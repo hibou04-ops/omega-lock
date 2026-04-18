@@ -1,0 +1,90 @@
+{
+  "PhantomKeyholeDeep|fractal_vise|seed=42": {
+    "effective_precision": 0.0,
+    "effective_recall": 0.0,
+    "fitness_gap_pct": 63.81519437790125,
+    "found_fitness": 36.403000000000006,
+    "generalization_gap": 1.1977034859764304,
+    "n_evaluations": 241,
+    "param_L2_error": 1.5806236289013986,
+    "status_pass": 0,
+    "stress_rank_spearman": 1.0
+  },
+  "PhantomKeyholeDeep|fractal_vise|seed=7": {
+    "effective_precision": 0.0,
+    "effective_recall": 0.0,
+    "fitness_gap_pct": 77.03765547470185,
+    "found_fitness": 24.203000000000003,
+    "generalization_gap": 0.04131719208362599,
+    "n_evaluations": 241,
+    "param_L2_error": 1.5806236289013986,
+    "status_pass": 0,
+    "stress_rank_spearman": 0.8285714285714285
+  },
+  "PhantomKeyholeDeep|plain_grid|seed=42": {
+    "effective_precision": 1.0,
+    "effective_recall": 0.5,
+    "fitness_gap_pct": 67.7912189497331,
+    "found_fitness": 32.403000000000006,
+    "generalization_gap": 1.160386383976792,
+    "n_evaluations": 91,
+    "param_L2_error": 1.8745369798669986,
+    "status_pass": 1,
+    "stress_rank_spearman": 1.0
+  },
+  "PhantomKeyholeDeep|plain_grid|seed=7": {
+    "effective_precision": 1.0,
+    "effective_recall": 0.5,
+    "fitness_gap_pct": 81.78135347191255,
+    "found_fitness": 19.203000000000003,
+    "generalization_gap": 0.46867676925480384,
+    "n_evaluations": 91,
+    "param_L2_error": 1.8123802642442954,
+    "status_pass": 0,
+    "stress_rank_spearman": 0.8285714285714285
+  },
+  "PhantomKeyhole|fractal_vise|seed=42": {
+    "effective_precision": 0.5,
+    "effective_recall": 1.0,
+    "fitness_gap_pct": -44.47517494168609,
+    "found_fitness": 13.0071,
+    "generalization_gap": 1.1532163203173653,
+    "n_evaluations": 394,
+    "param_L2_error": 0.08750000000000002,
+    "status_pass": 1,
+    "stress_rank_spearman": 1.0
+  },
+  "PhantomKeyhole|fractal_vise|seed=7": {
+    "effective_precision": 0.5,
+    "effective_recall": 1.0,
+    "fitness_gap_pct": -16.696659168541192,
+    "found_fitness": 14.0071,
+    "generalization_gap": 2.213163324314098,
+    "n_evaluations": 394,
+    "param_L2_error": 0.025000000000000022,
+    "status_pass": 1,
+    "stress_rank_spearman": 1.0
+  },
+  "PhantomKeyhole|plain_grid|seed=42": {
+    "effective_precision": 1.0,
+    "effective_recall": 1.0,
+    "fitness_gap_pct": -33.32222592469177,
+    "found_fitness": 12.003,
+    "generalization_gap": 1.2496875781054737,
+    "n_evaluations": 75,
+    "param_L2_error": 0.15000000000000002,
+    "status_pass": 1,
+    "stress_rank_spearman": 1.0
+  },
+  "PhantomKeyhole|plain_grid|seed=7": {
+    "effective_precision": 1.0,
+    "effective_recall": 1.0,
+    "fitness_gap_pct": 8.331250520703158,
+    "found_fitness": 11.003,
+    "generalization_gap": 2.726529128419522,
+    "n_evaluations": 75,
+    "param_L2_error": 0.15000000000000002,
+    "status_pass": 0,
+    "stress_rank_spearman": 1.0
+  }
+}

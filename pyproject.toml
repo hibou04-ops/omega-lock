@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omega-lock"
+version = "0.1.0"
+description = "Sensitivity-driven coordinate descent calibration framework (stress → top-K unlock → grid → walk-forward)"
+requires-python = ">=3.11"
+authors = [{name = "hibou"}]
+readme = "README.md"
+license = {text = "MIT"}
+keywords = [
+    "calibration",
+    "hyperparameter-optimization",
+    "sensitivity-analysis",
+    "walk-forward",
+    "overfitting-detection",
+    "coordinate-descent",
+    "kill-criteria",
+    "machine-learning",
+    "research",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "numpy>=1.24",
+]
+
+[project.urls]
+Homepage = "https://github.com/hibou04-ops/omega-lock"
+Repository = "https://github.com/hibou04-ops/omega-lock"
+Issues = "https://github.com/hibou04-ops/omega-lock/issues"
+Documentation = "https://github.com/hibou04-ops/omega-lock#readme"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+p2 = [
+    "optuna>=3.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+filterwarnings = [
+    "ignore::optuna.exceptions.ExperimentalWarning",
+]
