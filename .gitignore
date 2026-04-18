@@ -3,6 +3,10 @@
 # Per-user, per-machine, never meant for version control.
 .claude/
 
+# Local design docs, hackathon strategy notes, office-hours artifacts.
+# Not meant to ship with the public repo.
+.gstack/
+
 # archive/ contains references to Omega_TB_1 internal research (v1 HeartCore
 # best_params, BTCUSDT real-data specifics, Binance Vision fetch details).
 # Kept locally as methodology provenance but NOT published with the repo.

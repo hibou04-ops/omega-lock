@@ -4,17 +4,18 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.2)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Sensitivity-driven coordinate descent calibration framework.**
+**Sensitivity-driven calibration framework with a reusable audit surface.**
 
-> Two ideas, applied in sequence.
->
-> (1) **Keyhole as the mold.** Lock every parameter tight. Unlock only those that push back hardest under perturbation (high stress). Search that low-dim subspace.
->
-> (2) **Fractal vise.** Lock the winners. Re-measure stress on what remains. Narrow the grid geometrically around each winner. Iterate until convergence.
->
-> Idea (1) reduces dimensionality. Idea (2) is what actually makes the result generalize. Walk-forward and an optional holdout catch what slips through; an objective RAGAS-style scorecard makes every run comparable.
+Built with Claude Opus 4.7 in a single session on 2026-04-18. Ships on PyPI as `omega-lock`. 149 tests passing, 30-run objective benchmark, CI regression guard.
 
-The framework was built in two stages, not one. The **keyhole-as-mold** idea came first, distilled from a real calibration experiment that ended in KC-4 FAIL. That got the methodology to a functional single-round prototype: measure which parameters matter, reduce a 22-dim problem to 3 dim, catch overfitting exactly as designed (which is what the framework exists to produce). The **fractal-vise** idea came second, and closed the remaining gap: lock each round's winners, re-measure stress on the rest, shrink the grid geometrically. That turned the prototype into a multi-scale system (iterative lock-in, zooming grid, optional TPE, holdout defense, objective benchmark).
+What shipping version 0.1.2 contains:
+
+- **Three integrated search pipelines** that share the same verification surface: `run_p1` (grid / zooming grid), `run_p1_iterative` (multi-round lock-in), `run_p2_tpe` (Optuna TPE, optional extra).
+- **Reusable audit components** attached to every pipeline: perturbation sensitivity (stress), walk-forward correlation, pre-declared kill criteria (KC-1..4), optional single-shot holdout, Bergstra-Bengio random-search advisory (SC-2), RAGAS-style objective scorecard.
+- **Bring-your-own-search hook** via `CallableAdapter` — wrap any external optimizer as a `CalibrableTarget` and feed it through the same pipeline.
+- **Two reference keyholes** with ground-truth methods for mechanical benchmark scoring.
+
+Origin: extracted from a trading-strategy calibration experiment that ended in KC-4 FAIL, overfitting detected exactly as designed. That controlled-failure outcome is the behaviour the framework is built to produce. A full separable `omega_lock.audit.run_audit(external_candidate, environments)` API is on the [hackathon week plan](#hackathon-week-plan-2026-04-21--28), not in 0.1.2.
 
 한국어 README: [README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)
 
@@ -22,27 +23,43 @@ The framework was built in two stages, not one. The **keyhole-as-mold** idea cam
 
 | | |
 |---|---|
-| What it solves | High-dim parameter search where most params don't matter, few iterations are available, and the optimizer will overfit if you let it. |
-| How it's different | Measure which params matter (stress) before searching. Search a 3-dim subspace, not a 22-dim one. Pre-declared kill criteria prevent threshold fudging. |
-| When to use it | You have ≥10 parameters, a costly fitness function, a train/test split, and you want machine-verifiable "this configuration generalizes" rather than a single number. |
-| When not to use it | Your optimum lies in effective dimension ≈ nominal dimension, or you have effectively unlimited samples. Use plain TPE / random search. |
-| Install | `pip install omega-lock` (core) or `pip install "omega-lock[p2]"` (with Optuna TPE). |
-| Core API | `run_p1(target)` · `run_p1_iterative(target)` · `run_p2_tpe(target)` · `run_benchmark(specs, methods)` |
-| Status | 0.1.2 · 149 tests passing · benchmark gold baseline frozen for CI regression guard. |
+| What it is | A calibration framework with three integrated search pipelines and a shared audit surface (stress, walk-forward, KCs, holdout, objective scorecard). |
+| Why it matters | The audit components run the same way regardless of which pipeline produced the candidate. That separates "found something" from "it generalizes." |
+| When to use it | Costly fitness function, a train/test (and ideally holdout) split, and you want a mechanical pass/fail on generalization, not a single fitness number. |
+| When not to use it | Effective dim ≈ nominal dim, samples effectively unlimited, out-of-sample stability not a concern. Use a stock optimizer instead. |
+| Install | `pip install omega-lock` (core) or `pip install "omega-lock[p2]"` (Optuna TPE included) |
+| Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
+| Status | 0.1.2 on PyPI · 149 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
+| Built | 2026-04-18, single session, Claude Opus 4.7 |
 
-**Concrete numbers from the reference keyhole** (`PhantomKeyhole`, 12 params, 3 effective):
+### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
 
-- Plain grid (5 pts/axis, 1 round): `alpha=0.5, fitness=12.00, pass 60%` across 5 seeds.
-- Fractal vise (2 rounds × 4 zoom passes): `alpha=0.4375, fitness=13.00` (`+8%`, lands off the coarse lattice).
-- Optuna TPE (200 trials): `alpha=0.4037, fitness=14.00` (closest to true optimum) but `pass 10%` (walk-forward catches TPE's finer overfit).
+This is the output of `examples/benchmark_battery.py` against the shipped reference keyholes. No cherry-picking, no single-seed dramatics.
 
-The framework catches what it's supposed to catch, and the numbers are reproducible from a seed.
+```
+keyhole                method          recall  L2err  fit_gap%  gen_gap  pass%
+PhantomKeyhole         plain_grid      1.00    0.24    -9.3     1.26     60%
+PhantomKeyhole         fractal_vise    0.60    0.50   -16.6     1.13     60%
+PhantomKeyhole         optuna_tpe      1.00    0.07   -22.1     1.10      0%
+PhantomKeyholeDeep     plain_grid      0.50    1.86   +73.9     0.66     60%
+PhantomKeyholeDeep     fractal_vise    0.20    1.51   +45.9     0.51     20%
+PhantomKeyholeDeep     optuna_tpe      0.50    1.87   +70.0     0.61     20%
+```
+
+What the numbers actually show:
+
+- **No single search method dominates.** Plain grid has the highest pass rate, TPE has the tightest optimum (lowest L2err) on the easy keyhole, fractal-vise (iterative lock-in) is not a strict improvement over single-round grid. That is a legitimate finding, not a bug.
+- **Stress ranking is reliable across methods.** Spearman ρ(measured stress, true importance) ≈ **0.95** across all 30 runs. That is the part of the old lock-by-weight idea that still earns its keep: it is a cheap, accurate screening step.
+- **The audit catches what the searcher misses.** Optuna TPE lands closest to the true optimum on `PhantomKeyhole` but has **pass_rate = 0%**: walk-forward correctly flags the finer-grained overfit. That separation between "found something" and "it generalizes" is what the framework is for.
+
+The framework ships three integrated search pipelines. Each reuses the same audit components (stress / walk-forward / KCs / holdout / benchmark). The benchmark above compares them on identical keyholes under identical gates.
 
 ## Table of Contents
 
 - [Philosophy](#philosophy)
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
+- [Hackathon Week Plan (2026-04-21 – 28)](#hackathon-week-plan-2026-04-21--28)
 - [Kill Criteria](#kill-criteria-pre-declared)
 - [Module Structure](#module-structure)
 - [Search Strategy Comparison](#search-strategy-comparison)
@@ -61,66 +78,71 @@ The framework catches what it's supposed to catch, and the numbers are reproduci
 
 ## Philosophy
 
-Most parameter search suffers from the **curse of dimensionality**. You can hit a 22-dimensional space with random search or TPE, but if samples are scarce and evaluations are expensive, iterations run out and you converge on a Goodhart local optimum.
+The framework separates two concerns that most optimization tools conflate.
 
-Omega-Lock makes three assumptions:
+**Search** is how you propose candidates. Grid, zoom, random, Bayesian, gradient-based, a custom heuristic, whatever. Every method has a region where it does well and a region where it fails. There is no universal best.
 
-- **Effective dimension ≪ nominal dimension.** Most parameters don't meaningfully affect the result.
-- Therefore, **measure sensitivity first** and only search the top-K.
-- **Kill criteria must be pre-declared.** The experimenter cannot fudge thresholds post-hoc (Winchester prevention).
+**Audit** is how you decide whether a proposed candidate actually generalizes. This has nothing to do with how the candidate was produced. It has everything to do with whether its train fitness predicts its test fitness, whether the optimum is stable under perturbation, whether it clears a pre-declared bar on action count and time, whether it still looks good on data the searcher never saw.
 
-If these assumptions don't hold, Omega-Lock doesn't work. The original case study confirmed assumptions 1 and 2 but failed KC-4 in walk-forward. Even reduced to 3 dimensions, the underlying signal layer was overfit. The framework flagged it, which is the job.
+Omega-Lock is an audit-first framework. It ships multiple search methods, but the value proposition is that **the audit is the same for all of them**. If you bring your own optimizer (via `CallableAdapter`), it gets the same audit.
+
+Three assumptions the framework still leans on:
+
+- **Effective dim ≪ nominal dim is common.** When it holds, stress measurement is a cheap screening step that shrinks the search region before the expensive part.
+- **Pre-declared kill criteria are non-negotiable.** Thresholds cannot be fudged post-hoc. This is the structural defense against the common failure mode where a founder tunes the test set, declares victory, and ships an overfit.
+- **No method is immune to overfitting.** The nicer your optimizer, the more skill it has at finding plausible-looking false peaks. This is why the audit layer is method-agnostic by design.
+
+If all three hold, the framework earns its keep. If effective dim ≈ nominal dim or samples are effectively unlimited, a stock optimizer is fine and this framework is overkill.
 
 ---
 
 ## Pipeline
 
-Two levels: an **inner pipeline** (one round of stress → unlock → search → verify) and an **outer loop** (fractal-vise coordinate descent that runs the inner pipeline repeatedly, locking winners each round).
+Two axes, independent.
 
-### Inner pipeline (`run_p1`)
+### Axis 1 — Search (swappable)
 
-```
-target.evaluate(baseline_params)              # baseline (neutrals or prior round's locks)
-    ↓
-for each unlocked param:                      # stress (KC-2)
-    perturb by ±ε, measure |Δfitness|/ε
-    ↓
-sort stress desc, pick top-K                  # unlock set
-    ↓
-search over K-dim subspace                    # train fitness
-    GridSearch         ─ 1 round × n^K                    (default)
-    ZoomingGridSearch  ─ r rounds, range × zoom_factor    (fractal refinement)
-    run_p2_tpe         ─ Optuna TPE, fully continuous     (optional)
-    ↓
-walk-forward on test_target                   # KC-4 (Pearson + trade ratio)
-    ↓
-[optional] hybrid re-rank with judge target   # slow-but-accurate B over top-K
-    ↓
-[optional] SC-2 advisory                      # grid top-q vs random top-q (Bergstra-Bengio)
-    ↓
-KC-1 (time box) + KC-3 (action count floor)
-    ↓
-[optional] holdout_target evaluated ONCE      # honest out-of-sample
-    ↓
-P1Result (JSON-serializable)
-```
+Pick one. Or bring your own via `CallableAdapter`. They all return the same downstream shape, so the audit does not care which one you chose.
 
-### Outer loop (`run_p1_iterative`)
+| Method | Module | When it fits |
+|---|---|---|
+| `GridSearch` | `grid.py` | Low-dim, want exhaustive, easy to debug |
+| `ZoomingGridSearch` | `grid.py` | Refine around a winner to below the initial lattice |
+| `RandomSearch` | `random_search.py` | SC-2 baseline, or when you suspect grid coverage is wasted |
+| `run_p2_tpe` | `p2_tpe.py` | Continuous Bayesian, non-separable objectives (opt-in Optuna dep) |
+| any callable | `adapters.py` | Your existing optimizer. The framework wraps it, not replaces it. |
+
+### Axis 2 — Audit (invariant)
+
+This runs for every method. Same gates, same thresholds, same scorecard.
 
 ```
-base_params = neutral_defaults
-locked = {}
-for round r in 0..max_rounds:
-    remaining = all_params - locked
-    result = run_p1(target, base_params, subset=remaining)
-    if result.status != "PASS":  break   # Winchester defense
-    if improvement < min_improvement:  break
-    lock winners of this round into base_params
+baseline evaluation on neutrals
     ↓
-final_baseline (all locked values) + per-round P1Results + holdout_result
+stress measurement                        # KC-2: Gini + top/bot ratio
+    (optional: a cheap screening to pick a smaller search region)
+    ↓
+[ Search runs here, whichever method you chose ]
+    ↓
+walk-forward re-evaluation on test target  # KC-4: Pearson + trade_ratio
+    ↓
+[optional] hybrid re-rank with judge target
+    ↓
+[optional] SC-2 advisory                    # grid top-q vs random top-q
+    ↓
+KC-1 time box + KC-3 action-count floor
+    ↓
+[optional] holdout_target evaluated ONCE   # honest out-of-sample, never touched by search
+    ↓
+Result (JSON-serializable) + status PASS or FAIL:KC-N
 ```
 
-Each round's KC-1..4 are enforced independently — thresholds are **never relaxed across rounds** (Winchester prevention). The outer loop halts on the first failed round.
+### High-level orchestrators
+
+- **`run_p1`** — one pass through the axis 2 audit with axis 1 set to `GridSearch` (or `ZoomingGridSearch` if `zoom_rounds > 1`).
+- **`run_p1_iterative`** — runs `run_p1` in a loop. Each round locks the grid winners, then re-measures stress on what remains, then searches again. Same KCs per round, not relaxed across rounds (Winchester defense). This is still inside the lock-by-weight frame; useful when effective dim > unlock_k and the landscape is approximately additive, less useful when parameters interact.
+- **`run_p2_tpe`** — axis 2 audit with axis 1 set to Optuna TPE. Drops the lock-by-weight commitment: TPE samples the unlocked subspace adaptively without ranking params.
+- **`run_benchmark`** — run multiple (search method × keyhole × seed) combinations, emit the objective scorecard shown in the At a Glance section.
 
 ---
 
@@ -264,6 +286,38 @@ result = run_p2_tpe(
 
 ---
 
+## Hackathon Week Plan (2026-04-21 – 28)
+
+This repo was built during a single session on 2026-04-18 with Claude Opus 4.7. What's listed here is what ships in 0.1.2 today versus what lands during the Anthropic "Built with Opus 4.7" hackathon week.
+
+### Shipping in 0.1.2 (today)
+
+- `run_p1`, `run_p1_iterative`, `run_p2_tpe` integrated pipelines
+- Stress measurement, walk-forward, KC-1..4, holdout support, SC-2 advisory
+- `run_benchmark` + 30-run objective scorecard with gold baseline regression guard
+- `CallableAdapter` for wrapping external optimizers
+- Two reference keyholes (`PhantomKeyhole`, `PhantomKeyholeDeep`) with ground-truth methods
+- 149 tests, PyPI release, MIT license
+
+### Adding during hackathon week
+
+1. **`omega_lock.audit.run_audit(candidate, environments, config) -> AuditResult`** — separable audit entrypoint. Takes a candidate config from any source (Optuna, a vendor default, hand-tuning, an LLM suggestion), runs local stress + per-environment walk-forward + KC gates + holdout, returns pass/fail + per-environment breakdown + trust score + specific failure reasons. Reuses existing stress / walk_forward / kill_criteria / benchmark code; thin wrapper and a trust-score aggregator are the new parts.
+2. **`omega-lock audit --explain` CLI** — human-readable per-corner output plus JSON mode.
+3. **`omega_lock.keyholes.sram_bitcell`** — 6T SRAM bitcell demo keyhole. Analytical (no SPICE), <1ms per evaluation, 5 PVT corners (TT / SS / FF / FS / SF). Overfit pathology is physics-informed: a candidate optimized for TT will systematically break SS/FF under the transistor strength ratio. Concrete demonstration that the same pattern kills both trading-strategy calibrations and silicon tape-outs.
+4. **`examples/demo_sram.py`** — end-to-end 60-second demo: Optuna TPE finds a TT-corner optimum, `run_audit` rejects it with KC-4 Pearson 0.11 on SS corner, radar chart saved to `corners.png` visualizing the TT spike and 4-corner collapse.
+5. **PyPI 0.1.3 release** on ~4/25 with all of the above (also incidentally refreshes the shields.io badge cache).
+
+### Why this particular demo
+
+`omega-lock`'s origin is a calibration experiment in one domain (trading strategies) that failed its own overfitting check. Taking the methodology and applying it to a completely different domain (low-power SRAM bitcell sizing) makes two things concrete:
+
+1. The overfit-to-train-corner pathology is not domain-specific. The same KC-4 gate that catches a trading strategy overfit to its backtest window catches a bitcell sized for typical-process silicon that dies in slow-slow corner.
+2. The audit surface is reusable. Extracting it as `run_audit` turns the framework from "three pipelines that each include their own verification" into "any candidate from any source can be verified with the same mechanical checks."
+
+The demo is the proof. The README is the pointer.
+
+---
+
 ## Kill Criteria (pre-declared)
 
 | KC | Checked at | Default threshold | Purpose |
@@ -309,11 +363,11 @@ src/omega_lock/
 
 ## vs External Alternatives
 
-| Tool | Approach | Omega-Lock's difference |
+| Tool | What it does | What Omega-Lock adds |
 |---|---|---|
-| Optuna / Hyperopt (TPE) | Bayesian adaptive sampling, full-dim | Omega-Lock fixes a top-K subspace via stress *before* sampling. When `effective_dim ≪ nominal_dim` holds, sample efficiency dominates. Complementary, wrap TPE via `run_p2_tpe`. |
-| Ray Tune / scikit-optimize | general-purpose HPO frameworks | single fitness, no built-in walk-forward / overfit gate. Omega-Lock makes KC-4 (Pearson + trade_ratio) a required gate. |
-| Plain grid search | exhaustive | high-dim explosion ($n^D$). Omega-Lock reduces to $n^K$ via stress → top-K unlock. |
+| Optuna / Hyperopt (TPE) | Bayesian adaptive sampling over a full-dim space | Audit layer around the result. Stress-based subspace reduction is an optional pre-filter, not required. You can run TPE directly via `run_p2_tpe` and still get the same KC gates + walk-forward + holdout + scorecard. |
+| Ray Tune / scikit-optimize | Generic HPO frameworks (many searchers, many schedulers) | A standard audit surface with declared kill criteria, not a single fitness score. KC-4 (Pearson + trade_ratio) and a holdout check are opinionated defaults. |
+| Plain grid search | Exhaustive Cartesian | Same grid when you want it, plus a zooming variant for sub-lattice precision, plus an automatic random-sample baseline (SC-2 advisory) that flags cases where your grid coverage was wasted. |
 | Nelder-Mead / Powell | local continuous search | continuous-only, no categoricals or bools. Omega-Lock handles mixed int / bool / continuous. |
 
 **Omega-Lock's USP**: *pre-declared kill criteria + low-dim subspace hypothesis.* Not another adaptive-sampling optimizer, a **methodology framework**. Ideally layered on top of existing optimizers (TPE / Bayesian / Genetic); `run_p2_tpe` is the reference example.
@@ -324,19 +378,17 @@ Pass a third target that is *never touched during rounds* via `run_p1(..., holdo
 
 ## Fractal-vise Mode (multi-scale refinement)
 
-Think of a fractal vise: a large segment clamps the object first (round 1 lock-in), then smaller segments conform within that coordinate system (zooming within a round, or the next round on remaining params).
-
-Two independent axes:
+Two independent refinement axes. Both sit inside the same audit envelope.
 
 1. **Iterative lock-in** (`run_p1_iterative` + `IterativeConfig`):
-   After round 1 unlocks top-K and locks the grid-best, round 2 re-measures stress on the remaining params, and so on. Valuable when `effective_dim > unlock_k`.
+   After round 1 unlocks top-K and locks the grid-best, round 2 re-measures stress on the remaining params, and so on. Useful when `effective_dim > unlock_k` AND parameters are approximately additive. Still inside the lock-by-weight frame. Per the benchmark, this is not a strict win over a single wider round, so use it when you have reason to believe the landscape separates.
 
 2. **Zooming grid** (`ZoomingGridSearch`, or `P1Config(zoom_rounds=N)`):
-   Within a single round, the grid shrinks geometrically around the previous winner. Reaches finer values (e.g. `alpha=0.4375`) that the initial discrete grid (e.g. `alpha=0.5`) cannot. Roughly 4× error reduction every two zoom rounds.
+   Within a single round, the grid shrinks geometrically around the previous winner. Reaches values that the initial discrete lattice cannot express. Roughly 4× error reduction per two zoom rounds on smooth landscapes. This is geometric, not weight-based, so it composes with any search method.
 
-The two axes compose: `run_p1_iterative(config=IterativeConfig(rounds=3, zoom_rounds=4))` is the full fractal vise. On `PhantomKeyhole`, plain grid (`alpha=0.5`, fitness=12.0) vs. fractal (`alpha=0.4375`, fitness=13.0) makes the contrast visible.
+The two axes compose: `run_p1_iterative(config=IterativeConfig(rounds=3, zoom_rounds=4))`. On a single seed of `PhantomKeyhole`, this moves `alpha` from `0.5` (on the 5-point grid) to `0.4375` (between lattice points) with fitness 12 → 13. Across 5 seeds the picture is more mixed, see the raw scorecard in [At a Glance](#at-a-glance).
 
-**Warning**: KC thresholds are strictly enforced every round, Winchester prevention. Because `test_set` is reused across rounds, `KC-4` PASS becomes weaker evidence as rounds deepen. In practice, splitting out a hold-out set is recommended.
+**KC thresholds are enforced every round and never relaxed across rounds** — this is the Winchester defense. Because `test_target` is consulted repeatedly for lock-in decisions, `KC-4 PASS` becomes weaker evidence as rounds accumulate. Pair iterative runs with a `holdout_target` when you care about the final answer.
 
 ---
 
@@ -378,7 +430,7 @@ fractal_vise        0.400   0.217  1.003  14.7%     0.820    40.0%
 optuna_tpe          0.750   1.000  0.970  23.9%     0.858    10.0%
 ```
 
-Reading the table: TPE has the tightest `L2err` (closest to true optimum) but also the lowest `pass_rate`. That's the framework catching TPE's finer-grained overfitting. `plain_grid` passes most often because it's coarser and harder to overfit with. `fractal_vise` trades precision for broader coverage across rounds.
+See the [At a Glance](#at-a-glance) section for the per-keyhole breakdown. Short version: no search method wins on every metric, the audit (KC gates + walk-forward) is what makes the scorecard comparable, and the stress-rank Spearman stays around 0.95 across all 30 runs (stress measurement is reliable even where the search methods disagree).
 
 **CI regression guard**: `tests/test_benchmark_regression.py` compares the current run against a frozen `tests/fixtures/benchmark_gold.json`. Any drift > `1e-6` on deterministic metrics fails the test. Regenerate intentionally via `OMEGA_LOCK_UPDATE_GOLD=1 pytest tests/test_benchmark_regression.py`.
 

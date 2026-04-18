@@ -4,17 +4,18 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.2)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**민감도 기반 좌표 하강 캘리브레이션 프레임워크.**
+**Sensitivity 기반 캘리브레이션 프레임워크 + 재사용 가능한 audit surface.**
 
-두 가지 아이디어, 순차적으로 적용.
+2026-04-18 단일 세션에서 Claude Opus 4.7 와 함께 빌드. PyPI 에 `omega-lock` 으로 배포. 149 tests 통과, 30-run 객관 benchmark, CI regression guard.
 
-(1) **열쇠구멍을 거푸집으로.** 모든 파라미터를 단단히 잠그고, 충격을 받는 (stress 가 높은) 것만 풀어준다. 저차원 subspace 탐색.
+0.1.2 에 실제로 포함된 것:
 
-(2) **프랙탈 바이스.** winner 를 lock. 남은 파라미터에서 stress 재측정. 각 winner 주위로 격자를 기하급수 축소. 수렴할 때까지 반복.
+- **통합 search pipeline 3개**, 동일한 verification surface 공유: `run_p1` (grid / zooming grid), `run_p1_iterative` (multi-round lock-in), `run_p2_tpe` (Optuna TPE, optional extra).
+- **재사용 가능한 audit 컴포넌트**, 모든 pipeline 에 연결: perturbation sensitivity (stress), walk-forward 상관, 사전 명문화 kill criteria (KC-1..4), optional 단일 holdout, Bergstra-Bengio random-search advisory (SC-2), RAGAS-style 객관 scorecard.
+- **Bring-your-own-search hook** — `CallableAdapter` 로 임의 외부 optimizer 를 `CalibrableTarget` 으로 wrap 해서 같은 pipeline 에 태움.
+- **2개 reference keyhole**, ground-truth 메서드 탑재로 기계적 benchmark 채점 가능.
 
-(1) 은 차원을 줄인다. (2) 는 결과가 실제로 일반화되게 만든다. Walk-forward 와 옵션 holdout 이 빠져나가는 것을 잡고, RAGAS-style 객관 scorecard 로 모든 run 을 비교 가능하게 만든다.
-
-이 프레임워크는 한 번에 만들어진 게 아니라 **두 단계**로 쌓였다. **열쇠구멍 거푸집** 아이디어가 먼저 나왔다. KC-4 FAIL 로 종결된 실제 캘리브레이션 실험에서 distill 된 것으로, 방법론을 single-round 프로토타입 수준까지 끌어올렸다: 어떤 파라미터가 중요한지 측정하고, 22차원 문제를 3차원으로 줄이고, 설계대로 overfitting 을 정확히 탐지 (그 탐지 기능이 프레임워크가 만들어진 이유). **프랙탈 바이스** 아이디어가 그다음에 왔고, 남은 gap 을 닫았다: 매 라운드 winner 를 lock, 남은 파라미터에서 stress 재측정, 격자를 기하급수 축소. 이 단계가 프로토타입을 multi-scale 시스템으로 바꿨다 (iterative lock-in, zooming grid, 옵션 TPE, holdout 방어, 객관 benchmark).
+Origin: KC-4 FAIL 로 종결된 거래전략 캘리브레이션 실험에서 distill — 방법론이 설계대로 overfitting 을 탐지한 그 controlled-failure outcome 이 프레임워크가 만들어내도록 설계된 동작 자체다. 분리된 `omega_lock.audit.run_audit(external_candidate, environments)` API 는 [해커톤 주간 계획](#해커톤-주간-계획-2026-04-21--28) 에 있음, 0.1.2 에 없음.
 
 English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/README.md)
 
@@ -22,27 +23,43 @@ English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/
 
 | | |
 |---|---|
-| 무엇을 푸는가 | 대부분의 param 이 결과에 영향 없는 고차원 탐색, iteration 예산 적음, optimizer 는 방치하면 overfit 한다. |
-| 무엇이 다른가 | 탐색 전에 어떤 param 이 실제로 중요한지 (stress) 먼저 측정. 22차원 대신 3차원 subspace 탐색. 사전 명문화된 kill criteria 로 threshold fudge 방지. |
-| 언제 쓰나 | 파라미터 10개 이상, fitness 평가 비용 큼, train/test split 있음, "이 설정이 일반화되는가" 를 단일 숫자가 아닌 기계 검증 가능 형태로 원할 때. |
-| 언제 안 쓰나 | Effective dim ≈ nominal dim 이거나 샘플이 사실상 무제한. 그때는 plain TPE / random search 로 충분. |
-| 설치 | `pip install omega-lock` (기본) 또는 `pip install "omega-lock[p2]"` (Optuna TPE 포함). |
-| Core API | `run_p1(target)` · `run_p1_iterative(target)` · `run_p2_tpe(target)` · `run_benchmark(specs, methods)` |
-| 상태 | 0.1.2 · 149 tests 통과 · benchmark gold baseline CI regression guard 동결. |
+| 뭔가 | 3개 통합 search pipeline + 공유 audit surface (stress, walk-forward, KCs, holdout, 객관 scorecard) |
+| 왜 중요 | 어떤 pipeline 이 후보를 만들었든 audit 은 동일하게 작동. "뭔가 찾음" 과 "일반화됨" 을 분리 |
+| 언제 쓰나 | Fitness 평가 비용 큼, train/test (가능하면 holdout) 분리됨, 단일 점수 아닌 일반화 pass/fail 기계 검증 원할 때 |
+| 언제 안 쓰나 | Effective dim ≈ nominal dim, 샘플 무제한, out-of-sample 안정성 무관심 → stock optimizer 로 충분 |
+| 설치 | `pip install omega-lock` (기본) 또는 `pip install "omega-lock[p2]"` (Optuna TPE 포함) |
+| Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
+| 상태 | 0.1.2 on PyPI · 149 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
+| Built | 2026-04-18 · 단일 세션 · Claude Opus 4.7 |
 
-**레퍼런스 keyhole 실측 수치** (`PhantomKeyhole`, 12 params, 3 effective):
+### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
 
-- Plain grid (5pts/axis, 1 round): `alpha=0.5, fitness=12.00, pass 60%` (5 seeds).
-- Fractal vise (2 rounds × 4 zoom passes): `alpha=0.4375, fitness=13.00` (+8%, coarse lattice 밖에 착지).
-- Optuna TPE (200 trials): `alpha=0.4037, fitness=14.00` (진짜 optimum 최근접) 인데 `pass 10%` — walk-forward 가 TPE 의 정밀 overfit 포착.
+`examples/benchmark_battery.py` 의 실제 출력. cherry-pick 없음.
 
-프레임워크가 잡아야 할 것을 잡고, 숫자는 seed 로부터 재현 가능하다.
+```
+keyhole                method          recall  L2err  fit_gap%  gen_gap  pass%
+PhantomKeyhole         plain_grid      1.00    0.24    -9.3     1.26     60%
+PhantomKeyhole         fractal_vise    0.60    0.50   -16.6     1.13     60%
+PhantomKeyhole         optuna_tpe      1.00    0.07   -22.1     1.10      0%
+PhantomKeyholeDeep     plain_grid      0.50    1.86   +73.9     0.66     60%
+PhantomKeyholeDeep     fractal_vise    0.20    1.51   +45.9     0.51     20%
+PhantomKeyholeDeep     optuna_tpe      0.50    1.87   +70.0     0.61     20%
+```
+
+수치가 실제로 말하는 것:
+
+- **어떤 단일 search 도 지배적이지 않다.** plain grid 가 pass rate 최고, TPE 가 PhantomKeyhole 에서 최적점 가장 가깝게 (L2err 최저) 찍지만, fractal-vise (iterative lock-in) 는 단일 라운드 grid 대비 엄밀한 개선 아님. 이건 버그가 아니라 실측 결과.
+- **Stress ranking 은 method 관계없이 안정적.** 30 runs 전체 Spearman ρ(측정 stress, 실제 importance) ≈ **0.95**. 오래된 lock-by-weight 아이디어에서 여전히 값을 하는 부분 — **저렴하고 정확한 screening**.
+- **Search 가 놓친 것을 audit 이 잡는다.** Optuna TPE 가 PhantomKeyhole 에서 진짜 optimum 에 가장 근접했는데 **pass_rate = 0%**: walk-forward 가 정밀 overfit 을 정확히 flag. "뭔가 찾음" 과 "그게 일반화됨" 사이의 이 분리 — 프레임워크가 존재하는 이유.
+
+프레임워크는 3개 통합 search pipeline 을 ship. 각각이 동일한 audit 컴포넌트 (stress / walk-forward / KCs / holdout / benchmark) 를 재사용. 위 benchmark 는 같은 keyhole, 같은 gate 아래에서 세 방법을 비교한 결과.
 
 ## 목차
 
 - [철학](#철학)
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
+- [해커톤 주간 계획 (2026-04-21 ~ 28)](#해커톤-주간-계획-2026-04-21--28)
 - [Kill Criteria](#kill-criteria-사전-명문화)
 - [모듈 구조](#모듈-구조)
 - [검색 전략 비교](#검색-전략-비교)
@@ -260,6 +277,38 @@ result = run_p2_tpe(
 )
 # 동일한 KC-1..4 gate — TPE 는 search 방식 교체일 뿐 threshold 완화 아님.
 ```
+
+---
+
+## 해커톤 주간 계획 (2026-04-21 ~ 28)
+
+이 repo 는 2026-04-18 하루 세션에 Claude Opus 4.7 와 같이 빌드됐다. 아래는 **오늘 0.1.2 에 실제 포함된 것** vs **Anthropic "Built with Opus 4.7" 해커톤 주간에 추가될 것** 의 정직한 구분.
+
+### 0.1.2 에 이미 ship 중인 것 (오늘)
+
+- `run_p1`, `run_p1_iterative`, `run_p2_tpe` 통합 pipeline
+- Stress 측정, walk-forward, KC-1..4, holdout 지원, SC-2 advisory
+- `run_benchmark` + 30-run 객관 scorecard + gold baseline regression guard
+- `CallableAdapter` (외부 optimizer wrap 용)
+- 2개 reference keyhole (`PhantomKeyhole`, `PhantomKeyholeDeep`), ground-truth method 탑재
+- 149 tests, PyPI 배포, MIT license
+
+### 해커톤 주간에 추가할 것
+
+1. **`omega_lock.audit.run_audit(candidate, environments, config) -> AuditResult`** — 분리된 audit entrypoint. 임의 소스 (Optuna, 벤더 default, 수동 튜닝, LLM 제안) 에서 온 candidate 를 받아 local stress + per-environment walk-forward + KC gate + holdout 돌림. 반환: pass/fail + per-environment 분해 + trust score + 실패 사유. 기존 stress / walk_forward / kill_criteria / benchmark 코드 재활용; 신규는 thin wrapper + trust-score aggregator.
+2. **`omega-lock audit --explain` CLI** — 사람이 읽는 per-corner 출력 + JSON 모드.
+3. **`omega_lock.keyholes.sram_bitcell`** — 6T SRAM bitcell 데모 keyhole. 분석식 모델 (SPICE 없음), <1ms/eval, 5 PVT corner (TT / SS / FF / FS / SF). Overfit pathology 는 physics-informed: TT corner 에 최적화된 candidate 가 transistor strength ratio 때문에 SS/FF 에서 systematically 무너짐. **거래전략 캘리브레이션 죽이는 패턴이 실리콘 tape-out 도 죽인다는 것** 의 구체 증명.
+4. **`examples/demo_sram.py`** — end-to-end 60초 데모: Optuna TPE 가 TT corner optimum 찾음, `run_audit` 가 SS corner 에서 KC-4 Pearson 0.11 로 reject, radar chart `corners.png` 저장 (TT spike + 4 corner 붕괴 시각화).
+5. **PyPI 0.1.3 릴리즈** (~4/25) — 위 전부 포함. shields.io 배지 cache 도 부수적으로 갱신됨.
+
+### 왜 이 데모인가
+
+`omega-lock` 의 origin 은 한 도메인 (거래전략) 의 캘리브레이션 실험이 자기 overfitting check 에서 실패한 것. 같은 방법론을 **전혀 다른 도메인** (low-power SRAM bitcell 사이징) 에 적용하면 두 가지가 구체화된다:
+
+1. Train-corner overfit pathology 는 도메인에 의존하지 않는다. Backtest window 에 과적합한 거래전략을 잡는 그 KC-4 gate 가, typical 공정에서 최적화되어 slow-slow corner 에서 죽는 bitcell 도 잡는다.
+2. Audit surface 는 재사용 가능하다. `run_audit` 로 분리하면 프레임워크가 "각자 verification 를 포함한 3개 pipeline" 에서 "임의 소스의 후보를 동일한 기계적 check 로 검증" 으로 전환된다.
+
+데모가 증거. README 는 pointer.
 
 ---
 
