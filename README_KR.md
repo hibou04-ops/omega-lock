@@ -6,9 +6,15 @@
 
 **민감도 기반 좌표 하강 캘리브레이션 프레임워크.**
 
-"열쇠구멍을 거푸집으로 쓴다" — 모든 파라미터를 단단히 잠그고, stress 가 높은 곳만 풀어 저차원 subspace 에서 탐색. **그다음 프랙탈 바이스처럼 반복**: winner 를 lock-in → 남은 파라미터에서 stress 재측정 → 각 winner 주위로 격자를 기하급수적으로 축소. Walk-forward 와 옵션 holdout target 으로 과적합 검증. RAGAS-style 객관 scorecard 로 모든 run 비교 가능.
+두 가지 아이디어, 순차적으로 적용.
 
-이 프레임워크는 실제 캘리브레이션 실험에서 distill 된 것으로, 그 실험은 KC-4 FAIL 로 종결됐다. 방법론이 설계대로 overfitting 을 정확히 탐지했고, 바로 그 탐지 기능이 프레임워크가 만들어진 이유다. 이후 single-round 프로토타입을 넘어 multi-scale 시스템으로 진화했다 (iterative lock-in, zooming grid, 옵션 TPE, holdout 방어, 객관 benchmark).
+(1) **열쇠구멍을 거푸집으로.** 모든 파라미터를 단단히 잠그고, 충격을 받는 (stress 가 높은) 것만 풀어준다. 저차원 subspace 탐색.
+
+(2) **프랙탈 바이스.** winner 를 lock. 남은 파라미터에서 stress 재측정. 각 winner 주위로 격자를 기하급수 축소. 수렴할 때까지 반복.
+
+(1) 은 차원을 줄인다. (2) 는 결과가 실제로 일반화되게 만든다. Walk-forward 와 옵션 holdout 이 빠져나가는 것을 잡고, RAGAS-style 객관 scorecard 로 모든 run 을 비교 가능하게 만든다.
+
+이 프레임워크는 한 번에 만들어진 게 아니라 **두 단계**로 쌓였다. **열쇠구멍 거푸집** 아이디어가 먼저 나왔다. KC-4 FAIL 로 종결된 실제 캘리브레이션 실험에서 distill 된 것으로, 방법론을 single-round 프로토타입 수준까지 끌어올렸다: 어떤 파라미터가 중요한지 측정하고, 22차원 문제를 3차원으로 줄이고, 설계대로 overfitting 을 정확히 탐지 (그 탐지 기능이 프레임워크가 만들어진 이유). **프랙탈 바이스** 아이디어가 그다음에 왔고, 남은 gap 을 닫았다: 매 라운드 winner 를 lock, 남은 파라미터에서 stress 재측정, 격자를 기하급수 축소. 이 단계가 프로토타입을 multi-scale 시스템으로 바꿨다 (iterative lock-in, zooming grid, 옵션 TPE, holdout 방어, 객관 benchmark).
 
 English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/README.md)
 

@@ -6,9 +6,15 @@
 
 **Sensitivity-driven coordinate descent calibration framework.**
 
-> "Use the keyhole as the mold." Lock every parameter tight. Unlock only those that push back hardest under perturbation. Search the low-dimensional subspace, **then iterate like a fractal vise**: lock the winners, re-measure stress on what remains, narrow the grid geometrically around each winner. Walk-forward and an optional holdout target catch overfitting; an objective RAGAS-style scorecard makes every run comparable.
+> Two ideas, applied in sequence.
+>
+> (1) **Keyhole as the mold.** Lock every parameter tight. Unlock only those that push back hardest under perturbation (high stress). Search that low-dim subspace.
+>
+> (2) **Fractal vise.** Lock the winners. Re-measure stress on what remains. Narrow the grid geometrically around each winner. Iterate until convergence.
+>
+> Idea (1) reduces dimensionality. Idea (2) is what actually makes the result generalize. Walk-forward and an optional holdout catch what slips through; an objective RAGAS-style scorecard makes every run comparable.
 
-The framework was distilled from a real calibration experiment that ended in KC-4 FAIL. The methodology detected overfitting exactly as designed, and that detection is what the framework is built to produce. It has since grown beyond the single-round prototype into a multi-scale system (iterative lock-in, zooming grid, optional TPE, holdout defense, objective benchmark).
+The framework was built in two stages, not one. The **keyhole-as-mold** idea came first, distilled from a real calibration experiment that ended in KC-4 FAIL. That got the methodology to a functional single-round prototype: measure which parameters matter, reduce a 22-dim problem to 3 dim, catch overfitting exactly as designed (which is what the framework exists to produce). The **fractal-vise** idea came second, and closed the remaining gap: lock each round's winners, re-measure stress on the rest, shrink the grid geometrically. That turned the prototype into a multi-scale system (iterative lock-in, zooming grid, optional TPE, holdout defense, objective benchmark).
 
 한국어 README: [README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)
 
