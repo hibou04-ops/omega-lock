@@ -45,7 +45,7 @@ from omega_lock.benchmark import (
     compute_generalization_gap, compute_spearman,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 __all__ = [
     "CalibrableTarget", "ParamSpec", "EvalResult",

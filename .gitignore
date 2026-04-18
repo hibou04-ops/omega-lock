@@ -3,6 +3,10 @@
 # Per-user, per-machine, never meant for version control.
 .claude/
 
+# Local design docs, hackathon strategy notes, office-hours artifacts.
+# Not meant to ship with the public repo.
+.gstack/
+
 # archive/ contains references to internal calibration research (v1 CoreSignal
 # best_params, recorded telemetry specifics, and data-collection details).
 # Kept locally as methodology provenance but NOT published with the repo.
