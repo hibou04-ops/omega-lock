@@ -6,11 +6,31 @@
 
 **Sensitivity-driven coordinate descent calibration framework.**
 
-> "Use the keyhole as the mold." Lock every parameter tight. Unlock only those that push back hardest under perturbation. Grid-search the low-dimensional subspace, then validate with walk-forward to catch overfitting.
+> "Use the keyhole as the mold." Lock every parameter tight. Unlock only those that push back hardest under perturbation. Search the low-dimensional subspace, **then iterate like a fractal vise**: lock the winners, re-measure stress on what remains, narrow the grid geometrically around each winner. Walk-forward and an optional holdout target catch overfitting; an objective RAGAS-style scorecard makes every run comparable.
 
-This package generalizes the methodology from `Omega_TB_1/research/omega_lock_p1/` (a v1 HeartCore target that ended in KC-4 FAIL) into a reusable library for arbitrary parameter-search problems. The original HeartCore experiment was not a "success" in the naive sense, it was a successful *overfitting detection*, which is exactly what this framework is designed to produce (see `archive/`).
+The framework was distilled from a real calibration experiment that ended in KC-4 FAIL. The methodology detected overfitting exactly as designed, and that detection is what the framework is built to produce. It has since grown beyond the single-round prototype into a multi-scale system (iterative lock-in, zooming grid, optional TPE, holdout defense, objective benchmark).
 
-한국어 README: **[README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)**
+한국어 README: [README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)
+
+## At a Glance
+
+| | |
+|---|---|
+| What it solves | High-dim parameter search where most params don't matter, few iterations are available, and the optimizer will overfit if you let it. |
+| How it's different | Measure which params matter (stress) before searching. Search a 3-dim subspace, not a 22-dim one. Pre-declared kill criteria prevent threshold fudging. |
+| When to use it | You have ≥10 parameters, a costly fitness function, a train/test split, and you want machine-verifiable "this configuration generalizes" rather than a single number. |
+| When not to use it | Your optimum lies in effective dimension ≈ nominal dimension, or you have effectively unlimited samples. Use plain TPE / random search. |
+| Install | `pip install omega-lock` (core) or `pip install "omega-lock[p2]"` (with Optuna TPE). |
+| Core API | `run_p1(target)` · `run_p1_iterative(target)` · `run_p2_tpe(target)` · `run_benchmark(specs, methods)` |
+| Status | 0.1.2 · 149 tests passing · benchmark gold baseline frozen for CI regression guard. |
+
+**Concrete numbers from the reference keyhole** (`PhantomKeyhole`, 12 params, 3 effective):
+
+- Plain grid (5 pts/axis, 1 round): `alpha=0.5, fitness=12.00, pass 60%` across 5 seeds.
+- Fractal vise (2 rounds × 4 zoom passes): `alpha=0.4375, fitness=13.00` (`+8%`, lands off the coarse lattice).
+- Optuna TPE (200 trials): `alpha=0.4037, fitness=14.00` (closest to true optimum) but `pass 10%` (walk-forward catches TPE's finer overfit).
+
+The framework catches what it's supposed to catch, and the numbers are reproducible from a seed.
 
 ## Table of Contents
 
@@ -23,9 +43,11 @@ This package generalizes the methodology from `Omega_TB_1/research/omega_lock_p1
 - [vs External Alternatives](#vs-external-alternatives)
 - [Holdout Target](#holdout-target)
 - [Fractal-vise Mode](#fractal-vise-mode-multi-scale-refinement)
+- [Objective Benchmark (RAGAS-style)](#objective-benchmark-ragas-style)
+- [Adapter Patterns](#adapter-patterns)
 - [Tests](#tests)
 - [Limitations](#limitations)
-- [Roadmap](#roadmap-out-of-scope-for-this-package)
+- [Roadmap](#roadmap)
 - [Citation](#citation)
 - [License](#license)
 
@@ -41,30 +63,58 @@ Omega-Lock makes three assumptions:
 - Therefore, **measure sensitivity first** and only search the top-K.
 - **Kill criteria must be pre-declared.** The experimenter cannot fudge thresholds post-hoc (Winchester prevention).
 
-If these assumptions don't hold, Omega-Lock doesn't work. P1 HeartCore confirmed assumptions 1 and 2 but failed KC-4 in walk-forward, meaning even reduced to 3 dimensions, v1's signal layer was fundamentally overfit. That outcome was itself useful information.
+If these assumptions don't hold, Omega-Lock doesn't work. The original case study confirmed assumptions 1 and 2 but failed KC-4 in walk-forward. Even reduced to 3 dimensions, the underlying signal layer was overfit. The framework flagged it, which is the job.
 
 ---
 
 ## Pipeline
 
+Two levels: an **inner pipeline** (one round of stress → unlock → search → verify) and an **outer loop** (fractal-vise coordinate descent that runs the inner pipeline repeatedly, locking winners each round).
+
+### Inner pipeline (`run_p1`)
+
 ```
-target.evaluate(neutral_defaults)        # baseline
+target.evaluate(baseline_params)              # baseline (neutrals or prior round's locks)
     ↓
-for each param:                          # stress measurement (KC-2)
+for each unlocked param:                      # stress (KC-2)
     perturb by ±ε, measure |Δfitness|/ε
     ↓
-sort stress desc, pick top-K             # unlock set
+sort stress desc, pick top-K                  # unlock set
     ↓
-grid search over K-dim subspace          # train fitness
+search over K-dim subspace                    # train fitness
+    GridSearch         ─ 1 round × n^K                    (default)
+    ZoomingGridSearch  ─ r rounds, range × zoom_factor    (fractal refinement)
+    run_p2_tpe         ─ Optuna TPE, fully continuous     (optional)
     ↓
-walk-forward: top-N on test target       # KC-4 (Pearson + trade ratio)
+walk-forward on test_target                   # KC-4 (Pearson + trade ratio)
     ↓
-[optional] hybrid validation: top-K with slower judge target
+[optional] hybrid re-rank with judge target   # slow-but-accurate B over top-K
+    ↓
+[optional] SC-2 advisory                      # grid top-q vs random top-q (Bergstra-Bengio)
     ↓
 KC-1 (time box) + KC-3 (action count floor)
     ↓
+[optional] holdout_target evaluated ONCE      # honest out-of-sample
+    ↓
 P1Result (JSON-serializable)
 ```
+
+### Outer loop (`run_p1_iterative`)
+
+```
+base_params = neutral_defaults
+locked = {}
+for round r in 0..max_rounds:
+    remaining = all_params - locked
+    result = run_p1(target, base_params, subset=remaining)
+    if result.status != "PASS":  break   # Winchester defense
+    if improvement < min_improvement:  break
+    lock winners of this round into base_params
+    ↓
+final_baseline (all locked values) + per-round P1Results + holdout_result
+```
+
+Each round's KC-1..4 are enforced independently — thresholds are **never relaxed across rounds** (Winchester prevention). The outer loop halts on the first failed round.
 
 ---
 
@@ -90,10 +140,16 @@ pip install -e ".[dev]"
 ```bash
 python examples/rosenbrock_demo.py      # 2D Rosenbrock — grid convergence sanity check
 python examples/phantom_demo.py         # 12-param synthetic keyhole — full P1 end-to-end
+python examples/full_showcase.py        # 5-mode comprehensive: plain / fractal / random / TPE / deep-iteration
+python examples/benchmark_battery.py    # RAGAS-style objective scorecard across methods × keyholes × seeds
+python examples/adapter_example.py      # wrap arbitrary external systems as CalibrableTarget
 ```
 
 - `rosenbrock_demo.py` — 2D static function, no walk-forward / KC-4.
-- `phantom_demo.py` — **`PhantomKeyhole`** (12 params: 3 effective + 9 decoy, seed-driven train / test / validation). Exercises stress → top-K unlock → grid → walk-forward → hybrid, with KC-1..4 all PASS. The reference keyhole for the framework.
+- `phantom_demo.py` — **`PhantomKeyhole`** (12 params: 3 effective + 9 decoy, seed-driven train / test / validation). Exercises stress → top-K unlock → grid → walk-forward → hybrid, with KC-1..4 all PASS. The reference keyhole.
+- `full_showcase.py` — every search mode against both reference keyholes, prints results side-by-side.
+- `benchmark_battery.py` — runs every method × keyhole × seed combination, prints an objective scorecard (effective_recall, param_L2_error, fitness_gap, generalization_gap, stress_rank_spearman, pass_rate).
+- `adapter_example.py` — two patterns for wrapping external systems: `CallableAdapter` (one-liner for pure functions) and a stateful class template.
 
 ### 3. Implement your own target
 
@@ -158,6 +214,48 @@ result = run_p1(
 # result.hybrid_top[0] is the #1 by B's score
 ```
 
+### 6. Fractal-vise mode (iterative lock-in + zooming grid)
+
+When `effective_dim > unlock_k`, single-round grid search can only capture K effectives — the rest stay at neutrals. The iterative orchestrator locks each round's winners and re-measures stress on what remains, surfacing the next wave. Zooming narrows the grid geometrically around each winner so the final values aren't stuck on the coarse lattice.
+
+```python
+from omega_lock import IterativeConfig, KCThresholds, run_p1_iterative
+
+result = run_p1_iterative(
+    train_target=MyTarget(),
+    test_target=MyTargetAtDifferentSlice(),
+    holdout_target=MyTargetAtThirdSlice(),          # evaluated ONCE at the end, never during rounds
+    config=IterativeConfig(
+        rounds=3,
+        per_round_unlock_k=3,
+        zoom_rounds=4,          # geometric refinement inside each round
+        zoom_factor=0.5,        # range shrinks by half each zoom pass
+        min_improvement=0.5,
+        kc_thresholds=KCThresholds(trade_count_min=50),
+    ),
+)
+
+print(result.final_status)                # "PASS" only if every round passed KC-1..4
+print(result.locked_in_order)             # [['alpha', 'long_mode', 'beta'], ['window', 'use_ema', 'horizon'], ...]
+print(result.round_best_fitness)          # [32.4, 143.6, 143.61]  — each round's grid_best
+print(result.holdout_result)              # {'fitness': 144.41, 'n_trials': ..., 'params': ...}
+```
+
+### 7. Optuna TPE (continuous search)
+
+Install with `pip install "omega-lock[p2]"`. TPE replaces the grid with adaptive Bayesian sampling.
+
+```python
+from omega_lock import P2Config, run_p2_tpe
+
+result = run_p2_tpe(
+    train_target=MyTarget(),
+    test_target=MyTargetAtDifferentSlice(),
+    config=P2Config(unlock_k=3, n_trials=200, seed=42),
+)
+# Same KC-1..4 gates as run_p1 — TPE is a search-method swap, not a threshold relaxation.
+```
+
 ---
 
 ## Kill Criteria (pre-declared)
@@ -184,9 +282,11 @@ src/omega_lock/
 ├── random_search.py  # RandomSearch + top_quartile_fitness + compare_to_grid (SC-2)
 ├── walk_forward.py   # WalkForward + pearson
 ├── fitness.py        # BaseFitness + HybridFitness
-├── kill_criteria.py  # KCThresholds + check_kc1..4
-├── orchestrator.py   # run_p1() + run_p1_iterative() (+ holdout support)
-├── p2_tpe.py         # run_p2_tpe() — Optuna TPE continuous-space optimizer (optional dep)
+├── kill_criteria.py  # KCThresholds + check_kc1..4 (+ KCStatus "ADVISORY" for SC-2)
+├── orchestrator.py   # run_p1 + run_p1_iterative (+ holdout + SC-2 wire-in)
+├── p2_tpe.py         # run_p2_tpe — Optuna TPE continuous-space optimizer (optional dep)
+├── adapters.py       # CallableAdapter — wrap any callable as a CalibrableTarget
+├── benchmark.py      # run_benchmark + BenchmarkReport — RAGAS-style objective scorecard
 └── keyholes/
     ├── phantom.py        # PhantomKeyhole — effective_dim 3 / nominal 12 (happy-path demo)
     └── phantom_deep.py   # PhantomKeyholeDeep — effective_dim 6 / nominal 20 (iteration required)
@@ -234,6 +334,79 @@ The two axes compose: `run_p1_iterative(config=IterativeConfig(rounds=3, zoom_ro
 
 ---
 
+## Objective Benchmark (RAGAS-style)
+
+"Does it pass?" (binary KC gate) is necessary but not sufficient. For comparing methods or detecting silent regressions, Omega-Lock provides a mechanical scorecard where every metric is computed from run outputs + keyhole ground truth (no human judgment).
+
+| Metric | Definition | Want |
+|---|---|---|
+| `effective_recall` | \|found ∩ true_effective\| / \|true_effective\| | → 1.0 |
+| `effective_precision` | \|found ∩ true_effective\| / \|found\| | → 1.0 |
+| `param_L2_error` | Normalized L2 of found params vs true optimum | → 0.0 |
+| `fitness_gap_pct` | `(optimum − found) / |optimum|` | ≤ 0 (found beats reference) |
+| `generalization_gap` | `|train_best − test_best| / |train_best|` | small |
+| `stress_rank_spearman` | ρ(measured stress ranking, true importance ranking) | → 1.0 |
+| `pass_rate` | fraction of runs with `status == "PASS"` | — |
+| `walltime_s` / `n_evaluations` | efficiency | — |
+
+```python
+from omega_lock import BenchmarkSpec, CalibrationMethod, run_benchmark
+from omega_lock.keyholes.phantom import PhantomKeyhole
+
+spec = BenchmarkSpec("PhantomKeyhole", PhantomKeyhole, seeds=[42, 7, 100, 314, 55])
+methods = [
+    CalibrationMethod("plain_grid",   runner=lambda t, s: _wrap_p1(run_p1(t, ...))),
+    CalibrationMethod("fractal_vise", runner=lambda t, s: _wrap_iter(run_p1_iterative(t, ...))),
+]
+
+report = run_benchmark([spec], methods, output_path=Path("bench.json"))
+print(report.render_scorecard())
+```
+
+Sample output (combined over 10 runs):
+
+```
+method              recall  prec   L2err  fit_gap%  gen_gap  pass%
+plain_grid          0.750   1.000  1.052  32.3%     0.958    60.0%
+fractal_vise        0.400   0.217  1.003  14.7%     0.820    40.0%
+optuna_tpe          0.750   1.000  0.970  23.9%     0.858    10.0%
+```
+
+Reading the table: TPE has the tightest `L2err` (closest to true optimum) but also the lowest `pass_rate`. That's the framework catching TPE's finer-grained overfitting. `plain_grid` passes most often because it's coarser and harder to overfit with. `fractal_vise` trades precision for broader coverage across rounds.
+
+**CI regression guard**: `tests/test_benchmark_regression.py` compares the current run against a frozen `tests/fixtures/benchmark_gold.json`. Any drift > `1e-6` on deterministic metrics fails the test. Regenerate intentionally via `OMEGA_LOCK_UPDATE_GOLD=1 pytest tests/test_benchmark_regression.py`.
+
+---
+
+## Adapter Patterns
+
+Wrap arbitrary external systems as `CalibrableTarget`. Two idiomatic patterns, both in `examples/adapter_example.py`.
+
+### Pattern 1: `CallableAdapter` (one-liner for pure functions)
+
+```python
+from omega_lock import CallableAdapter, ParamSpec, run_p1
+
+def external_score(params: dict) -> float:
+    return -((params["a"] - 3.0) ** 2 + (params["b"] - 7.0) ** 2)
+
+target = CallableAdapter(
+    fitness_fn=external_score,
+    specs=[
+        ParamSpec(name="a", dtype="float", low=0.0, high=10.0, neutral=5.0),
+        ParamSpec(name="b", dtype="float", low=0.0, high=10.0, neutral=5.0),
+    ],
+)
+
+result = run_p1(train_target=target, config=P1Config(unlock_k=2, zoom_rounds=4))
+```
+
+### Pattern 2: Stateful class (for systems with setup cost)
+
+Implement `param_space()` + `evaluate()` directly when your target has internal state (trained models, pre-loaded data, active sessions). The template in `examples/adapter_example.py` shows the full shape.
+
+---
+
 ## Tests
 
 ```bash
@@ -248,18 +421,28 @@ pytest --cov=omega_lock          # coverage
 ## Limitations
 
 - **Determinism assumption.** Stress measurement is accurate only when the target is deterministic. For non-deterministic targets, fix the seed or average multiple evaluations.
-- **OFI-biased parameters.** If a parameter's stress is artificially low due to environmental constraints, mark it with `ParamSpec(ofi_biased=True)`. It gets flagged in results but not auto-filtered (observational only).
+- **Suppressed-stress flag.** If a parameter's stress is known to be artificially low due to an environmental constraint (e.g. an upstream subsystem was mocked or disabled during measurement), mark it with `ParamSpec(ofi_biased=True)`. The flag appears in the result for observability, but nothing is auto-filtered.
 - **Continuous + int mixed.** Epsilon is type-aware (continuous = 10% of range, int = 1, bool = flip). Override via `StressOptions(epsilons={...})`.
 - **Grid dimension explosion.** K=3 / 5 points-per-axis = 125 combos. For larger K, adaptive search like Optuna TPE is better (currently outside P2 TPE's scope; future enhancement).
 
 ---
 
-## Roadmap (out of scope for this package)
+## Roadmap
 
-- **Omega_X adapter** — `adapters/omega_x/` implementing `SelectorTarget`, `ValidationTarget` for X thread pipeline calibration.
-- **P2 Optuna TPE** — `orchestrator.run_p2()`, adaptive search instead of grid.
-- **P3 enrichment** — faithful OFI reconstruction from bookDepth / aggTrades (HeartCore-specific).
-- **Random-search baseline** — actually compare SC-2 "top-quartile ≥ 1.5× random" (missed in P1).
+### Shipped in current version
+
+- ✅ **Iterative coordinate descent** — `run_p1_iterative`, multi-round lock-in.
+- ✅ **Zooming grid** — `ZoomingGridSearch`, geometric refinement inside a round.
+- ✅ **Optuna TPE (P2)** — `run_p2_tpe`, continuous-space search as opt-in (`pip install "omega-lock[p2]"`).
+- ✅ **Random-search baseline** — `RandomSearch` + `compare_to_grid`, SC-2 advisory gate in `run_p1`.
+- ✅ **Holdout target** — single-shot out-of-sample evaluation, never touched during rounds.
+- ✅ **Objective benchmark** — `run_benchmark` + `BenchmarkReport`, RAGAS-style scorecard + CI regression guard.
+- ✅ **Adapter patterns** — `CallableAdapter` + stateful-class template.
+
+### Still out of scope (application-specific)
+
+- **Domain-specific adapters** — wrapping a particular external system (trading strategy, ML model, simulation) as a `CalibrableTarget` belongs outside this generic library. See `CallableAdapter` and the stateful-class template in `examples/adapter_example.py` for the general pattern.
+- **Ensemble-averaged `evaluate` helper** — for non-deterministic targets; the `CalibrableTarget` docstring says "report ensemble averages" but no helper ships. Add when a real use case appears.
 
 ---
 
@@ -272,21 +455,10 @@ If you use Omega-Lock in research or a published project, please cite:
   author  = {hibou},
   title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
   year    = {2026},
-  version = {0.1.0},
+  version = {0.1.2},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```
-
----
-
-## Archive (private, not in public repo)
-
-The methodological origin, **Omega-Lock P1 HeartCore** applied case (2026-04-13 to 04-14), lives in a separate local `archive/` directory (gitignored).
-
-- `P1_HeartCore_SPEC.md` — original design document for the 21-param v1 HeartCore target.
-- `P1_HeartCore_RESULT.md` — KC-4 FAIL report (Pearson 0.119, successful train/test overfit detection).
-
-Both documents are **immutable**, preserved as the **first recorded case** of the methodology detecting overfitting as intended. Not publicly released (Omega_TB_1 internal research + BTCUSDT real-data references).
 
 ---
 

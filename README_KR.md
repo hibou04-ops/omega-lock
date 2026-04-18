@@ -6,11 +6,31 @@
 
 **민감도 기반 좌표 하강 캘리브레이션 프레임워크.**
 
-"열쇠구멍을 거푸집으로 쓴다" — 모든 파라미터를 단단히 잠그고, 계속 부딪혀서 충격을 받는 곳 (stress 가 높은 곳) 만 풀어준다. 저차원 subspace 에서 grid 탐색 후 walk-forward 로 과적합 검증.
+"열쇠구멍을 거푸집으로 쓴다" — 모든 파라미터를 단단히 잠그고, stress 가 높은 곳만 풀어 저차원 subspace 에서 탐색. **그다음 프랙탈 바이스처럼 반복**: winner 를 lock-in → 남은 파라미터에서 stress 재측정 → 각 winner 주위로 격자를 기하급수적으로 축소. Walk-forward 와 옵션 holdout target 으로 과적합 검증. RAGAS-style 객관 scorecard 로 모든 run 비교 가능.
 
-이 패키지는 `Omega_TB_1/research/omega_lock_p1/` (v1 HeartCore target, KC-4 FAIL) 의 방법론을 임의의 파라미터 탐색 문제에 재사용할 수 있도록 **generic 라이브러리로 추출**한 것이다. v1 HeartCore 실험은 방법론이 의도대로 overfitting 을 탐지한 사례로 종결됨 (archive/ 참조).
+이 프레임워크는 실제 캘리브레이션 실험에서 distill 된 것으로, 그 실험은 KC-4 FAIL 로 종결됐다. 방법론이 설계대로 overfitting 을 정확히 탐지했고, 바로 그 탐지 기능이 프레임워크가 만들어진 이유다. 이후 single-round 프로토타입을 넘어 multi-scale 시스템으로 진화했다 (iterative lock-in, zooming grid, 옵션 TPE, holdout 방어, 객관 benchmark).
 
-**English README**: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/README.md)
+English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/README.md)
+
+## At a Glance
+
+| | |
+|---|---|
+| 무엇을 푸는가 | 대부분의 param 이 결과에 영향 없는 고차원 탐색, iteration 예산 적음, optimizer 는 방치하면 overfit 한다. |
+| 무엇이 다른가 | 탐색 전에 어떤 param 이 실제로 중요한지 (stress) 먼저 측정. 22차원 대신 3차원 subspace 탐색. 사전 명문화된 kill criteria 로 threshold fudge 방지. |
+| 언제 쓰나 | 파라미터 10개 이상, fitness 평가 비용 큼, train/test split 있음, "이 설정이 일반화되는가" 를 단일 숫자가 아닌 기계 검증 가능 형태로 원할 때. |
+| 언제 안 쓰나 | Effective dim ≈ nominal dim 이거나 샘플이 사실상 무제한. 그때는 plain TPE / random search 로 충분. |
+| 설치 | `pip install omega-lock` (기본) 또는 `pip install "omega-lock[p2]"` (Optuna TPE 포함). |
+| Core API | `run_p1(target)` · `run_p1_iterative(target)` · `run_p2_tpe(target)` · `run_benchmark(specs, methods)` |
+| 상태 | 0.1.2 · 149 tests 통과 · benchmark gold baseline CI regression guard 동결. |
+
+**레퍼런스 keyhole 실측 수치** (`PhantomKeyhole`, 12 params, 3 effective):
+
+- Plain grid (5pts/axis, 1 round): `alpha=0.5, fitness=12.00, pass 60%` (5 seeds).
+- Fractal vise (2 rounds × 4 zoom passes): `alpha=0.4375, fitness=13.00` (+8%, coarse lattice 밖에 착지).
+- Optuna TPE (200 trials): `alpha=0.4037, fitness=14.00` (진짜 optimum 최근접) 인데 `pass 10%` — walk-forward 가 TPE 의 정밀 overfit 포착.
+
+프레임워크가 잡아야 할 것을 잡고, 숫자는 seed 로부터 재현 가능하다.
 
 ## 목차
 
@@ -23,9 +43,11 @@
 - [vs External Alternatives](#vs-external-alternatives)
 - [Holdout target](#holdout-target)
 - [Fractal-vise 모드](#fractal-vise-모드-multi-scale-refinement)
+- [객관 Benchmark (RAGAS-style)](#객관-benchmark-ragas-style)
+- [Adapter 패턴](#adapter-패턴)
 - [테스트](#테스트)
 - [제한 사항](#제한-사항)
-- [다음 단계](#다음-단계-이-패키지-범위-밖)
+- [로드맵](#로드맵)
 - [Citation](#citation)
 - [License](#license)
 
@@ -40,30 +62,58 @@ Omega-Lock 은 가정한다:
 - 따라서 **sensitivity 를 먼저 측정** 하고, 상위 K 개만 탐색하는 것이 합리적
 - **kill criteria 는 사전 명문화** — 실험자가 fudge 못 하게 함 (Winchester 방지)
 
-이 세 가정이 맞지 않으면 Omega-Lock 은 작동 안 한다. P1 HeartCore 는 가정 1, 2 는 확인했지만 walk-forward 에서 KC-4 FAIL — 즉 3차원으로 줄여도 v1 신호층이 근본적으로 과적합 경향이 있었다. 이것 자체가 유용한 결과였다.
+이 세 가정이 맞지 않으면 Omega-Lock 은 작동 안 한다. 원 case study 에서 가정 1, 2 는 확인됐지만 walk-forward 에서 KC-4 FAIL. 3차원으로 줄여도 밑단 신호층이 과적합이었다. 프레임워크가 그걸 잡아낸 것이 애초의 기능이다.
 
 ---
 
 ## Pipeline
 
+두 계층: **inner pipeline** (한 라운드의 stress → unlock → search → verify) 과 **outer loop** (inner pipeline 을 반복하며 매 라운드 winner 를 lock-in 하는 프랙탈 바이스 coordinate descent).
+
+### Inner pipeline (`run_p1`)
+
 ```
-target.evaluate(neutral_defaults)        # baseline
+target.evaluate(baseline_params)              # baseline (neutrals 또는 이전 라운드의 locks)
     ↓
-for each param:                          # stress measurement (KC-2)
+for each unlocked param:                      # stress (KC-2)
     perturb by ±ε, measure |Δfitness|/ε
     ↓
-sort stress desc, pick top-K             # unlock set
+sort stress desc, pick top-K                  # unlock set
     ↓
-grid search over K-dim subspace          # train fitness
+search over K-dim subspace                    # train fitness
+    GridSearch         ─ 1 round × n^K                       (기본)
+    ZoomingGridSearch  ─ r rounds, range × zoom_factor       (프랙탈 refinement)
+    run_p2_tpe         ─ Optuna TPE, 완전 연속                (옵션)
     ↓
-walk-forward: top-N on test target       # KC-4 (Pearson + trade ratio)
+walk-forward on test_target                   # KC-4 (Pearson + trade ratio)
     ↓
-[optional] hybrid validation: top-K with slower judge target
+[옵션] hybrid re-rank with judge target       # 느리지만 정밀한 B 로 top-K 재평가
+    ↓
+[옵션] SC-2 advisory                          # grid top-q vs random top-q (Bergstra-Bengio)
     ↓
 KC-1 (time box) + KC-3 (action count floor)
     ↓
+[옵션] holdout_target 딱 1회 평가              # 정직한 out-of-sample
+    ↓
 P1Result (JSON-serializable)
 ```
+
+### Outer loop (`run_p1_iterative`)
+
+```
+base_params = neutral_defaults
+locked = {}
+for round r in 0..max_rounds:
+    remaining = all_params - locked
+    result = run_p1(target, base_params, subset=remaining)
+    if result.status != "PASS":  break   # Winchester 방어
+    if improvement < min_improvement:  break
+    이번 라운드 winner 를 base_params 에 lock
+    ↓
+final_baseline (모든 locked 값) + per-round P1Results + holdout_result
+```
+
+각 라운드의 KC-1..4 는 독립 적용 — threshold 는 **라운드 간 절대 완화 안 됨** (Winchester 방지). Outer loop 는 첫 실패 라운드에서 정지.
 
 ---
 
@@ -89,10 +139,16 @@ pip install -e ".[dev]"
 ```bash
 python examples/rosenbrock_demo.py      # 2D Rosenbrock — grid 수렴 sanity check
 python examples/phantom_demo.py         # 12-param 합성 keyhole — full P1 end-to-end
+python examples/full_showcase.py        # 5-mode 종합: plain / fractal / random / TPE / deep-iteration
+python examples/benchmark_battery.py    # RAGAS-style 객관 scorecard (methods × keyholes × seeds)
+python examples/adapter_example.py      # 임의 외부 시스템을 CalibrableTarget 으로 wrap
 ```
 
 - `rosenbrock_demo.py` — 2D 정적 함수, walk-forward/KC-4 없음
-- `phantom_demo.py` — **`PhantomKeyhole`** (12 params, 3 effective + 9 decoy, seed-driven train/test/validation). stress → top-K unlock → grid → walk-forward → hybrid 전 경로를 KC-1~4 전체 PASS로 시연. 프레임워크의 레퍼런스 열쇠구멍.
+- `phantom_demo.py` — **`PhantomKeyhole`** (12 params, 3 effective + 9 decoy). stress → top-K unlock → grid → walk-forward → hybrid 전 경로, KC-1~4 전원 PASS. 레퍼런스 열쇠구멍
+- `full_showcase.py` — 모든 search 모드를 두 레퍼런스 키홀에 대해 실행 + 결과 나란히 출력
+- `benchmark_battery.py` — 모든 method × keyhole × seed 조합 돌려서 객관 scorecard 출력 (effective_recall, param_L2_error, fitness_gap, generalization_gap, stress_rank_spearman, pass_rate)
+- `adapter_example.py` — 외부 시스템 wrap 2 패턴: `CallableAdapter` (순수 함수용 one-liner) + stateful class template
 
 ### 3. 자신의 target 구현
 
@@ -157,6 +213,48 @@ result = run_p1(
 # result.hybrid_top[0] 은 B 기준 1위
 ```
 
+### 6. Fractal-vise 모드 (iterative lock-in + zooming grid)
+
+`effective_dim > unlock_k` 인 경우, 단일 라운드 grid 는 K 개만 포착하고 나머지는 neutrals 상태로 방치됨. Iterative orchestrator 는 매 라운드 winner 를 lock 하고 남은 파라미터에서 stress 재측정 → 다음 effectives 가 표면에 떠오름. Zooming 은 각 winner 주위로 격자를 기하급수 축소해서 최종 값이 coarse lattice 에 갇히지 않게 함.
+
+```python
+from omega_lock import IterativeConfig, KCThresholds, run_p1_iterative
+
+result = run_p1_iterative(
+    train_target=MyTarget(),
+    test_target=MyTargetAtDifferentSlice(),
+    holdout_target=MyTargetAtThirdSlice(),          # 라운드 중엔 안 건드리고 마지막 1회만 평가
+    config=IterativeConfig(
+        rounds=3,
+        per_round_unlock_k=3,
+        zoom_rounds=4,          # 각 라운드 내 기하급수 refinement
+        zoom_factor=0.5,        # 매 zoom 패스마다 범위 절반으로
+        min_improvement=0.5,
+        kc_thresholds=KCThresholds(trade_count_min=50),
+    ),
+)
+
+print(result.final_status)                # 모든 라운드가 KC-1..4 PASS 면 "PASS"
+print(result.locked_in_order)             # [['alpha', 'long_mode', 'beta'], ['window', 'use_ema', 'horizon'], ...]
+print(result.round_best_fitness)          # [32.4, 143.6, 143.61]  — 각 라운드의 grid_best
+print(result.holdout_result)              # {'fitness': 144.41, 'n_trials': ..., 'params': ...}
+```
+
+### 7. Optuna TPE (연속 공간 탐색)
+
+`pip install "omega-lock[p2]"` 로 설치. TPE 가 grid 를 대신해 Bayesian 적응 sampling 수행.
+
+```python
+from omega_lock import P2Config, run_p2_tpe
+
+result = run_p2_tpe(
+    train_target=MyTarget(),
+    test_target=MyTargetAtDifferentSlice(),
+    config=P2Config(unlock_k=3, n_trials=200, seed=42),
+)
+# 동일한 KC-1..4 gate — TPE 는 search 방식 교체일 뿐 threshold 완화 아님.
+```
+
 ---
 
 ## Kill Criteria (사전 명문화)
@@ -180,12 +278,14 @@ src/omega_lock/
 ├── params.py         # LockedParams + clip/default_epsilon
 ├── stress.py         # measure_stress + gini + select_unlock_top_k
 ├── grid.py           # GridSearch + ZoomingGridSearch + grid_points(_in)
-├── random_search.py  # RandomSearch + top_quartile_fitness + compare_to_grid (SC-2 비교)
+├── random_search.py  # RandomSearch + top_quartile_fitness + compare_to_grid (SC-2)
 ├── walk_forward.py   # WalkForward + pearson
 ├── fitness.py        # BaseFitness + HybridFitness
-├── kill_criteria.py  # KCThresholds + check_kc1..4
-├── orchestrator.py   # run_p1() + run_p1_iterative() (+ holdout 지원)
-├── p2_tpe.py         # run_p2_tpe() — Optuna TPE 연속 공간 optimizer (optional dep)
+├── kill_criteria.py  # KCThresholds + check_kc1..4 (+ KCStatus "ADVISORY" for SC-2)
+├── orchestrator.py   # run_p1 + run_p1_iterative (+ holdout + SC-2 wire-in)
+├── p2_tpe.py         # run_p2_tpe — Optuna TPE 연속 공간 optimizer (optional dep)
+├── adapters.py       # CallableAdapter — 임의 callable 을 CalibrableTarget 으로 wrap
+├── benchmark.py      # run_benchmark + BenchmarkReport — RAGAS-style 객관 scorecard
 └── keyholes/
     ├── phantom.py        # PhantomKeyhole — effective_dim 3 / nominal 12 (happy-path demo)
     └── phantom_deep.py   # PhantomKeyholeDeep — effective_dim 6 / nominal 20 (iteration 필수)
@@ -233,6 +333,79 @@ src/omega_lock/
 
 ---
 
+## 객관 Benchmark (RAGAS-style)
+
+"PASS 하는가?" (binary KC gate) 는 필요하지만 충분하지 않음. Method 간 비교나 조용한 regression 탐지를 위해 Omega-Lock 은 **기계적으로 계산 가능한 scorecard** 제공 — 모든 지표는 run 출력 + keyhole ground truth 로 자동 계산 (사람 판단 개입 없음).
+
+| 지표 | 정의 | 목표 |
+|---|---|---|
+| `effective_recall` | \|found ∩ true_effective\| / \|true_effective\| | → 1.0 |
+| `effective_precision` | \|found ∩ true_effective\| / \|found\| | → 1.0 |
+| `param_L2_error` | 정규화 L2 (found vs true optimum) | → 0.0 |
+| `fitness_gap_pct` | `(optimum − found) / |optimum|` | ≤ 0 (found 가 기준 초과) |
+| `generalization_gap` | `|train_best − test_best| / |train_best|` | 작을수록 좋음 |
+| `stress_rank_spearman` | ρ(측정 stress ranking, 진짜 importance ranking) | → 1.0 |
+| `pass_rate` | `status == "PASS"` 인 run 비율 | — |
+| `walltime_s` / `n_evaluations` | 효율 | — |
+
+```python
+from omega_lock import BenchmarkSpec, CalibrationMethod, run_benchmark
+from omega_lock.keyholes.phantom import PhantomKeyhole
+
+spec = BenchmarkSpec("PhantomKeyhole", PhantomKeyhole, seeds=[42, 7, 100, 314, 55])
+methods = [
+    CalibrationMethod("plain_grid",   runner=lambda t, s: _wrap_p1(run_p1(t, ...))),
+    CalibrationMethod("fractal_vise", runner=lambda t, s: _wrap_iter(run_p1_iterative(t, ...))),
+]
+
+report = run_benchmark([spec], methods, output_path=Path("bench.json"))
+print(report.render_scorecard())
+```
+
+샘플 출력 (10 runs 통합):
+
+```
+method              recall  prec   L2err  fit_gap%  gen_gap  pass%
+plain_grid          0.750   1.000  1.052  32.3%     0.958    60.0%
+fractal_vise        0.400   0.217  1.003  14.7%     0.820    40.0%
+optuna_tpe          0.750   1.000  0.970  23.9%     0.858    10.0%
+```
+
+표 읽는 법: TPE 가 `L2err` 가장 낮고 (진짜 optimum 에 가장 근접) `pass_rate` 도 최저. 프레임워크가 TPE 의 정밀한 overfit 을 잡아내는 증거다. `plain_grid` 는 coarse 한 만큼 overfit 하기 어려워서 pass 가 잦다. `fractal_vise` 는 precision 을 라운드에 걸친 넓은 coverage 와 교환한다.
+
+**CI regression guard**: `tests/test_benchmark_regression.py` 가 현재 run 을 frozen `tests/fixtures/benchmark_gold.json` 과 비교. 결정론적 지표의 drift `1e-6` 초과 시 test FAIL. 의도적 재생성: `OMEGA_LOCK_UPDATE_GOLD=1 pytest tests/test_benchmark_regression.py`.
+
+---
+
+## Adapter 패턴
+
+임의 외부 시스템을 `CalibrableTarget` 으로 wrap. 2 가지 idiomatic 패턴, 둘 다 `examples/adapter_example.py` 에 수록.
+
+### Pattern 1: `CallableAdapter` (순수 함수용 one-liner)
+
+```python
+from omega_lock import CallableAdapter, ParamSpec, run_p1
+
+def external_score(params: dict) -> float:
+    return -((params["a"] - 3.0) ** 2 + (params["b"] - 7.0) ** 2)
+
+target = CallableAdapter(
+    fitness_fn=external_score,
+    specs=[
+        ParamSpec(name="a", dtype="float", low=0.0, high=10.0, neutral=5.0),
+        ParamSpec(name="b", dtype="float", low=0.0, high=10.0, neutral=5.0),
+    ],
+)
+
+result = run_p1(train_target=target, config=P1Config(unlock_k=2, zoom_rounds=4))
+```
+
+### Pattern 2: Stateful class (setup 비용이 있는 시스템)
+
+target 이 내부 상태 (trained model, preloaded data, active session) 를 가질 때는 `param_space()` + `evaluate()` 직접 구현. `examples/adapter_example.py` 의 template 이 전체 모양 보여줌.
+
+---
+
 ## 테스트
 
 ```bash
@@ -247,18 +420,28 @@ pytest --cov=omega_lock          # 커버리지
 ## 제한 사항
 
 - **Determinism 가정**: stress 측정은 target 이 결정론적일 때만 정확. 비결정적 target 은 seed 고정 또는 복수 평가 평균 권장.
-- **OFI-biased 파라미터**: 특정 파라미터의 stress 가 환경 제약으로 인위적으로 낮게 측정되는 경우, `ParamSpec(ofi_biased=True)` 로 표기. 결과에 flag 되지만 자동 필터링은 안 함 (관찰용).
+- **Suppressed-stress 플래그**: 특정 파라미터의 stress 가 환경 제약으로 인위적으로 낮게 측정될 때 (예: 측정 시점에 상위 서브시스템이 mock/비활성화), `ParamSpec(ofi_biased=True)` 로 표기. 결과에 flag 로 남고 자동 필터링은 안 함 (관찰 용도).
 - **Continuous + int 혼합**: epsilon 은 type-aware (continuous = 10% range, int = 1, bool = flip). Custom epsilon 은 `StressOptions(epsilons={...})` 로 지정.
 - **Grid 차원 폭발**: K=3 / 5 points/axis = 125 combos. K 가 커지면 grid 대신 Optuna TPE 같은 adaptive 탐색이 나음 (현재 P2 TPE 는 범위 밖, 향후 추가 가능).
 
 ---
 
-## 다음 단계 (이 패키지 범위 밖)
+## 로드맵
 
-- **Omega_X 어댑터**: `adapters/omega_x/` 에 `SelectorTarget`, `ValidationTarget` 구현 → X thread pipeline calibration
-- **P2 Optuna TPE**: `orchestrator.run_p2()` — grid 대신 적응적 탐색
-- **P3 enrichment**: bookDepth/aggTrades 에서 faithful OFI 복원 (HeartCore 전용)
-- **Random-search baseline**: SC-2 "top-quartile ≥1.5× random" 를 실제로 비교 (P1 에서 누락됨)
+### 현재 버전에 포함됨
+
+- ✅ **Iterative coordinate descent** — `run_p1_iterative`, multi-round lock-in
+- ✅ **Zooming grid** — `ZoomingGridSearch`, 라운드 내 기하급수 refinement
+- ✅ **Optuna TPE (P2)** — `run_p2_tpe`, 연속 공간 search (`pip install "omega-lock[p2]"`)
+- ✅ **Random-search baseline** — `RandomSearch` + `compare_to_grid`, `run_p1` 에 SC-2 advisory gate wire-in
+- ✅ **Holdout target** — 단일 out-of-sample 평가, 라운드 중엔 절대 안 건드림
+- ✅ **객관 benchmark** — `run_benchmark` + `BenchmarkReport`, RAGAS-style scorecard + CI regression guard
+- ✅ **Adapter 패턴** — `CallableAdapter` + stateful-class template
+
+### 여전히 범위 밖 (application-specific)
+
+- **도메인 특화 adapter** — 특정 외부 시스템 (trading 전략, ML 모델, 시뮬레이션) 을 `CalibrableTarget` 으로 wrap 하는 것은 generic 라이브러리 영역 밖. 일반 패턴은 `CallableAdapter` + `examples/adapter_example.py` 의 stateful-class template 참조
+- **Ensemble-averaged `evaluate` helper** — 비결정적 target 용. 현재 `CalibrableTarget` docstring 에 "ensemble averages 권장" 명시만 있고 helper 미탑재. 실제 use case 생기면 추가
 
 ---
 
@@ -271,21 +454,10 @@ pytest --cov=omega_lock          # 커버리지
   author  = {hibou},
   title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
   year    = {2026},
-  version = {0.1.0},
+  version = {0.1.2},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```
-
----
-
-## Archive (private — not in public repo)
-
-프레임워크의 방법론적 출처인 **Omega-Lock P1 HeartCore** 적용 사례 (2026-04-13 ~ 04-14) 는 별도 로컬 보관 (`archive/` 디렉토리, `.gitignore` 처리).
-
-- `P1_HeartCore_SPEC.md` — 21-param v1 HeartCore 대상 원래 설계 문서
-- `P1_HeartCore_RESULT.md` — KC-4 FAIL 결과 리포트 (Pearson 0.119, train/test 과적합 탐지 성공)
-
-두 문서는 **불변**이며, 방법론이 의도대로 overfitting 을 탐지한 **최초 사례 기록**으로 보존. 외부에 공개되지 않음 (Omega_TB_1 내부 연구 + BTCUSDT 실데이터 참조 포함).
 
 ---
 
