@@ -1,0 +1,88 @@
+# ── Private project materials ──────────────────────────────────────────
+# Claude Code / AI-tooling local state (settings, session caches, etc.)
+# Per-user, per-machine, never meant for version control.
+.claude/
+
+# archive/ contains references to Omega_TB_1 internal research (v1 HeartCore
+# best_params, BTCUSDT real-data specifics, Binance Vision fetch details).
+# Kept locally as methodology provenance but NOT published with the repo.
+archive/
+
+# Runtime-generated calibration outputs — regenerable, large, and may leak
+# tuning history that the author wants to keep private across commits.
+# Re-generate via `python examples/*.py` locally when needed.
+output/
+
+# ── Python byte-compiled / packaging artifacts ─────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# ── Test & coverage caches ─────────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+coverage.xml
+*.cover
+
+# ── Virtual environments ───────────────────────────────────────────────
+.env
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ── IDE / editor state ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.spyderproject
+.spyproject
+.ropeproject
+*.sublime-project
+*.sublime-workspace
+
+# ── OS cruft ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Jupyter / notebook state ───────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# ── Runtime logs / tracebacks ──────────────────────────────────────────
+*.log
+*.log.*
+
+# ── Scratch / tuning / agent-generated throwaway scripts ───────────────
+# Agents and manual tuning sometimes create one-off scripts at the root
+# (e.g. _tune_deep.py, _debug_*.py) for empirical experiments. These are
+# never meant to ship; keep them local.
+/_*.py
+/scratch*.py
+/tmp_*.py
+
+# ── Explicit opt-ins (override ignores above) ──────────────────────────
+# Regression-guard baseline MUST be tracked in git — ignoring it would
+# defeat the whole point of tests/test_benchmark_regression.py.
+!tests/fixtures/benchmark_gold.json
+
+# Preserve empty directories that Python imports as packages even when
+# their contents (e.g. auto-generated caches) are ignored elsewhere.
+!src/**/__init__.py
+!tests/**/__init__.py
