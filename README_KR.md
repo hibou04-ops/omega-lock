@@ -1,21 +1,21 @@
 # Omega-Lock (한국어)
 
-[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.2)](https://pypi.org/project/omega-lock/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.2)](https://pypi.org/project/omega-lock/)
+[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Sensitivity 기반 캘리브레이션 프레임워크 + 재사용 가능한 audit surface.**
 
 2026-04-18 단일 세션에서 Claude Opus 4.7 와 함께 빌드. PyPI 에 `omega-lock` 으로 배포. 149 tests 통과, 30-run 객관 benchmark, CI regression guard.
 
-0.1.2 에 실제로 포함된 것:
+0.1.3 에 실제로 포함된 것:
 
 - **통합 search pipeline 3개**, 동일한 verification surface 공유: `run_p1` (grid / zooming grid), `run_p1_iterative` (multi-round lock-in), `run_p2_tpe` (Optuna TPE, optional extra).
 - **재사용 가능한 audit 컴포넌트**, 모든 pipeline 에 연결: perturbation sensitivity (stress), walk-forward 상관, 사전 명문화 kill criteria (KC-1..4), optional 단일 holdout, Bergstra-Bengio random-search advisory (SC-2), RAGAS-style 객관 scorecard.
 - **Bring-your-own-search hook** — `CallableAdapter` 로 임의 외부 optimizer 를 `CalibrableTarget` 으로 wrap 해서 같은 pipeline 에 태움.
 - **2개 reference keyhole**, ground-truth 메서드 탑재로 기계적 benchmark 채점 가능.
 
-Origin: KC-4 FAIL 로 종결된 거래전략 캘리브레이션 실험에서 distill — 방법론이 설계대로 overfitting 을 탐지한 그 controlled-failure outcome 이 프레임워크가 만들어내도록 설계된 동작 자체다. 분리된 `omega_lock.audit.run_audit(external_candidate, environments)` API 는 [해커톤 주간 계획](#해커톤-주간-계획-2026-04-21--28) 에 있음, 0.1.2 에 없음.
+Origin: KC-4 FAIL 로 종결된 거래전략 캘리브레이션 실험에서 distill — 방법론이 설계대로 overfitting 을 탐지한 그 controlled-failure outcome 이 프레임워크가 만들어내도록 설계된 동작 자체다. 분리된 `omega_lock.audit.run_audit(external_candidate, environments)` API 는 [해커톤 주간 계획](#해커톤-주간-계획-2026-04-21--28) 에 있음, 0.1.3 에 없음.
 
 English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/README.md)
 
@@ -29,7 +29,7 @@ English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/
 | 언제 안 쓰나 | Effective dim ≈ nominal dim, 샘플 무제한, out-of-sample 안정성 무관심 → stock optimizer 로 충분 |
 | 설치 | `pip install omega-lock` (기본) 또는 `pip install "omega-lock[p2]"` (Optuna TPE 포함) |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
-| 상태 | 0.1.2 on PyPI · 149 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
+| 상태 | 0.1.3 on PyPI · 149 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
 | Built | 2026-04-18 · 단일 세션 · Claude Opus 4.7 |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
@@ -282,9 +282,9 @@ result = run_p2_tpe(
 
 ## 해커톤 주간 계획 (2026-04-21 ~ 28)
 
-이 repo 는 2026-04-18 하루 세션에 Claude Opus 4.7 와 같이 빌드됐다. 아래는 **오늘 0.1.2 에 실제 포함된 것** vs **Anthropic "Built with Opus 4.7" 해커톤 주간에 추가될 것** 의 정직한 구분.
+이 repo 는 2026-04-18 하루 세션에 Claude Opus 4.7 와 같이 빌드됐다. 아래는 **오늘 0.1.3 에 실제 포함된 것** vs **Anthropic "Built with Opus 4.7" 해커톤 주간에 추가될 것** 의 정직한 구분.
 
-### 0.1.2 에 이미 ship 중인 것 (오늘)
+### 0.1.3 에 이미 ship 중인 것 (오늘)
 
 - `run_p1`, `run_p1_iterative`, `run_p2_tpe` 통합 pipeline
 - Stress 측정, walk-forward, KC-1..4, holdout 지원, SC-2 advisory
@@ -509,7 +509,7 @@ pytest --cov=omega_lock          # 커버리지
   author  = {hibou},
   title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
   year    = {2026},
-  version = {0.1.2},
+  version = {0.1.3},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```

@@ -1,21 +1,21 @@
 # Omega-Lock
 
-[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.2)](https://pypi.org/project/omega-lock/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.2)](https://pypi.org/project/omega-lock/)
+[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Sensitivity-driven calibration framework with a reusable audit surface.**
 
 Built with Claude Opus 4.7 in a single session on 2026-04-18. Ships on PyPI as `omega-lock`. 149 tests passing, 30-run objective benchmark, CI regression guard.
 
-What shipping version 0.1.2 contains:
+What shipping version 0.1.3 contains:
 
 - **Three integrated search pipelines** that share the same verification surface: `run_p1` (grid / zooming grid), `run_p1_iterative` (multi-round lock-in), `run_p2_tpe` (Optuna TPE, optional extra).
 - **Reusable audit components** attached to every pipeline: perturbation sensitivity (stress), walk-forward correlation, pre-declared kill criteria (KC-1..4), optional single-shot holdout, Bergstra-Bengio random-search advisory (SC-2), RAGAS-style objective scorecard.
 - **Bring-your-own-search hook** via `CallableAdapter` — wrap any external optimizer as a `CalibrableTarget` and feed it through the same pipeline.
 - **Two reference keyholes** with ground-truth methods for mechanical benchmark scoring.
 
-Origin: extracted from a trading-strategy calibration experiment that ended in KC-4 FAIL, overfitting detected exactly as designed. That controlled-failure outcome is the behaviour the framework is built to produce. A full separable `omega_lock.audit.run_audit(external_candidate, environments)` API is on the [hackathon week plan](#hackathon-week-plan-2026-04-21--28), not in 0.1.2.
+Origin: extracted from a trading-strategy calibration experiment that ended in KC-4 FAIL, overfitting detected exactly as designed. That controlled-failure outcome is the behaviour the framework is built to produce. A full separable `omega_lock.audit.run_audit(external_candidate, environments)` API is on the [hackathon week plan](#hackathon-week-plan-2026-04-21--28), not in 0.1.3.
 
 한국어 README: [README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)
 
@@ -29,7 +29,7 @@ Origin: extracted from a trading-strategy calibration experiment that ended in K
 | When not to use it | Effective dim ≈ nominal dim, samples effectively unlimited, out-of-sample stability not a concern. Use a stock optimizer instead. |
 | Install | `pip install omega-lock` (core) or `pip install "omega-lock[p2]"` (Optuna TPE included) |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
-| Status | 0.1.2 on PyPI · 149 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
+| Status | 0.1.3 on PyPI · 149 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
 | Built | 2026-04-18, single session, Claude Opus 4.7 |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
@@ -288,9 +288,9 @@ result = run_p2_tpe(
 
 ## Hackathon Week Plan (2026-04-21 – 28)
 
-This repo was built during a single session on 2026-04-18 with Claude Opus 4.7. What's listed here is what ships in 0.1.2 today versus what lands during the Anthropic "Built with Opus 4.7" hackathon week.
+This repo was built during a single session on 2026-04-18 with Claude Opus 4.7. What's listed here is what ships in 0.1.3 today versus what lands during the Anthropic "Built with Opus 4.7" hackathon week.
 
-### Shipping in 0.1.2 (today)
+### Shipping in 0.1.3 (today)
 
 - `run_p1`, `run_p1_iterative`, `run_p2_tpe` integrated pipelines
 - Stress measurement, walk-forward, KC-1..4, holdout support, SC-2 advisory
@@ -513,7 +513,7 @@ If you use Omega-Lock in research or a published project, please cite:
   author  = {hibou},
   title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
   year    = {2026},
-  version = {0.1.2},
+  version = {0.1.3},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```
