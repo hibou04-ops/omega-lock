@@ -10,7 +10,7 @@
 
 This package generalizes the methodology from `Omega_TB_1/research/omega_lock_p1/` (a v1 HeartCore target that ended in KC-4 FAIL) into a reusable library for arbitrary parameter-search problems. The original HeartCore experiment was not a "success" in the naive sense, it was a successful *overfitting detection*, which is exactly what this framework is designed to produce (see `archive/`).
 
-한국어 README: **[README_KR.md](README_KR.md)**
+한국어 README: **[README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)**
 
 ## Table of Contents
 
@@ -292,6 +292,6 @@ Both documents are **immutable**, preserved as the **first recorded case** of th
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](https://github.com/hibou04-ops/omega-lock/blob/main/LICENSE) for details.
 
 Copyright (c) 2026 hibou.

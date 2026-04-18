@@ -10,7 +10,7 @@
 
 이 패키지는 `Omega_TB_1/research/omega_lock_p1/` (v1 HeartCore target, KC-4 FAIL) 의 방법론을 임의의 파라미터 탐색 문제에 재사용할 수 있도록 **generic 라이브러리로 추출**한 것이다. v1 HeartCore 실험은 방법론이 의도대로 overfitting 을 탐지한 사례로 종결됨 (archive/ 참조).
 
-**English README**: [README.md](README.md)
+**English README**: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/README.md)
 
 ## 목차
 
@@ -291,6 +291,6 @@ pytest --cov=omega_lock          # 커버리지
 
 ## License
 
-MIT License. 자세한 내용은 [LICENSE](LICENSE) 참조.
+MIT License. 자세한 내용은 [LICENSE](https://github.com/hibou04-ops/omega-lock/blob/main/LICENSE) 참조.
 
 Copyright (c) 2026 hibou.
