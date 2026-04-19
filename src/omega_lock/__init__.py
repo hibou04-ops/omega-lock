@@ -45,7 +45,13 @@ from omega_lock.benchmark import (
     compute_generalization_gap, compute_spearman,
 )
 
-__version__ = "0.1.3"
+# Audit surface — method-agnostic trail + constraints over any CalibrableTarget.
+from omega_lock.audit import (
+    AuditingTarget, Constraint, AuditedRun, AuditReport,
+    make_report, render_scorecard,
+)
+
+__version__ = "0.1.4"
 
 __all__ = [
     "CalibrableTarget", "ParamSpec", "EvalResult",
@@ -65,4 +71,6 @@ __all__ = [
     "compute_effective_recall", "compute_effective_precision",
     "compute_param_L2_error", "compute_fitness_gap_pct",
     "compute_generalization_gap", "compute_spearman",
+    "AuditingTarget", "Constraint", "AuditedRun", "AuditReport",
+    "make_report", "render_scorecard",
 ]
