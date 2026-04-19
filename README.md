@@ -61,7 +61,8 @@ The framework ships three integrated search pipelines. Each reuses the same audi
 - [Philosophy](#philosophy)
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
-- [Hackathon Week Plan (2026-04-21 – 28)](#hackathon-week-plan-2026-04-21--28)
+- [Release History](#release-history)
+- [Hackathon Week 2026-04-21 – 28](#hackathon-week-2026-04-21--28)
 - [Kill Criteria](#kill-criteria-pre-declared)
 - [Module Structure](#module-structure)
 - [Search Strategy Comparison](#search-strategy-comparison)
@@ -124,7 +125,7 @@ If you're running a one-shot toy optimization and nobody else is going to look a
 
 ### Methodology behind the build
 
-The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline called [Antemortem](https://github.com/hibou04-ops/Antemortem) — an AI-assisted protocol for stress-testing a change on paper before writing code. The case study in the Antemortem repo documents exactly how it was applied to this module (one ghost trap caught, three risks downgraded, one new spec requirement surfaced — before a line was written).
+The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline called **Antemortem** — an AI-assisted protocol for stress-testing a change on paper before writing code. Applied to this module, Antemortem caught one ghost trap, downgraded three risks, and surfaced one new spec requirement — before a line was written. The methodology will be published as a companion repository during hackathon week 2026-04-21 – 28.
 
 ---
 
@@ -338,35 +339,17 @@ result = run_p2_tpe(
 
 ---
 
-## Hackathon Week Plan (2026-04-21 – 28)
+## Release History
 
-This repo was built during a single session on 2026-04-18 with Claude Opus 4.7. What's listed here is what ships in 0.1.3 today versus what lands during the Anthropic "Built with Opus 4.7" hackathon week.
+**0.1.3** (2026-04-18) — initial public release. Three integrated search pipelines (`run_p1`, `run_p1_iterative`, `run_p2_tpe`), perturbation sensitivity, walk-forward, KC-1..4, holdout support, SC-2 advisory, `run_benchmark` + 30-run gold baseline regression guard. `CallableAdapter` for wrapping external optimizers. Two reference keyholes (`PhantomKeyhole`, `PhantomKeyholeDeep`) with ground-truth methods. 149 tests, PyPI, MIT.
 
-### Shipping in 0.1.3 (today)
+**0.1.4** (2026-04-20) — **audit surface as the headline.** New `omega_lock.audit` submodule: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol-based, so no optimizer changes required — wrap any `CalibrableTarget` and hand it to grid / TPE / random / Bayesian / your own optimizer. Ships alongside `examples/demo_sram.py` — a 6T SRAM bitcell analytical surrogate across 5 PVT corners (TT / SS / FF / FS / SF) with 3 hard constraints, demonstrating the audit scorecard on a realistic-shaped target. Overfit pathology is physics-informed: a candidate optimized for the typical corner systematically breaks fast/slow corners under the transistor strength ratio. Same pattern kills trading-strategy calibrations and silicon tape-outs. 176 tests (149 + 20 audit + 7 SRAM demo). Benchmark gold baseline unchanged.
 
-- `run_p1`, `run_p1_iterative`, `run_p2_tpe` integrated pipelines
-- Stress measurement, walk-forward, KC-1..4, holdout support, SC-2 advisory
-- `run_benchmark` + 30-run objective scorecard with gold baseline regression guard
-- `CallableAdapter` for wrapping external optimizers
-- Two reference keyholes (`PhantomKeyhole`, `PhantomKeyholeDeep`) with ground-truth methods
-- 149 tests, PyPI release, MIT license
+## Hackathon Week 2026-04-21 – 28
 
-### Adding during hackathon week
+This repo is stable for the Anthropic "Built with Opus 4.7" hackathon week. Scope-limited maintenance only — no substantive API changes are planned here. The hackathon build is a companion project: **`antemortem-cli`** — a Python CLI that tools the pre-implementation reconnaissance methodology used to design `omega_lock.audit`. Both the methodology docs and the CLI will be published as a separate repository during the event.
 
-1. **`omega_lock.audit.run_audit(candidate, environments, config) -> AuditResult`** — separable audit entrypoint. Takes a candidate config from any source (Optuna, a vendor default, hand-tuning, an LLM suggestion), runs local stress + per-environment walk-forward + KC gates + holdout, returns pass/fail + per-environment breakdown + trust score + specific failure reasons. Reuses existing stress / walk_forward / kill_criteria / benchmark code; thin wrapper and a trust-score aggregator are the new parts.
-2. **`omega-lock audit --explain` CLI** — human-readable per-corner output plus JSON mode.
-3. **`omega_lock.keyholes.sram_bitcell`** — 6T SRAM bitcell demo keyhole. Analytical (no SPICE), <1ms per evaluation, 5 PVT corners (TT / SS / FF / FS / SF). Overfit pathology is physics-informed: a candidate optimized for TT will systematically break SS/FF under the transistor strength ratio. Concrete demonstration that the same pattern kills both trading-strategy calibrations and silicon tape-outs.
-4. **`examples/demo_sram.py`** — end-to-end 60-second demo: Optuna TPE finds a TT-corner optimum, `run_audit` rejects it with KC-4 Pearson 0.11 on SS corner, radar chart saved to `corners.png` visualizing the TT spike and 4-corner collapse.
-5. **PyPI 0.1.3 release** on ~4/25 with all of the above (also incidentally refreshes the shields.io badge cache).
-
-### Why this particular demo
-
-`omega-lock`'s origin is a calibration experiment in one domain (trading strategies) that failed its own overfitting check. Taking the methodology and applying it to a completely different domain (low-power SRAM bitcell sizing) makes two things concrete:
-
-1. The overfit-to-train-corner pathology is not domain-specific. The same KC-4 gate that catches a trading strategy overfit to its backtest window catches a bitcell sized for typical-process silicon that dies in slow-slow corner.
-2. The audit surface is reusable. Extracting it as `run_audit` turns the framework from "three pipelines that each include their own verification" into "any candidate from any source can be verified with the same mechanical checks."
-
-The demo is the proof. The README is the pointer.
+`omega-lock`'s origin is a calibration experiment in one domain (trading strategies) that failed its own overfitting check. The 0.1.4 SRAM bitcell demo shows the same pathology catching a bitcell sized for typical-process silicon that dies in slow-slow corner. The audit surface is domain-agnostic by design: any candidate from any source, verified through the same mechanical checks.
 
 ---
 

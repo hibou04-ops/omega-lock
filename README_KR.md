@@ -61,7 +61,8 @@ PhantomKeyholeDeep     optuna_tpe      0.50    1.87   +70.0     0.61     20%
 - [철학](#철학)
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
-- [해커톤 주간 계획 (2026-04-21 ~ 28)](#해커톤-주간-계획-2026-04-21--28)
+- [릴리스 히스토리](#릴리스-히스토리)
+- [해커톤 주간 2026-04-21 ~ 28](#해커톤-주간-2026-04-21--28)
 - [Kill Criteria](#kill-criteria-사전-명문화)
 - [모듈 구조](#모듈-구조)
 - [검색 전략 비교](#검색-전략-비교)
@@ -124,7 +125,7 @@ open("audit.json", "w").write(report.to_json())
 
 ### 어떻게 만들었는가
 
-`omega_lock.audit` 모듈은 [Antemortem](https://github.com/hibou04-ops/Antemortem) 이라는 pre-implementation reconnaissance discipline 으로 만들었습니다. AI 를 이용해 코드를 짜기 전 계획을 종이 위에서 stress-test 하는 protocol. Antemortem 저장소의 case study 는 이 모듈에 protocol 이 실제로 적용된 과정을 기록 — ghost trap 1개 제거, 리스크 3개 하향 조정, 새 spec 요구사항 1개 발견, 전부 코드 한 줄 쓰기 전에.
+`omega_lock.audit` 모듈은 **Antemortem** 이라는 pre-implementation reconnaissance discipline 으로 만들었습니다. AI 를 이용해 코드를 짜기 전 계획을 종이 위에서 stress-test 하는 protocol. 이 모듈에 적용한 결과 — ghost trap 1개 제거, 리스크 3개 하향 조정, 새 spec 요구사항 1개 발견, 전부 코드 한 줄 쓰기 전에. 방법론 자체는 해커톤 주간(2026-04-21 ~ 28)에 별도 companion repo 로 공개 예정.
 
 ---
 
@@ -332,35 +333,17 @@ result = run_p2_tpe(
 
 ---
 
-## 해커톤 주간 계획 (2026-04-21 ~ 28)
+## 릴리스 히스토리
 
-이 repo 는 2026-04-18 하루 세션에 Claude Opus 4.7 와 같이 빌드됐다. 아래는 **오늘 0.1.3 에 실제 포함된 것** vs **Anthropic "Built with Opus 4.7" 해커톤 주간에 추가될 것** 의 정직한 구분.
+**0.1.3** (2026-04-18) — 초기 공개 릴리스. 3개 통합 search pipeline (`run_p1`, `run_p1_iterative`, `run_p2_tpe`), 섭동 민감도 측정, walk-forward, KC-1..4, holdout 지원, SC-2 advisory, `run_benchmark` + 30-run gold baseline regression guard. `CallableAdapter` (외부 optimizer wrap 용). 2개 reference keyhole (`PhantomKeyhole`, `PhantomKeyholeDeep`) ground-truth method 탑재. 149 tests, PyPI, MIT.
 
-### 0.1.3 에 이미 ship 중인 것 (오늘)
+**0.1.4** (2026-04-20) — **audit surface 가 헤드라인.** 새 `omega_lock.audit` 서브모듈: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol 기반이라 optimizer 수정 불필요 — 임의의 `CalibrableTarget` 을 wrap 해서 grid / TPE / random / Bayesian / 커스텀 optimizer 에 넘길 수 있음. `examples/demo_sram.py` 동반 ship — 6T SRAM bitcell 분석식 surrogate, 5 PVT corner (TT / SS / FF / FS / SF), 3개 hard constraint. 현실적 형상의 target 에서 audit scorecard 를 보여줌. Overfit pathology 는 physics-informed: typical corner 에 최적화된 candidate 가 transistor strength ratio 때문에 fast/slow corner 에서 systematically 무너짐. 거래전략 캘리브레이션 죽이는 패턴이 실리콘 tape-out 도 죽인다는 것의 구체 증명. 176 tests (149 + 20 audit + 7 SRAM demo). Benchmark gold baseline 불변.
 
-- `run_p1`, `run_p1_iterative`, `run_p2_tpe` 통합 pipeline
-- Stress 측정, walk-forward, KC-1..4, holdout 지원, SC-2 advisory
-- `run_benchmark` + 30-run 객관 scorecard + gold baseline regression guard
-- `CallableAdapter` (외부 optimizer wrap 용)
-- 2개 reference keyhole (`PhantomKeyhole`, `PhantomKeyholeDeep`), ground-truth method 탑재
-- 149 tests, PyPI 배포, MIT license
+## 해커톤 주간 2026-04-21 ~ 28
 
-### 해커톤 주간에 추가할 것
+Anthropic "Built with Opus 4.7" 해커톤 주간 동안 이 repo 는 stable 유지. 실질적 API 변경 없는 scope-limited 유지보수만. 해커톤 빌드는 동반 프로젝트 — **`antemortem-cli`** — `omega_lock.audit` 설계에 쓰인 pre-implementation reconnaissance 방법론을 CLI 로 도구화한 Python 패키지. 방법론 docs 와 CLI 모두 이벤트 기간 중 별도 저장소로 공개 예정.
 
-1. **`omega_lock.audit.run_audit(candidate, environments, config) -> AuditResult`** — 분리된 audit entrypoint. 임의 소스 (Optuna, 벤더 default, 수동 튜닝, LLM 제안) 에서 온 candidate 를 받아 local stress + per-environment walk-forward + KC gate + holdout 돌림. 반환: pass/fail + per-environment 분해 + trust score + 실패 사유. 기존 stress / walk_forward / kill_criteria / benchmark 코드 재활용; 신규는 thin wrapper + trust-score aggregator.
-2. **`omega-lock audit --explain` CLI** — 사람이 읽는 per-corner 출력 + JSON 모드.
-3. **`omega_lock.keyholes.sram_bitcell`** — 6T SRAM bitcell 데모 keyhole. 분석식 모델 (SPICE 없음), <1ms/eval, 5 PVT corner (TT / SS / FF / FS / SF). Overfit pathology 는 physics-informed: TT corner 에 최적화된 candidate 가 transistor strength ratio 때문에 SS/FF 에서 systematically 무너짐. **거래전략 캘리브레이션 죽이는 패턴이 실리콘 tape-out 도 죽인다는 것** 의 구체 증명.
-4. **`examples/demo_sram.py`** — end-to-end 60초 데모: Optuna TPE 가 TT corner optimum 찾음, `run_audit` 가 SS corner 에서 KC-4 Pearson 0.11 로 reject, radar chart `corners.png` 저장 (TT spike + 4 corner 붕괴 시각화).
-5. **PyPI 0.1.3 릴리즈** (~4/25) — 위 전부 포함. shields.io 배지 cache 도 부수적으로 갱신됨.
-
-### 왜 이 데모인가
-
-`omega-lock` 의 origin 은 한 도메인 (거래전략) 의 캘리브레이션 실험이 자기 overfitting check 에서 실패한 것. 같은 방법론을 **전혀 다른 도메인** (low-power SRAM bitcell 사이징) 에 적용하면 두 가지가 구체화된다:
-
-1. Train-corner overfit pathology 는 도메인에 의존하지 않는다. Backtest window 에 과적합한 거래전략을 잡는 그 KC-4 gate 가, typical 공정에서 최적화되어 slow-slow corner 에서 죽는 bitcell 도 잡는다.
-2. Audit surface 는 재사용 가능하다. `run_audit` 로 분리하면 프레임워크가 "각자 verification 를 포함한 3개 pipeline" 에서 "임의 소스의 후보를 동일한 기계적 check 로 검증" 으로 전환된다.
-
-데모가 증거. README 는 pointer.
+`omega-lock` 의 origin 은 한 도메인(거래전략)의 캘리브레이션 실험이 자기 overfitting check 에서 실패한 것. 0.1.4 SRAM bitcell 데모는 같은 pathology 가 typical-process 실리콘에 최적화된 bitcell 이 slow-slow corner 에서 죽는 경우를 잡는 것을 보여줌. Audit surface 는 설계상 도메인 무관: 임의 소스의 후보를 동일한 기계적 check 로 검증.
 
 ---
 
