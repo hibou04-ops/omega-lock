@@ -127,7 +127,7 @@ open("audit.json", "w").write(report.to_json())
 
 ### 어떻게 만들었는가
 
-`omega_lock.audit` 모듈은 제가 **Antemortem** 이라 부르는 pre-implementation reconnaissance discipline 으로 만들었습니다. AI 를 이용해 코드를 짜기 전 계획을 종이 위에서 stress-test 하는 protocol. 이 discipline 은 `omega_lock.audit` 을 개발하는 과정에서 태어났습니다. 이 모듈에 적용한 결과 — Antemortem 이 ghost trap 1개 제거, 리스크 3개 하향 조정, 새 spec 요구사항 1개 발견, 전부 코드 한 줄 쓰기 전에.
+`omega_lock.audit` 모듈은 제가 [**Antemortem**](https://github.com/hibou04-ops/Antemortem) 이라 부르는 pre-implementation reconnaissance discipline 으로 만들었습니다. AI 를 이용해 코드를 짜기 전 계획을 종이 위에서 stress-test 하는 protocol. 이 discipline 은 `omega_lock.audit` 을 개발하는 과정에서 태어났습니다. 이 모듈에 적용한 결과 — Antemortem 이 ghost trap 1개 제거, 리스크 3개 하향 조정, 새 spec 요구사항 1개 발견, 전부 코드 한 줄 쓰기 전에.
 
 ---
 

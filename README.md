@@ -127,7 +127,7 @@ If you're running a one-shot toy optimization and nobody else is going to look a
 
 ### Methodology behind the build
 
-The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline I call **Antemortem** — an AI-assisted protocol for stress-testing a change on paper before writing code. The discipline emerged during `omega_lock.audit`'s own development. Applied to this module, Antemortem caught one ghost trap, downgraded three risks, and surfaced one new spec requirement — before a line was written.
+The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline I call [**Antemortem**](https://github.com/hibou04-ops/Antemortem) — an AI-assisted protocol for stress-testing a change on paper before writing code. The discipline emerged during `omega_lock.audit`'s own development. Applied to this module, Antemortem caught one ghost trap, downgraded three risks, and surfaced one new spec requirement — before a line was written.
 
 ---
 
