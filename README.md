@@ -64,7 +64,7 @@ The framework ships three integrated search pipelines. Each reuses the same audi
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
 - [Release History](#release-history)
-- [Hackathon Week 2026-04-21 – 28](#hackathon-week-2026-04-21--28)
+- [Origin](#origin)
 - [Kill Criteria](#kill-criteria-pre-declared)
 - [Module Structure](#module-structure)
 - [Search Strategy Comparison](#search-strategy-comparison)
@@ -127,7 +127,7 @@ If you're running a one-shot toy optimization and nobody else is going to look a
 
 ### Methodology behind the build
 
-The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline called **Antemortem** — an AI-assisted protocol for stress-testing a change on paper before writing code. Applied to this module, Antemortem caught one ghost trap, downgraded three risks, and surfaced one new spec requirement — before a line was written. The methodology will be published as a companion repository during hackathon week 2026-04-21 – 28.
+The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline I call **Antemortem** — an AI-assisted protocol for stress-testing a change on paper before writing code. The discipline emerged during `omega_lock.audit`'s own development. Applied to this module, Antemortem caught one ghost trap, downgraded three risks, and surfaced one new spec requirement — before a line was written.
 
 ---
 
@@ -347,9 +347,7 @@ result = run_p2_tpe(
 
 **0.1.4** (2026-04-20) — **audit surface as the headline.** New `omega_lock.audit` submodule: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol-based, so no optimizer changes required — wrap any `CalibrableTarget` and hand it to grid / TPE / random / Bayesian / your own optimizer. Ships alongside `examples/demo_sram.py` — a 6T SRAM bitcell analytical surrogate across 5 PVT corners (TT / SS / FF / FS / SF) with 3 hard constraints, demonstrating the audit scorecard on a realistic-shaped target. Overfit pathology is physics-informed: a candidate optimized for the typical corner systematically breaks fast/slow corners under the transistor strength ratio. Same pattern kills trading-strategy calibrations and silicon tape-outs. 176 tests (149 + 20 audit + 7 SRAM demo). Benchmark gold baseline unchanged.
 
-## Hackathon Week 2026-04-21 – 28
-
-This repo is stable for the Anthropic "Built with Opus 4.7" hackathon week. Scope-limited maintenance only — no substantive API changes are planned here. The hackathon build is a companion project: **`antemortem-cli`** — a Python CLI that tools the pre-implementation reconnaissance methodology used to design `omega_lock.audit`. Both the methodology docs and the CLI will be published as a separate repository during the event.
+## Origin
 
 `omega-lock`'s origin is a calibration experiment in one domain (trading strategies) that failed its own overfitting check. The 0.1.4 SRAM bitcell demo shows the same pathology catching a bitcell sized for typical-process silicon that dies in slow-slow corner. The audit surface is domain-agnostic by design: any candidate from any source, verified through the same mechanical checks.
 

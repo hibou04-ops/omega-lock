@@ -64,7 +64,7 @@ PhantomKeyholeDeep     optuna_tpe      0.50    1.87   +70.0     0.61     20%
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
 - [릴리스 히스토리](#릴리스-히스토리)
-- [해커톤 주간 2026-04-21 ~ 28](#해커톤-주간-2026-04-21--28)
+- [Origin](#origin)
 - [Kill Criteria](#kill-criteria-사전-명문화)
 - [모듈 구조](#모듈-구조)
 - [검색 전략 비교](#검색-전략-비교)
@@ -127,7 +127,7 @@ open("audit.json", "w").write(report.to_json())
 
 ### 어떻게 만들었는가
 
-`omega_lock.audit` 모듈은 **Antemortem** 이라는 pre-implementation reconnaissance discipline 으로 만들었습니다. AI 를 이용해 코드를 짜기 전 계획을 종이 위에서 stress-test 하는 protocol. 이 모듈에 적용한 결과 — ghost trap 1개 제거, 리스크 3개 하향 조정, 새 spec 요구사항 1개 발견, 전부 코드 한 줄 쓰기 전에. 방법론 자체는 해커톤 주간(2026-04-21 ~ 28)에 별도 companion repo 로 공개 예정.
+`omega_lock.audit` 모듈은 제가 **Antemortem** 이라 부르는 pre-implementation reconnaissance discipline 으로 만들었습니다. AI 를 이용해 코드를 짜기 전 계획을 종이 위에서 stress-test 하는 protocol. 이 discipline 은 `omega_lock.audit` 을 개발하는 과정에서 태어났습니다. 이 모듈에 적용한 결과 — Antemortem 이 ghost trap 1개 제거, 리스크 3개 하향 조정, 새 spec 요구사항 1개 발견, 전부 코드 한 줄 쓰기 전에.
 
 ---
 
@@ -341,9 +341,7 @@ result = run_p2_tpe(
 
 **0.1.4** (2026-04-20) — **audit surface 가 헤드라인.** 새 `omega_lock.audit` 서브모듈: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol 기반이라 optimizer 수정 불필요 — 임의의 `CalibrableTarget` 을 wrap 해서 grid / TPE / random / Bayesian / 커스텀 optimizer 에 넘길 수 있음. `examples/demo_sram.py` 동반 ship — 6T SRAM bitcell 분석식 surrogate, 5 PVT corner (TT / SS / FF / FS / SF), 3개 hard constraint. 현실적 형상의 target 에서 audit scorecard 를 보여줌. Overfit pathology 는 physics-informed: typical corner 에 최적화된 candidate 가 transistor strength ratio 때문에 fast/slow corner 에서 systematically 무너짐. 거래전략 캘리브레이션 죽이는 패턴이 실리콘 tape-out 도 죽인다는 것의 구체 증명. 176 tests (149 + 20 audit + 7 SRAM demo). Benchmark gold baseline 불변.
 
-## 해커톤 주간 2026-04-21 ~ 28
-
-Anthropic "Built with Opus 4.7" 해커톤 주간 동안 이 repo 는 stable 유지. 실질적 API 변경 없는 scope-limited 유지보수만. 해커톤 빌드는 동반 프로젝트 — **`antemortem-cli`** — `omega_lock.audit` 설계에 쓰인 pre-implementation reconnaissance 방법론을 CLI 로 도구화한 Python 패키지. 방법론 docs 와 CLI 모두 이벤트 기간 중 별도 저장소로 공개 예정.
+## Origin
 
 `omega-lock` 의 origin 은 한 도메인(거래전략)의 캘리브레이션 실험이 자기 overfitting check 에서 실패한 것. 0.1.4 SRAM bitcell 데모는 같은 pathology 가 typical-process 실리콘에 최적화된 bitcell 이 slow-slow corner 에서 죽는 경우를 잡는 것을 보여줌. Audit surface 는 설계상 도메인 무관: 임의 소스의 후보를 동일한 기계적 check 로 검증.
 
