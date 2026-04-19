@@ -1,21 +1,21 @@
 # Omega-Lock (한국어)
 
-[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
+[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Sensitivity 기반 캘리브레이션 프레임워크 + 재사용 가능한 audit surface.**
+**캘리브레이션을 위한 method-agnostic audit surface — 그리고 그게 자라난 sensitivity 기반 탐색 프레임워크.**
 
-2026-04-18 단일 세션에서 Claude Opus 4.7 와 함께 빌드. PyPI 에 `omega-lock` 으로 배포. 149 tests 통과, 30-run 객관 benchmark, CI regression guard.
+`omega_lock.audit` 이 주인공입니다. 어떤 `CalibrableTarget` 이든 `AuditingTarget` 으로 감싸 아무 optimizer (grid, TPE, random, Bayesian, 자체 구현) 에 넘기면, phase / role / round 컨텍스트 + 선언적 hard constraints + feasible-vs-absolute best 구분 + JSON 직렬화 reviewable artifact 가 나옵니다. 0.1.4 신규 (2026-04-20).
 
-0.1.3 에 실제로 포함된 것:
+0.1.4 에 포함된 것:
 
-- **통합 search pipeline 3개**, 동일한 verification surface 공유: `run_p1` (grid / zooming grid), `run_p1_iterative` (multi-round lock-in), `run_p2_tpe` (Optuna TPE, optional extra).
-- **재사용 가능한 audit 컴포넌트**, 모든 pipeline 에 연결: perturbation sensitivity (stress), walk-forward 상관, 사전 명문화 kill criteria (KC-1..4), optional 단일 holdout, Bergstra-Bengio random-search advisory (SC-2), RAGAS-style 객관 scorecard.
-- **Bring-your-own-search hook** — `CallableAdapter` 로 임의 외부 optimizer 를 `CalibrableTarget` 으로 wrap 해서 같은 pipeline 에 태움.
-- **2개 reference keyhole**, ground-truth 메서드 탑재로 기계적 benchmark 채점 가능.
+- **`omega_lock.audit`** — 신규 submodule: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol 기반이라 기존 optimizer 수정 불필요. 아래 [Audit 모듈](#audit-모듈-014-신규) 참조.
+- **`examples/demo_sram.py`** — 6T SRAM bitcell 해석 surrogate 를 5개 PVT corner × 3 hard constraint 로 캘리브레이션. 실전 형태 target 에서 audit scorecard 시연.
+- **기존 프레임워크** — 통합 search pipeline 3개 (`run_p1`, `run_p1_iterative`, `run_p2_tpe`), perturbation sensitivity, walk-forward, kill criteria, RAGAS-style benchmark. 0.1.3 대비 변경 없음 — 단, audit wrapper 가 모든 pipeline 에 native 하게 붙음.
+- **176 tests 통과** (0.1.3 의 149 + 신규 audit 20 + 신규 SRAM demo 7). Benchmark gold baseline 그대로.
 
-Origin: KC-4 FAIL 로 종결된 거래전략 캘리브레이션 실험에서 distill — 방법론이 설계대로 overfitting 을 탐지한 그 controlled-failure outcome 이 프레임워크가 만들어내도록 설계된 동작 자체다. 분리된 `omega_lock.audit.run_audit(external_candidate, environments)` API 는 [해커톤 주간 계획](#해커톤-주간-계획-2026-04-21--28) 에 있음, 0.1.3 에 없음.
+Origin: KC-4 FAIL 로 종결된 거래전략 캘리브레이션 실험에서 distill — 방법론이 설계대로 overfitting 을 탐지한 그 controlled-failure outcome 이 프레임워크가 만들어내도록 설계된 동작 자체다.
 
 English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/README.md)
 
@@ -23,14 +23,15 @@ English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/
 
 | | |
 |---|---|
-| 뭔가 | 3개 통합 search pipeline + 공유 audit surface (stress, walk-forward, KCs, holdout, 객관 scorecard) |
-| 왜 중요 | 어떤 pipeline 이 후보를 만들었든 audit 은 동일하게 작동. "뭔가 찾음" 과 "일반화됨" 을 분리 |
-| 언제 쓰나 | Fitness 평가 비용 큼, train/test (가능하면 holdout) 분리됨, 단일 점수 아닌 일반화 pass/fail 기계 검증 원할 때 |
+| 뭔가 | 어떤 `CalibrableTarget` 이든 감싸는 audit 모듈 (`omega_lock.audit`) + 그걸 키운 sensitivity 기반 탐색 프레임워크 |
+| 왜 중요 | 어떤 pipeline 이 후보를 만들었든 audit 은 동일하게 작동. "뭔가 찾음" 과 "일반화됨 + 제약조건 만족" 을 기계적으로 분리 |
+| 언제 쓰나 | Fitness 평가 비용 큼, train/test (가능하면 holdout) 분리됨, hard constraint 도 함께 검증해야 할 때 |
 | 언제 안 쓰나 | Effective dim ≈ nominal dim, 샘플 무제한, out-of-sample 안정성 무관심 → stock optimizer 로 충분 |
 | 설치 | `pip install omega-lock` (기본) 또는 `pip install "omega-lock[p2]"` (Optuna TPE 포함) |
+| Hero API | `from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard` |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
-| 상태 | 0.1.3 on PyPI · 149 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
-| Built | 2026-04-18 · 단일 세션 · Claude Opus 4.7 |
+| 상태 | 0.1.4 on PyPI · 176 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
+| Built | 2026-04-18 (audit 모듈) / 2026-04-20 (SRAM demo + 0.1.4 릴리스) · Claude Opus 4.7 |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
 
@@ -56,6 +57,7 @@ PhantomKeyholeDeep     optuna_tpe      0.50    1.87   +70.0     0.61     20%
 
 ## 목차
 
+- [Audit 모듈 (0.1.4 신규)](#audit-모듈-014-신규)
 - [철학](#철학)
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
@@ -73,6 +75,56 @@ PhantomKeyholeDeep     optuna_tpe      0.50    1.87   +70.0     0.61     20%
 - [로드맵](#로드맵)
 - [Citation](#citation)
 - [License](#license)
+
+---
+
+## Audit 모듈 (0.1.4 신규)
+
+모든 캘리브레이션 런은 reviewable artifact 를 남겨야 합니다. `omega_lock.audit` 은 `CalibrableTarget` 프로토콜을 따르는 optimizer 라면 어느 것에든 그걸 가능하게 하는 최소 surface 입니다.
+
+### 30초 Quick Start
+
+```python
+from omega_lock import run_p1, P1Config
+from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
+
+constraints = [
+    Constraint("read_margin_ok",
+               lambda p, r: r.metadata["read_snm_mv_worst"] > 150.0,
+               "Worst-corner read SNM 150 mV 이상"),
+    Constraint("leakage_ok",
+               lambda p, r: r.metadata["leakage_na_worst"] < 5.0,
+               "Worst-corner leakage 5 nA 미만"),
+]
+
+wrapped = AuditingTarget(bitcell_target, constraints=constraints)
+result  = run_p1(train_target=wrapped, config=P1Config())
+report  = make_report(wrapped, method="run_p1", seed=42)
+
+print(render_scorecard(report))
+open("audit.json", "w").write(report.to_json())
+```
+
+### 얻는 것
+
+- **Append-only trail.** 모든 `evaluate()` 호출이 하나의 `AuditedRun` 이 됨. append-only 라 post-hoc 수정 불가 — trail 자체가 source of truth.
+- **호출별 positional context.** `phase` (baseline / stress / search / walk_forward / holdout), `target_role` (train / test / validation / holdout), `round_index` (coordinate-descent 용), `call_index` (monotonic).
+- **Constraint 를 first-class 로.** hard 술어를 한 번 선언하면 모든 호출마다 pass/fail 이 기록됨. report 는 `best_feasible` 과 `best_any` 를 구분 — 실전 배포에서 결정적인 구분.
+- **Multi-target, 한 trail.** `run_p1` 은 train + test + holdout 세 target 을 굴림. 각각을 `AuditingTarget` 으로 감싸 `shared_trail` + `shared_counter` 를 공유하면 trail 이 globally ordered 상태 유지.
+- **Method-agnostic.** `AuditingTarget` 이 `CalibrableTarget` protocol 을 구현하므로 이 저장소의 모든 optimizer (grid, zooming grid, random, TPE) 가 수정 없이 작동. `CallableAdapter` 로 래핑한 외부 optimizer 도 동일.
+- **JSON roundtrip.** `report.to_json()` / `AuditReport.from_json(s)` — report 가 버저닝/diff/아카이빙 가능.
+
+### 언제 쓰나
+
+"이 캘리브레이션 런이 valid 했나?" 에 기계적 답이 필요한 모든 setting. 전형적: 칩 설계 PVT 스윕, 공정 제어, 재료 탐색, 비싼 평가 + 다중 제약 문제. `examples/demo_sram.py` 에 6T SRAM bitcell 의 5 PVT corner × 3 hard constraint 예제.
+
+### 언제 과잉인가
+
+일회성 장난감 최적화, 아무도 trail 을 볼 일 없을 때. audit 은 런 자체가 downstream 의 신뢰 대상 artifact 가 되는 경우를 위한 것.
+
+### 어떻게 만들었는가
+
+`omega_lock.audit` 모듈은 [Antemortem](https://github.com/hibou04-ops/Antemortem) 이라는 pre-implementation reconnaissance discipline 으로 만들었습니다. AI 를 이용해 코드를 짜기 전 계획을 종이 위에서 stress-test 하는 protocol. Antemortem 저장소의 case study 는 이 모듈에 protocol 이 실제로 적용된 과정을 기록 — ghost trap 1개 제거, 리스크 3개 하향 조정, 새 spec 요구사항 1개 발견, 전부 코드 한 줄 쓰기 전에.
 
 ---
 

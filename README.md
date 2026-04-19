@@ -1,21 +1,21 @@
 # Omega-Lock
 
-[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.3)](https://pypi.org/project/omega-lock/)
+[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Sensitivity-driven calibration framework with a reusable audit surface.**
+**A method-agnostic audit surface for calibration — plus the sensitivity-driven search framework it grew out of.**
 
-Built with Claude Opus 4.7 in a single session on 2026-04-18. Ships on PyPI as `omega-lock`. 149 tests passing, 30-run objective benchmark, CI regression guard.
+`omega_lock.audit` is the headline. Wrap any `CalibrableTarget` with `AuditingTarget`, hand it to any optimizer (grid, TPE, random, Bayesian, your own), and get an append-only trail with phase / role / round context, declarative hard constraints, a feasible-vs-absolute best split, and a JSON-serializable reviewable artifact. New in 0.1.4 (2026-04-20).
 
-What shipping version 0.1.3 contains:
+What 0.1.4 ships:
 
-- **Three integrated search pipelines** that share the same verification surface: `run_p1` (grid / zooming grid), `run_p1_iterative` (multi-round lock-in), `run_p2_tpe` (Optuna TPE, optional extra).
-- **Reusable audit components** attached to every pipeline: perturbation sensitivity (stress), walk-forward correlation, pre-declared kill criteria (KC-1..4), optional single-shot holdout, Bergstra-Bengio random-search advisory (SC-2), RAGAS-style objective scorecard.
-- **Bring-your-own-search hook** via `CallableAdapter` — wrap any external optimizer as a `CalibrableTarget` and feed it through the same pipeline.
-- **Two reference keyholes** with ground-truth methods for mechanical benchmark scoring.
+- **`omega_lock.audit`** — new submodule: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol-based, so no optimizer changes required. See [Audit Module](#audit-module-new-in-014) below.
+- **`examples/demo_sram.py`** — 6T SRAM bitcell analytical surrogate across 5 PVT corners with 3 hard constraints, demonstrating the audit scorecard on a realistic-shaped target.
+- **The original framework** — three integrated search pipelines (`run_p1`, `run_p1_iterative`, `run_p2_tpe`), perturbation sensitivity, walk-forward, kill criteria, RAGAS-style benchmark. All unchanged from 0.1.3 except the audit wrapper now works with every pipeline natively.
+- **176 tests passing** (149 from 0.1.3 + 20 new audit tests + 7 new SRAM demo tests). Benchmark gold baseline unchanged.
 
-Origin: extracted from a trading-strategy calibration experiment that ended in KC-4 FAIL, overfitting detected exactly as designed. That controlled-failure outcome is the behaviour the framework is built to produce. A full separable `omega_lock.audit.run_audit(external_candidate, environments)` API is on the [hackathon week plan](#hackathon-week-plan-2026-04-21--28), not in 0.1.3.
+Origin: extracted from a trading-strategy calibration experiment that ended in KC-4 FAIL, overfitting detected exactly as designed. That controlled-failure outcome is the behaviour the framework is built to produce.
 
 한국어 README: [README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)
 
@@ -23,14 +23,15 @@ Origin: extracted from a trading-strategy calibration experiment that ended in K
 
 | | |
 |---|---|
-| What it is | A calibration framework with three integrated search pipelines and a shared audit surface (stress, walk-forward, KCs, holdout, objective scorecard). |
-| Why it matters | The audit components run the same way regardless of which pipeline produced the candidate. That separates "found something" from "it generalizes." |
-| When to use it | Costly fitness function, a train/test (and ideally holdout) split, and you want a mechanical pass/fail on generalization, not a single fitness number. |
+| What it is | An audit module (`omega_lock.audit`) that works over any `CalibrableTarget`, shipped alongside the sensitivity-driven calibration framework it was built on. |
+| Why it matters | The audit runs the same way regardless of which pipeline produced the candidate. That separates "found something" from "it generalizes — and meets the constraints." |
+| When to use it | Costly fitness function, a train/test (and ideally holdout) split, and you want a mechanical pass/fail on generalization plus hard constraints, not a single fitness number. |
 | When not to use it | Effective dim ≈ nominal dim, samples effectively unlimited, out-of-sample stability not a concern. Use a stock optimizer instead. |
 | Install | `pip install omega-lock` (core) or `pip install "omega-lock[p2]"` (Optuna TPE included) |
+| Hero API | `from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard` |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
-| Status | 0.1.3 on PyPI · 149 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
-| Built | 2026-04-18, single session, Claude Opus 4.7 |
+| Status | 0.1.4 on PyPI · 176 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
+| Built | 2026-04-18 (audit module) / 2026-04-20 (SRAM demo + 0.1.4 release), Claude Opus 4.7 |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
 
@@ -56,6 +57,7 @@ The framework ships three integrated search pipelines. Each reuses the same audi
 
 ## Table of Contents
 
+- [Audit Module (new in 0.1.4)](#audit-module-new-in-014)
 - [Philosophy](#philosophy)
 - [Pipeline](#pipeline)
 - [Quick Start](#quick-start)
@@ -73,6 +75,56 @@ The framework ships three integrated search pipelines. Each reuses the same audi
 - [Roadmap](#roadmap)
 - [Citation](#citation)
 - [License](#license)
+
+---
+
+## Audit Module (new in 0.1.4)
+
+Every calibration run should produce a reviewable artifact. `omega_lock.audit` is the minimal surface that makes that possible for any optimizer conforming to the `CalibrableTarget` protocol.
+
+### 30-second Quick Start
+
+```python
+from omega_lock import run_p1, P1Config
+from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
+
+constraints = [
+    Constraint("read_margin_ok",
+               lambda p, r: r.metadata["read_snm_mv_worst"] > 150.0,
+               "Worst-corner read SNM must exceed 150 mV"),
+    Constraint("leakage_ok",
+               lambda p, r: r.metadata["leakage_na_worst"] < 5.0,
+               "Worst-corner leakage must stay below 5 nA"),
+]
+
+wrapped = AuditingTarget(bitcell_target, constraints=constraints)
+result  = run_p1(train_target=wrapped, config=P1Config())
+report  = make_report(wrapped, method="run_p1", seed=42)
+
+print(render_scorecard(report))
+open("audit.json", "w").write(report.to_json())
+```
+
+### What it gives you
+
+- **Append-only trail.** Every `evaluate()` call becomes one `AuditedRun`. Append-only means no post-hoc rewrites — the trail is the source of truth.
+- **Positional context per call.** `phase` (baseline / stress / search / walk_forward / holdout), `target_role` (train / test / validation / holdout), `round_index` (for coordinate-descent runs), `call_index` (monotonic).
+- **Constraints as first-class.** Declare hard predicates once; every call records pass/fail. The report distinguishes `best_feasible` from `best_any` — the separation that matters in real-world deployment.
+- **Multi-target, one trail.** `run_p1` juggles train + test + holdout targets. Wrap each with `AuditingTarget` sharing `shared_trail` and `shared_counter`; the trail stays globally ordered.
+- **Method-agnostic by construction.** Because `AuditingTarget` implements the `CalibrableTarget` protocol, every optimizer in this repo works unchanged — grid, zooming grid, random, TPE. External optimizers wrapped via `CallableAdapter` work the same way.
+- **JSON roundtrip.** `report.to_json()` / `AuditReport.from_json(s)` — reports are versionable, diffable, archivable.
+
+### When to use it
+
+Any setting where "was this calibration run valid?" needs a mechanical answer. Typical: chip-design PVT sweeps, process control, materials discovery, any multi-constraint expensive-evaluation problem. See `examples/demo_sram.py` for a worked 6T SRAM bitcell demo across 5 PVT corners with 3 hard constraints.
+
+### When it's overkill
+
+If you're running a one-shot toy optimization and nobody else is going to look at the trail, skip it. Audit is for the case where the run itself ends up as a decision artifact someone downstream has to trust.
+
+### Methodology behind the build
+
+The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline called [Antemortem](https://github.com/hibou04-ops/Antemortem) — an AI-assisted protocol for stress-testing a change on paper before writing code. The case study in the Antemortem repo documents exactly how it was applied to this module (one ghost trap caught, three risks downgraded, one new spec requirement surfaced — before a line was written).
 
 ---
 
