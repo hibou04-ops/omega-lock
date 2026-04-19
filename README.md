@@ -4,6 +4,8 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **Release timing.** v0.1.4 was released on 2026-04-20, prior to the [Anthropic Built with Opus 4.7 hackathon](https://cerebralvalley.ai/e/built-with-4-7-hackathon) window (2026-04-21 – 28). This repo is stable during that week — no substantive changes are planned here. Any hackathon submissions by the same author live in separate repositories and are not part of this package.
+
 **A method-agnostic audit surface for calibration — plus the sensitivity-driven search framework it grew out of.**
 
 `omega_lock.audit` is the headline. Wrap any `CalibrableTarget` with `AuditingTarget`, hand it to any optimizer (grid, TPE, random, Bayesian, your own), and get an append-only trail with phase / role / round context, declarative hard constraints, a feasible-vs-absolute best split, and a JSON-serializable reviewable artifact. New in 0.1.4 (2026-04-20).
