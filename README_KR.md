@@ -4,6 +4,8 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **릴리스 타이밍.** v0.1.4 는 2026-04-20 릴리스됨 — [Anthropic Built with Opus 4.7 해커톤](https://cerebralvalley.ai/e/built-with-4-7-hackathon) 기간 (2026-04-21 – 28) 직전. 해커톤 주간 동안 이 repo 는 안정 상태이며 실질적 변경 없음. 동일 저자의 해커톤 제출작은 별도 repo 에서 진행되며 이 패키지의 일부가 아닙니다.
+
 **캘리브레이션을 위한 method-agnostic audit surface — 그리고 그게 자라난 sensitivity 기반 탐색 프레임워크.**
 
 `omega_lock.audit` 이 주인공입니다. 어떤 `CalibrableTarget` 이든 `AuditingTarget` 으로 감싸 아무 optimizer (grid, TPE, random, Bayesian, 자체 구현) 에 넘기면, phase / role / round 컨텍스트 + 선언적 hard constraints + feasible-vs-absolute best 구분 + JSON 직렬화 reviewable artifact 가 나옵니다. 0.1.4 신규 (2026-04-20).
