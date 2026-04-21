@@ -3,12 +3,26 @@
 [![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-176%20passing-brightgreen.svg)](tests/)
+[![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
 
-> **릴리스 타이밍.** v0.1.4 는 2026-04-20 릴리스됨 — [Anthropic Built with Opus 4.7 해커톤](https://cerebralvalley.ai/e/built-with-4-7-hackathon) 기간 (2026-04-21 – 26) 직전. 해커톤 주간 동안 이 repo 는 안정 상태이며 실질적 변경 없음. 동일 저자의 해커톤 제출작은 별도 repo 에서 진행되며 이 패키지의 일부가 아닙니다.
+> **캘리브레이션을 위한 method-agnostic audit surface — 그리고 그게 자라난 sensitivity 기반 탐색 프레임워크.**
+>
+> Optimizer 는 자유. Omega-Lock 은 튜닝된 후보가 리뷰 가능하고, 제약조건을 만족하며, 일반화될 가능성이 있는지 판정합니다 — optimizer 가 "뭔가 찾았는지" 가 아니라.
 
-**캘리브레이션을 위한 method-agnostic audit surface — 그리고 그게 자라난 sensitivity 기반 탐색 프레임워크.**
+### 이름의 의미
 
-`omega_lock.audit` 이 주인공입니다. 어떤 `CalibrableTarget` 이든 `AuditingTarget` 으로 감싸 아무 optimizer (grid, TPE, random, Bayesian, 자체 구현) 에 넘기면, phase / role / round 컨텍스트 + 선언적 hard constraints + feasible-vs-absolute best 구분 + JSON 직렬화 reviewable artifact 가 나옵니다. 0.1.4 신규 (2026-04-20).
+`omega-lock` 은 **캘리브레이션 audit discipline** 이지 보안/DRM 소프트웨어가 아닙니다. *Lock* 은 후보를 audit gate 뒤에 잠그는 것을 의미합니다 — hard constraints, 안정성 검증, out-of-sample 일반화까지 통과하지 못한 튜닝 결과는 절대 deploy 되지 않도록.
+
+### 적합한 대상
+
+- **Quant / 전략 튜닝** — in-sample 은 좋지만 walk-forward 에서 무너지는 후보를 KC-4 (Pearson + trade-ratio) 게이트로 걸러내기.
+- **하드웨어 / 시뮬레이션 캘리브레이션** — PVT sweep, 공정 제어, 재료 탐색: 비싼 surrogate 또는 SPICE-like 평가 + 하드 물리 제약 (`examples/demo_sram.py` — 5개 PVT corner 에 걸친 6T SRAM bitcell 데모).
+- **ML / HPO governance** — optimizer 의 "best trial" 을 단일 fitness 숫자가 아닌, append-only trail 붙은 deployment-safe artifact 로 변환.
+
+### Headline 기능 (0.1.4 신규)
+
+`omega_lock.audit` 이 hero surface 입니다. 어떤 `CalibrableTarget` 이든 `AuditingTarget` 으로 감싸 아무 optimizer (grid, TPE, random, Bayesian, 자체 구현) 에 넘기면, phase / role / round 컨텍스트 + 선언적 hard constraints + feasible-vs-absolute best 구분 + JSON 직렬화 reviewable artifact 가 나옵니다.
 
 0.1.4 에 포함된 것:
 
@@ -33,7 +47,7 @@ English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/
 | Hero API | `from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard` |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
 | 상태 | 0.1.4 on PyPI · 176 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
-| Built | 2026-04-18 (audit 모듈) / 2026-04-20 (SRAM demo + 0.1.4 릴리스) · Claude Opus 4.7 |
+| Built | 2026-04-18 (audit 모듈) · 2026-04-20 (SRAM demo + 0.1.4 릴리스) |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
 

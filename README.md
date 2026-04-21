@@ -3,12 +3,26 @@
 [![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-176%20passing-brightgreen.svg)](tests/)
+[![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
 
-> **Release timing.** v0.1.4 was released on 2026-04-20, prior to the [Anthropic Built with Opus 4.7 hackathon](https://cerebralvalley.ai/e/built-with-4-7-hackathon) window (2026-04-21 – 26). This repo is stable during that week — no substantive changes are planned here. Any hackathon submissions by the same author live in separate repositories and are not part of this package.
+> **A method-agnostic audit surface for calibration — plus the sensitivity-driven search framework it grew out of.**
+>
+> Bring your own optimizer. Omega-Lock decides whether the tuned candidate is reviewable, constraint-feasible, and likely to generalize — not whether your optimizer "found something."
 
-**A method-agnostic audit surface for calibration — plus the sensitivity-driven search framework it grew out of.**
+### What the name means
 
-`omega_lock.audit` is the headline. Wrap any `CalibrableTarget` with `AuditingTarget`, hand it to any optimizer (grid, TPE, random, Bayesian, your own), and get an append-only trail with phase / role / round context, declarative hard constraints, a feasible-vs-absolute best split, and a JSON-serializable reviewable artifact. New in 0.1.4 (2026-04-20).
+`omega-lock` is a **calibration audit discipline**, not security or DRM software. *Lock* refers to locking a candidate behind audit gates — hard constraints, stability checks, and out-of-sample generalization — so a tuned result never ships until it clears the same mechanical review every time.
+
+### Built for
+
+- **Quant / strategy tuning** — filter candidates that look great in-sample but collapse under walk-forward, with KC-4 (Pearson + trade-ratio) as the gate.
+- **Hardware / simulation calibration** — PVT sweeps, process control, materials discovery: costly surrogate or SPICE-like evaluation with hard physical constraints (see `examples/demo_sram.py` — 6T SRAM bitcell across 5 PVT corners).
+- **ML / HPO governance** — turn an optimizer's "best trial" into a deployment-safe artifact with an append-only trail, not a lone fitness number.
+
+### Headline feature (new in 0.1.4)
+
+`omega_lock.audit` is the hero surface. Wrap any `CalibrableTarget` with `AuditingTarget`, hand it to any optimizer (grid, TPE, random, Bayesian, your own), and get an append-only trail with phase / role / round context, declarative hard constraints, a feasible-vs-absolute best split, and a JSON-serializable reviewable artifact.
 
 What 0.1.4 ships:
 
@@ -33,7 +47,7 @@ Origin: extracted from a trading-strategy calibration experiment that ended in K
 | Hero API | `from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard` |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
 | Status | 0.1.4 on PyPI · 176 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
-| Built | 2026-04-18 (audit module) / 2026-04-20 (SRAM demo + 0.1.4 release), Claude Opus 4.7 |
+| Built | 2026-04-18 (audit module) · 2026-04-20 (SRAM demo + 0.1.4 release) |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
 
