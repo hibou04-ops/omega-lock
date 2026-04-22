@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Tests](https://img.shields.io/badge/tests-176%20passing-brightgreen.svg)](tests/)
 [![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
 
