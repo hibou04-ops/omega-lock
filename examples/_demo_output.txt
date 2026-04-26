@@ -1,0 +1,51 @@
+  [  1/12] alpha                          stress=160.0000 (0.0s)
+  [  2/12] window                         stress=3.0000 (0.0s)
+  [  3/12] long_mode                      stress=24.0000 (0.0s)
+  [  4/12] decoy_scale                    stress=0.0050 (0.0s)
+  [  5/12] decoy_offset                   stress=0.0003 (0.0s)
+  [  6/12] decoy_bias                     stress=0.0020 (0.0s)
+  [  7/12] decoy_mag                      stress=0.0000 (0.0s)
+  [  8/12] decoy_ofi                      stress=0.0040 OFI (0.0s)
+  [  9/12] decoy_mult                     stress=0.0000 (0.0s)
+  [ 10/12] decoy_exp                      stress=0.0001 (0.0s)
+  [ 11/12] decoy_mode                     stress=0.0007 (0.0s)
+  [ 12/12] decoy_flag                     stress=0.0030 (0.0s)
+  grid: 50 combos (axes=[5, 2, 5])
+  [  25/50] elapsed=0s, best_fitness=7.003 (n_trials=99)
+  [  50/50] elapsed=0s, best_fitness=12.003 (n_trials=60)
+
+-- PhantomKeyhole P1 summary --
+  status:   PASS
+  elapsed:  0.00s
+  baseline: fitness=-37.00 n_trials=95
+  top_k:    ['alpha', 'long_mode', 'window']
+  grid_best: {'alpha': 0.5, 'long_mode': True, 'window': 3} fitness=12.00 n_trials=60
+  walk_forward: pearson=0.879 trade_ratio=3.691
+  hybrid_top[0]: params={'alpha': 0.5, 'window': 3, 'long_mode': True, 'decoy_scale': 0.5, 'decoy_offset': 5.0, 'decoy_bias': 0.0, 'decoy_mag': 50.0, 'decoy_ofi': 0.5, 'decoy_mult': 50, 'decoy_exp': 5, 'decoy_mode': 1, 'decoy_flag': True} final_fitness=11.00
+  KC reports:
+    [PASS] KC-2: PASS: Gini=0.890, top3/bot3=1438461.54
+    [PASS] KC-4: PASS: pearson=0.879, trade_ratio=3.691
+    [PASS] KC-1: PASS: elapsed=0s (budget=259200s)
+    [PASS] KC-3: PASS: all counts >= 50 ({'baseline': 95, 'train_best': 60, 'test_best': 86})
+  stress top-3 vs bottom-3:
+    alpha           raw=  160.0000
+    long_mode       raw=   24.0000
+    window          raw=    3.0000
+    ...
+    decoy_exp       raw=  0.000100
+    decoy_mult      raw=  0.000020
+    decoy_mag       raw=  0.000010
+
+  output: C:\Users\hibou\Omega_Lock\output\phantom_run.json
+
+-- PhantomKeyhole fractal-vise (iterative + zoom) --
+  final_status:  PASS
+  stop_reason:   no_improvement
+  rounds run:    2
+  locked order:  [['alpha', 'long_mode', 'window'], ['decoy_scale', 'decoy_ofi', 'decoy_flag']]
+  round_best:    [13.003, 13.0071]
+  refined effective: {'alpha': 0.4375, 'long_mode': True, 'window': 3}
+  (plain coarse grid picked alpha=0.5, fractal picked alpha=0.4375)
+  output: C:\Users\hibou\Omega_Lock\output\phantom_fractal_run.json
+
+PhantomKeyhole demo PASSED.

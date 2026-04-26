@@ -37,6 +37,12 @@ Origin: extracted from a trading-strategy calibration experiment that ended in K
 
 한국어 README: [README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)
 
+## Demo (60s)
+
+https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
+
+> 60-second walkthrough on `examples/phantom_demo.py`: 12-axis sensitivity → top-K unlock (3 effective, 9 decoys) → 50-combo grid → walk-forward (Pearson 0.879) → KC-1..4 all PASS → fractal-vise refines `alpha 0.5 → 0.4375`. Real `phantom_demo.py` output, paced for readability. Reproducible with `python examples/demo_replay.py`.
+
 ## At a Glance
 
 | | |
@@ -75,6 +81,7 @@ The framework ships three integrated search pipelines. Each reuses the same audi
 
 ## Table of Contents
 
+- [Demo (60s)](#demo-60s)
 - [Audit Module (new in 0.1.4)](#audit-module-new-in-014)
 - [Philosophy](#philosophy)
 - [Pipeline](#pipeline)
@@ -414,14 +421,78 @@ src/omega_lock/
 
 ## vs External Alternatives
 
-| Tool | What it does | What Omega-Lock adds |
-|---|---|---|
-| Optuna / Hyperopt (TPE) | Bayesian adaptive sampling over a full-dim space | Audit layer around the result. Stress-based subspace reduction is an optional pre-filter, not required. You can run TPE directly via `run_p2_tpe` and still get the same KC gates + walk-forward + holdout + scorecard. |
-| Ray Tune / scikit-optimize | Generic HPO frameworks (many searchers, many schedulers) | A standard audit surface with declared kill criteria, not a single fitness score. KC-4 (Pearson + trade_ratio) and a holdout check are opinionated defaults. |
-| Plain grid search | Exhaustive Cartesian | Same grid when you want it, plus a zooming variant for sub-lattice precision, plus an automatic random-sample baseline (SC-2 advisory) that flags cases where your grid coverage was wasted. |
-| Nelder-Mead / Powell | local continuous search | continuous-only, no categoricals or bools. Omega-Lock handles mixed int / bool / continuous. |
+### Capability matrix
 
-**Omega-Lock's USP**: *pre-declared kill criteria + low-dim subspace hypothesis.* Not another adaptive-sampling optimizer, a **methodology framework**. Ideally layered on top of existing optimizers (TPE / Bayesian / Genetic); `run_p2_tpe` is the reference example.
+| Capability | Omega-Lock | Optuna | Ray Tune | scikit-learn HPO | Hyperopt | sklearn-Optuna combos | Nelder-Mead / scipy.optimize |
+|---|---|---|---|---|---|---|---|
+| **Sensitivity-driven axis unlock** (Gini → top-K) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Walk-forward held-out replay** as first-class | ✅ | manual (`study.optimize` + your CV) | manual | k-fold CV only | manual | manual | ❌ |
+| **Pre-declared kill criteria** (KC-1..4, immutable post-search) | ✅ | ❌ | partial (early-stop callbacks) | ❌ | ❌ | ❌ | ❌ |
+| **Constraint-feasible vs absolute-best split** | ✅ (`AuditingTarget` + `Constraint`) | manual (penalize) | manual | ❌ | manual | manual | manual |
+| **Diff-able JSON artifacts** for CI regression gating | ✅ (`P1Result` / `AuditReport`) | DB-based (study) | DB-based | ❌ | ❌ | ❌ | ❌ |
+| **Domain-agnostic Protocol** (any `CalibrableTarget`) | ✅ | objective fn | `Trainable` class | sklearn estimator only | objective fn | sklearn estimator | callable only |
+| **30-run gold baseline regression guard** | ✅ (`benchmark_battery.py`) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Mixed int / bool / continuous params** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | continuous only |
+| **TPE / Bayesian search** | ✅ via `run_p2_tpe` (Optuna under hood) | ✅ (TPE primary) | ✅ (multiple) | ❌ | ✅ | ✅ | ❌ |
+| **Random search baseline (SC-2 advisory)** | ✅ (auto, flags wasted grid coverage) | manual | manual | ✅ | manual | manual | N/A |
+| **Distributed multi-machine** | ❌ (by design) | partial (RDB) | ✅ (primary) | ❌ | partial (MongoDB) | partial | ❌ |
+| **Lightweight install** (no heavy deps) | ✅ (numpy + Pydantic; Optuna optional via `[p2]`) | ✅ | ❌ (Ray, pyarrow, ...) | ✅ | ✅ | ❌ | ✅ |
+| **Tests, zero network in CI** | 176 | yes (no specific count claimed) | yes | yes | yes | n/a | yes |
+
+### Where each shines
+
+- **Optuna / Hyperopt** — sample-efficient TPE search. Best when each evaluation is expensive *and* you trust the optimizer to find the optimum in fewest trials. Pair with omega-lock's `run_p2_tpe` to keep the audit gates.
+- **Ray Tune** — distributed multi-node search with ASHA / Population Based Training schedulers. Best for clusters and massively parallel tuning. Different problem domain than omega-lock.
+- **scikit-learn HPO** (`GridSearchCV`, `RandomizedSearchCV`, `HalvingRandomSearchCV`) — built into the sklearn ecosystem. Best when your model is a sklearn pipeline and k-fold CV is enough validation. omega-lock's walk-forward is stricter than k-fold for time-series-shaped problems.
+- **scipy.optimize** (`Nelder-Mead`, `Powell`, `differential_evolution`) — pure-continuous local optimizers. No mixed-type support, no audit. Best when you have a smooth differentiable surrogate.
+- **Omega-Lock** — **calibration discipline**. Best when overfitting is the failure mode (trading, prompts, hardware calibration, anything where train ≠ ship). KC-1..4 + walk-forward + constraint feasibility are the protective layer the other tools leave to you.
+
+### Composition is the real story
+
+Omega-Lock is **not trying to be a faster searcher**. It's a *protective discipline* that wraps any search:
+
+```python
+from omega_lock import run_p1, run_p2_tpe, run_p1_iterative, P1Config, P2Config
+
+# Your target implements CalibrableTarget — works for trading, ML, prompts, hardware, anything.
+target = MyTarget()
+
+# Same discipline, different search engines:
+result = run_p1(target, P1Config(unlock_k=3))               # grid + walk-forward + KC
+result = run_p2_tpe(target, P2Config(n_trials=200))         # TPE (Optuna) + walk-forward + KC
+result = run_p1_iterative(target, IterativeConfig(rounds=3)) # iterative refinement + KC
+
+# All three return the same JSON artifact shape — diff-able across runs:
+result.grid_best        # best parameters from search
+result.kc_reports       # KC-1..4 pass/fail with explanations
+result.walk_forward     # train_best vs test_best vs Pearson + trade_ratio
+result.holdout_result   # honest single-shot check on a third slice (optional)
+```
+
+You can plug Optuna's TPE inside via `run_p2_tpe` — omega-lock contributes the **sensitivity unlock + walk-forward + kill criteria** that surround the search. Swap the searcher; the discipline stays.
+
+### When NOT to use Omega-Lock
+
+Honest scope boundaries:
+
+- **Distributed compute is the bottleneck.** Use Ray Tune. Omega-Lock is single-machine by design.
+- **You need 50+ search algorithms / schedulers.** Use Optuna or Hyperopt directly. Omega-Lock ships P1, P1-iterative, P2-TPE.
+- **Effective dim ≈ nominal dim.** Stress + top-K unlock buy you nothing if every axis matters. Use stock TPE.
+- **Out-of-sample stability is not a concern.** Walk-forward + KC-4 are overhead if you only care about in-sample fit. Use `GridSearchCV`.
+- **You need GPU-aware scheduling, ASHA, hyperband.** Ray Tune is the right tool.
+
+Omega-Lock pays off when each evaluation is **non-trivial** (running a backtest, calling an LLM, training a model, simulating a circuit) **and shipping the wrong configuration is expensive**. That's where the kill criteria + walk-forward gate earn their keep.
+
+### Family integration
+
+Omega-Lock is the calibration kernel for two downstream applications in the [hibou04-ops](https://github.com/hibou04-ops) family:
+
+- **[antemortem-cli](https://github.com/hibou04-ops/antemortem-cli)** — applies the same *pre-declared discipline* idea to LLM-assisted code review (REAL / GHOST / NEW classifications with disk-verified citations).
+- **[omegaprompt](https://github.com/hibou04-ops/omegaprompt)** — applies omega-lock's calibration kernel to LLM prompt configuration (provider-neutral meta-axes, LLM-as-judge, walk-forward over prompts).
+
+If you're calibrating prompts or running pre-implementation recon, those are pre-built. If you're calibrating *anything else*, omega-lock is the layer underneath.
+
+**Omega-Lock's USP**: *pre-declared kill criteria + low-dim subspace hypothesis + protocol-based audit.* Not another adaptive-sampling optimizer, a **methodology framework**. Ideally layered on top of existing optimizers (TPE / Bayesian / Genetic); `run_p2_tpe` is the reference example.
 
 ## Holdout Target
 

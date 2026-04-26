@@ -1,0 +1,54 @@
+1
+00:00:00,000 --> 00:00:03,000
+Backtest 0.92. Live: -40%. Why?
+
+2
+00:00:03,200 --> 00:00:07,500
+Sensitivity measurement —
+which parameters actually move fitness?
+
+3
+00:00:07,800 --> 00:00:13,500
+12 axes probed. 3 carry signal. 9 are decoys.
+
+4
+00:00:14,000 --> 00:00:17,800
+Top-K unlock — grid only over the axes that matter.
+
+5
+00:00:18,000 --> 00:00:22,500
+50 combinations searched. Best train fitness: 12.00.
+
+6
+00:00:22,800 --> 00:00:26,500
+But does it generalise?
+
+7
+00:00:26,800 --> 00:00:32,500
+Walk-forward — replay best on held-out data.
+Pearson 0.879.
+
+8
+00:00:32,800 --> 00:00:36,500
+KC-4 threshold 0.50, declared up-front.
+Cannot be lowered after seeing the score.
+
+9
+00:00:36,800 --> 00:00:42,500
+All four kill criteria PASS.
+Train-rank predicts test-rank. Ship.
+
+10
+00:00:42,800 --> 00:00:48,500
+Fractal vise refines further.
+alpha 0.5 → 0.4375. Same discipline, finer grid.
+
+11
+00:00:49,000 --> 00:00:55,500
+Works for any CalibrableTarget.
+Trading. Prompts. Any hyperparameter.
+
+12
+00:00:56,000 --> 00:01:00,000
+pip install omega-lock
+Apache 2.0 · 176 tests · 0 network in CI
