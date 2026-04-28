@@ -1,4 +1,6 @@
-"""P2 end-to-end orchestrator — Optuna TPE variant of P1.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
+"""P2 end-to-end orchestrator ??Optuna TPE variant of P1.
 
 Pipeline (same gates as run_p1):
     1. Baseline evaluate on train_target (neutral defaults)
@@ -13,7 +15,7 @@ Motivation: grid search costs grow as g^K (e.g. 5^3 = 125) and cannot refine
 below the cell width. TPE fits a posterior over promising regions and can
 sample at arbitrary continuous precision within the same trial budget, at
 the cost of stochasticity (seed-controlled here) and an optional dep on
-optuna. The rest of the gates (KC-1..4) are identical to run_p1 — this is a
+optuna. The rest of the gates (KC-1..4) are identical to run_p1 ??this is a
 drop-in search-method swap, not a relaxation of the kill criteria.
 
 Optuna is declared as an optional dep (pyproject [project.optional-dependencies].p2).
@@ -51,7 +53,7 @@ from omega_lock.walk_forward import WalkForward, WalkForwardResult
 try:
     import optuna
     # Silence Optuna's per-trial INFO logs and the ExperimentalWarning
-    # emitted by TPESampler(multivariate=True) — stable in practice for years.
+    # emitted by TPESampler(multivariate=True) ??stable in practice for years.
     import warnings as _warnings
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     _warnings.filterwarnings(
@@ -133,7 +135,7 @@ def _suggest(trial: "optuna.trial.Trial", spec: ParamSpec) -> Any:
     """Map a ParamSpec to the corresponding Optuna suggest_* call.
 
     Float/int bounds are inclusive on both sides (matches ParamSpec + Optuna
-    conventions). Bool is expressed as a two-value categorical — this keeps
+    conventions). Bool is expressed as a two-value categorical ??this keeps
     the TPE model on a discrete axis rather than inferring a spurious
     continuous gradient.
     """

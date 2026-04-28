@@ -1,4 +1,6 @@
-"""Audit data types — Constraint, AuditedRun, AuditReport.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
+"""Audit data types ??Constraint, AuditedRun, AuditReport.
 
 Design:
     * Constraint: a named predicate over (params, EvalResult) -> bool.
@@ -7,7 +9,7 @@ Design:
     * AuditReport: the full append-only trail + summary + JSON roundtrip.
 
 The AuditReport reuses the EvalResult serialization pattern from
-orchestrator.py (_eval_to_dict + _json_fallback) — artifacts are
+orchestrator.py (_eval_to_dict + _json_fallback) ??artifacts are
 deliberately dropped to keep the trail small.
 """
 from __future__ import annotations
@@ -28,7 +30,7 @@ class Constraint:
     """A named hard constraint on (params, EvalResult).
 
     The predicate returns True when the result satisfies the constraint.
-    Soft penalties are deliberately out of scope for v1 — mix a
+    Soft penalties are deliberately out of scope for v1 ??mix a
     custom fitness transform into your CalibrableTarget if you need one.
     """
     name: str
@@ -176,7 +178,7 @@ class AuditReport:
 
     @classmethod
     def from_json(cls, s: str) -> "AuditReport":
-        """Rehydrate a report. Constraint predicates are NOT restored — we keep
+        """Rehydrate a report. Constraint predicates are NOT restored ??we keep
         only names + descriptions, since function objects can't round-trip."""
         d = json.loads(s)
         constraints = tuple(
@@ -217,7 +219,7 @@ class AuditReport:
 
 
 def _unavailable_predicate(params: dict[str, Any], result: EvalResult) -> bool:
-    """Sentinel for rehydrated constraints — calling it raises. Rehydrated
+    """Sentinel for rehydrated constraints ??calling it raises. Rehydrated
     reports are for inspection only; to re-run constraint checks, the caller
     must re-supply the original predicates."""
     raise RuntimeError(

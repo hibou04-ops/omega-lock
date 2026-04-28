@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """Parameter container + clip/perturbation helpers.
 
 Generic successor to research/omega_lock_p1/params.py. The 21 HeartCore-specific
@@ -21,11 +23,11 @@ def clip(spec: ParamSpec, value: Any) -> Any:
 
 
 def default_epsilon(spec: ParamSpec) -> float:
-    """Perturbation ε for stress measurement.
+    """Perturbation 琯 for stress measurement.
 
     - Continuous: 10% of range
     - Integer: 1 (smallest meaningful step)
-    - Boolean: 0.0 (caller flips explicitly, ε is unused)
+    - Boolean: 0.0 (caller flips explicitly, 琯 is unused)
     """
     if spec.dtype == "bool":
         return 0.0
@@ -43,7 +45,7 @@ def neutral_defaults(specs: list[ParamSpec]) -> dict[str, Any]:
 class LockedParams:
     """Lock/unlock state container.
 
-    Philosophy ("열쇠구멍을 거푸집으로 쓴다"):
+    Philosophy ("?댁뇿援щ찉??嫄고뫖吏묒쑝濡??대떎"):
         All params default to locked. Unlock only the ones you want to
         search over. Perturbation respects current values + type + range.
     """

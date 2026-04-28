@@ -1,10 +1,12 @@
-"""Fitness adapters — BaseFitness + HybridFitness.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
+"""Fitness adapters ??BaseFitness + HybridFitness.
 
 BaseFitness: identity wrapper around a target (for symmetry with HybridFitness).
 
 HybridFitness: two-stage A+B pattern.
-    A (search_target): fast, cheap — used for grid/stress exploration (125+ runs).
-    B (validation_target): slow, precise — used only on top-K candidates (≤5 runs).
+    A (search_target): fast, cheap ??used for grid/stress exploration (125+ runs).
+    B (validation_target): slow, precise ??used only on top-K candidates (?? runs).
 
 The final ranking is driven by B's fitness (fall back to A if B absent).
 Typical use:
@@ -35,7 +37,7 @@ class BaseFitness:
 class HybridResult:
     params: dict[str, Any]
     search_result: EvalResult         # A
-    validation_result: EvalResult | None = None   # B (None → not re-evaluated)
+    validation_result: EvalResult | None = None   # B (None ??not re-evaluated)
 
     @property
     def final_fitness(self) -> float:
@@ -50,7 +52,7 @@ class HybridFitness:
 
     Contract:
         - search_target.param_space() must equal validation_target.param_space()
-          (identity comparison is enough in practice — pass the same list)
+          (identity comparison is enough in practice ??pass the same list)
         - Both targets evaluate the same params dict
         - orchestrate() returns candidates sorted by final_fitness (desc)
     """
@@ -79,7 +81,7 @@ class HybridFitness:
             [top-K sorted by final_fitness (B)] + [rest sorted by search fitness (A)]
 
         This matches the "A ranks coarsely, B refines among A's top" use case.
-        A candidate demoted by B does NOT drop below unvalidated candidates —
+        A candidate demoted by B does NOT drop below unvalidated candidates ??
         because they never entered B's scrutiny.
         """
         stage_a: list[HybridResult] = []

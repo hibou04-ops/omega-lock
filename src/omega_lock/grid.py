@@ -1,6 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """K-dim grid search over unlocked parameters.
 
-Default: 5 points per axis (K=3 → 125 combos per P1 SPEC).
+Default: 5 points per axis (K=3 ??125 combos per P1 SPEC).
 
 For bool params, the axis is always {False, True} regardless of grid_points.
 For int params with a small range (<= grid_points), use the full range.
@@ -146,7 +148,7 @@ class GridSearch:
 
 @dataclass
 class ZoomingGridSearch:
-    """Fractal-vise grid search — repeated narrowing around the current best.
+    """Fractal-vise grid search ??repeated narrowing around the current best.
 
     Round 0 uses the full parameter range. After round r's winner is found,
     each continuous/int axis is re-centered on the winner's value and its
@@ -157,14 +159,14 @@ class ZoomingGridSearch:
     Args:
         zoom_rounds: total number of grid scans (1 = behaves like GridSearch).
         zoom_factor: fraction of the previous range to keep. 0.5 halves ranges
-            each round → resolution improves geometrically.
+            each round ??resolution improves geometrically.
 
     Budget: `zoom_rounds * grid_points_per_axis^K` evaluations (some reuse
-    across rounds is NOT attempted — winner of round r is typically near the
+    across rounds is NOT attempted ??winner of round r is typically near the
     centre of round r+1's grid but not exactly on it after re-linspace).
 
     Returns a flat list of all GridPoints from all rounds, in evaluation
-    order. The global best is `max(returned, key=fitness)` — naturally the
+    order. The global best is `max(returned, key=fitness)` ??naturally the
     final-round winner in smooth landscapes.
     """
     target: CalibrableTarget
