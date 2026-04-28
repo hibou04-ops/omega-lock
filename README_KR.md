@@ -2,8 +2,8 @@
 
 > **처음이신가요?** 먼저 보세요: [EASY_README_KR.md](EASY_README_KR.md) (한국어) · [EASY_README.md](EASY_README.md) (English). 아래 본 문서가 어렵게 느껴지는 분들을 위한 압축된 쉬운 소개.
 
-[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
+[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.6)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.6)](https://pypi.org/project/omega-lock/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Tests](https://img.shields.io/badge/tests-176%20passing-brightgreen.svg)](tests/)
 [![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
@@ -48,7 +48,7 @@ English README: [README.md](https://github.com/hibou04-ops/omega-lock/blob/main/
 | 설치 | `pip install omega-lock` (기본) 또는 `pip install "omega-lock[p2]"` (Optuna TPE 포함) |
 | Hero API | `from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard` |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
-| 상태 | 0.1.4 on PyPI · 176 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
+| 상태 | 0.1.6 on PyPI · 176 tests 통과 · 30-run benchmark gold baseline CI regression guard 동결 |
 | Built | 2026-04-18 (audit 모듈) · 2026-04-20 (SRAM demo + 0.1.4 릴리스) |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
@@ -569,6 +569,8 @@ pytest --cov=omega_lock          # 커버리지
 
 ## License
 
-MIT License. 자세한 내용은 [LICENSE](https://github.com/hibou04-ops/omega-lock/blob/main/LICENSE) 참조.
+Apache 2.0 License. 자세한 내용은 [LICENSE](https://github.com/hibou04-ops/omega-lock/blob/main/LICENSE) 참조.
 
 Copyright (c) 2026 hibou.
+
+**라이선스 히스토리.** 0.1.0 ~ 0.1.4 PyPI 배포본은 MIT `LICENSE` 파일과 함께 ship 되었습니다. 2026-04-22 (commit `8a5e66d`) Apache 2.0 으로 재라이선싱되었고, 0.1.5 (2026-04-28) 이후 모든 버전은 Apache 2.0 입니다. 0.1.0 ~ 0.1.4 를 설치한 사용자는 그 사본에 대해 MIT 라이선스를 보유합니다 — 라이선스 변경은 소급 적용되지 않습니다.

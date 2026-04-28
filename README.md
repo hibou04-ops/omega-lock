@@ -2,8 +2,8 @@
 
 > **New to this?** Start here: [EASY_README.md](EASY_README.md) (English) · [EASY_README_KR.md](EASY_README_KR.md) (한국어). Compressed plain-language introductions for readers who find the full doc below intimidating.
 
-[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.4)](https://pypi.org/project/omega-lock/)
+[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.6)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.6)](https://pypi.org/project/omega-lock/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Tests](https://img.shields.io/badge/tests-176%20passing-brightgreen.svg)](tests/)
 [![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
@@ -54,7 +54,7 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Install | `pip install omega-lock` (core) or `pip install "omega-lock[p2]"` (Optuna TPE included) |
 | Hero API | `from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard` |
 | Core API | `run_p1` · `run_p1_iterative` · `run_p2_tpe` · `run_benchmark` · `CallableAdapter` |
-| Status | 0.1.4 on PyPI · 176 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
+| Status | 0.1.6 on PyPI · 176 tests passing · 30-run benchmark gold baseline frozen for CI regression guard |
 | Built | 2026-04-18 (audit module) · 2026-04-20 (SRAM demo + 0.1.4 release) |
 
 ### Raw benchmark scorecard (30 runs: 2 keyholes × 3 methods × 5 seeds)
@@ -635,7 +635,7 @@ If you use Omega-Lock in research or a published project, please cite:
   author  = {hibou},
   title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
   year    = {2026},
-  version = {0.1.4},
+  version = {0.1.6},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```
@@ -647,3 +647,5 @@ If you use Omega-Lock in research or a published project, please cite:
 Apache 2.0 License. See [LICENSE](https://github.com/hibou04-ops/omega-lock/blob/main/LICENSE) for details.
 
 Copyright (c) 2026 hibou.
+
+**License history.** PyPI distributions of versions 0.1.0 through 0.1.4 were shipped with an MIT `LICENSE` file. The repository was relicensed to Apache 2.0 on 2026-04-22 (commit `8a5e66d`); 0.1.5 (2026-04-28) and all later versions ship under Apache 2.0. Anyone who installed 0.1.0 through 0.1.4 holds an MIT license to that copy — license changes do not apply retroactively.
