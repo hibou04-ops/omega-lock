@@ -1,4 +1,6 @@
-"""PhantomKeyhole — deterministic synthetic calibration target.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
+"""PhantomKeyhole ??deterministic synthetic calibration target.
 
 The caller sees a 12-parameter black box. Internally, only 3 parameters
 (`alpha`, `window`, `use_smoother`) meaningfully affect fitness; the other
@@ -17,8 +19,8 @@ Typical usage:
     )
 
 Hidden structure (the calibrator must rediscover via stress measurement):
-    - AR(1) latent series x[t] with ρ = 0.7
-    - Observations obs[t] = x[t] + ε_obs  (observation noise)
+    - AR(1) latent series x[t] with ? = 0.7
+    - Observations obs[t] = x[t] + 琯_obs  (observation noise)
     - Labels label[t] = +1 if x[t] > LABEL_Z else -1   (hidden threshold)
     - Effective params: alpha (threshold), window (lookback), long_mode (direction flip)
     - Decoy params contribute a sub-percent fitness coupling (non-zero for
@@ -27,12 +29,12 @@ Hidden structure (the calibrator must rediscover via stress measurement):
 Strategy (parametric):
     val[t] = mean(obs[t-window : t])
     if long_mode:  fire if val > alpha       (trend following)
-    else:          fire if val < -alpha      (reversion — the wrong sign here)
+    else:          fire if val < -alpha      (reversion ??the wrong sign here)
     reward += label[t] per fire
 
 Neutral placement is deliberately "wrong" on all three effective axes so
-the baseline is poor (n_trials ≥ 50 but reward strongly negative) and the
-grid can clearly improve — which is what Omega-Lock is meant to do.
+the baseline is poor (n_trials ??50 but reward strongly negative) and the
+grid can clearly improve ??which is what Omega-Lock is meant to do.
 """
 from __future__ import annotations
 
@@ -45,10 +47,10 @@ import numpy as np
 from omega_lock.target import EvalResult, ParamSpec
 
 
-# Hidden structure — not exposed.
+# Hidden structure ??not exposed.
 _RHO: float = 0.7                   # AR(1) persistence of latent x
 _LABEL_Z: float = 0.3               # latent-space threshold for label = +1
-_OBSERVATION_NOISE: float = 0.10    # std of obs = x + ε
+_OBSERVATION_NOISE: float = 0.10    # std of obs = x + 琯
 
 
 @dataclass
@@ -56,7 +58,7 @@ class PhantomKeyhole:
     """Deterministic 12-param keyhole.
 
     Args:
-        seed: PRNG seed — determines the event stream.
+        seed: PRNG seed ??determines the event stream.
         n_events: length of the synthetic series.
         noise: observation noise std (keep small vs latent std=1).
     """
@@ -81,11 +83,11 @@ class PhantomKeyhole:
         return [
             # --- effective trio (hidden; only these three move fitness meaningfully) ---
             # Neutrals deliberately placed in a poor region so the baseline
-            # fitness is much worse than the grid optimum — demonstrating
+            # fitness is much worse than the grid optimum ??demonstrating
             # Omega-Lock's improvement rather than starting already tuned.
             # Ground truth (for benchmark use, NOT visible to calibrators):
             #   true effectives = {alpha, window, long_mode}
-            #   true optimum    ≈ {alpha=0.35, window=3, long_mode=True}  (empirical)
+            #   true optimum    ??{alpha=0.35, window=3, long_mode=True}  (empirical)
             ParamSpec(name="alpha",     dtype="float", low=0.0, high=1.0, neutral=0.2),
             ParamSpec(name="window",    dtype="int",   low=3,   high=30,  neutral=16),
             ParamSpec(name="long_mode", dtype="bool",  neutral=False),
@@ -127,7 +129,7 @@ class PhantomKeyhole:
         n_trials = int(fire_idx.size)
         reward = float(labels[fire_idx].sum()) if n_trials > 0 else 0.0
 
-        # Decoy coupling — deliberately small so effective params dominate
+        # Decoy coupling ??deliberately small so effective params dominate
         # stress, but non-zero so KC-2's top/bot ratio is finite and meaningful.
         decoy_coupling = (
             0.005 * (float(params.get("decoy_scale", 0.5))  - 0.5)
@@ -156,7 +158,7 @@ class PhantomKeyhole:
             },
         )
 
-    # ── Ground-truth introspection (for benchmark use only) ──────────────
+    # ?? Ground-truth introspection (for benchmark use only) ??????????????
     # These are NOT part of CalibrableTarget; a well-behaved calibrator
     # must not consult them. Benchmark code uses them to score how close
     # the calibrator came to the true hidden structure.
@@ -173,6 +175,6 @@ class PhantomKeyhole:
 
     @staticmethod
     def true_importance_ranking() -> list[str]:
-        """Ground-truth stress ordering (most → least important).
-        Compared against measured stress via Spearman ρ."""
+        """Ground-truth stress ordering (most ??least important).
+        Compared against measured stress via Spearman ?."""
         return ["alpha", "long_mode", "window"]

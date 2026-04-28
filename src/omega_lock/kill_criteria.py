@@ -1,4 +1,6 @@
-"""Kill criteria (KC-1..4) — pre-declared, non-negotiable gates.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
+"""Kill criteria (KC-1..4) ??pre-declared, non-negotiable gates.
 
 Philosophy: structural defense against Winchester re-entry. Each KC is
 evaluated at a specific point in the pipeline; failing one stops the

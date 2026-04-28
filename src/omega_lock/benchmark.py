@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """Objective benchmark suite for calibration methods.
 
 RAGAS-style scorecard: every metric is mechanically computable from the
@@ -28,19 +30,19 @@ Ground truth expectations:
     Any keyhole passed in must expose three static methods:
         true_effective_params() -> set[str]
         true_optimum_params()   -> dict[str, Any]
-        true_importance_ranking() -> list[str]   # most → least important
+        true_importance_ranking() -> list[str]   # most ??least important
     PhantomKeyhole and PhantomKeyholeDeep both implement these.
 
 Metrics (all in [0, 1] except where noted; higher = better unless marked):
-    effective_recall      |found ∩ true| / |true|          — want 1.0
-    effective_precision   |found ∩ true| / |found|         — want 1.0
-    param_L2_error        LOW-LOWER-IS-BETTER              — want 0.0
-    fitness_gap_pct       (opt - found) / |opt|            — want ≤ 0 (found >= optimum)
-    generalization_gap    |train - test| / |train|         — want small
-    sample_efficiency     fitness_found / n_evaluations    — higher = better
-    walltime_s            wall clock                        — lower = better
-    stress_rank_spearman  ρ(measured_rank, truth_rank)     — want close to 1.0
-    status_pass           1 if status=='PASS' else 0       — binary
+    effective_recall      |found ??true| / |true|          ??want 1.0
+    effective_precision   |found ??true| / |found|         ??want 1.0
+    param_L2_error        LOW-LOWER-IS-BETTER              ??want 0.0
+    fitness_gap_pct       (opt - found) / |opt|            ??want ??0 (found >= optimum)
+    generalization_gap    |train - test| / |train|         ??want small
+    sample_efficiency     fitness_found / n_evaluations    ??higher = better
+    walltime_s            wall clock                        ??lower = better
+    stress_rank_spearman  ?(measured_rank, truth_rank)     ??want close to 1.0
+    status_pass           1 if status=='PASS' else 0       ??binary
 """
 from __future__ import annotations
 
@@ -57,14 +59,14 @@ from typing import Any, Callable, Protocol
 KeyholeFactory = Callable[[int], Any]    # (seed) -> target instance
 MethodRunner = Callable[[Any, int], dict[str, Any]]
 # Runner contract: (target, seed) -> dict with keys:
-#   'found_params'     dict — the final best parameters
+#   'found_params'     dict ??the final best parameters
 #   'found_fitness'    float
 #   'train_fitness'    float (same as found_fitness if no test_target)
 #   'test_fitness'     float | None
-#   'unlocked'         list[str] — param names the method chose to search
-#   'stress_ranking'   list[str] | None — measured stress order (desc), or None
-#   'status'           str — PASS / FAIL:...
-#   'n_evaluations'    int — total target.evaluate() calls
+#   'unlocked'         list[str] ??param names the method chose to search
+#   'stress_ranking'   list[str] | None ??measured stress order (desc), or None
+#   'status'           str ??PASS / FAIL:...
+#   'n_evaluations'    int ??total target.evaluate() calls
 #   'walltime_s'       float
 
 
@@ -85,7 +87,7 @@ class BenchmarkSpec:
 
 @dataclass
 class BenchmarkRow:
-    """One run result — one (keyhole, method, seed) triple."""
+    """One run result ??one (keyhole, method, seed) triple."""
     keyhole: str
     method: str
     seed: int
@@ -106,7 +108,7 @@ class BenchmarkRow:
 
 @dataclass
 class MethodSummary:
-    """Aggregated metrics for one method across (keyholes × seeds)."""
+    """Aggregated metrics for one method across (keyholes 횞 seeds)."""
     method: str
     n_runs: int
     effective_recall_mean: float
@@ -158,16 +160,16 @@ class BenchmarkReport:
         lines: list[str] = []
         lines.append(f"{'method':<22s} {'n':>3s} {'recall':>10s} {'prec':>8s} "
                      f"{'L2err':>10s} {'fit_gap%':>10s} {'gen_gap':>10s} "
-                     f"{'eff':>10s} {'wall_s':>8s} {'stress_ρ':>10s} {'pass%':>7s}")
-        lines.append("─" * 120)
+                     f"{'eff':>10s} {'wall_s':>8s} {'stress_?':>10s} {'pass%':>7s}")
+        lines.append("?" * 120)
         for s in self.scorecard():
             rho_str = f"{s.stress_rank_spearman_mean:+.3f}" if s.stress_rank_spearman_mean is not None else "   n/a"
             lines.append(
                 f"{s.method:<22s} {s.n_runs:>3d} "
-                f"{s.effective_recall_mean:>6.3f}±{s.effective_recall_std:.2f} "
+                f"{s.effective_recall_mean:>6.3f}짹{s.effective_recall_std:.2f} "
                 f"{s.effective_precision_mean:>8.3f} "
-                f"{s.param_L2_error_mean:>6.3f}±{s.param_L2_error_std:.2f} "
-                f"{s.fitness_gap_pct_mean:>6.1f}±{s.fitness_gap_pct_std:.1f} "
+                f"{s.param_L2_error_mean:>6.3f}짹{s.param_L2_error_std:.2f} "
+                f"{s.fitness_gap_pct_mean:>6.1f}짹{s.fitness_gap_pct_std:.1f} "
                 f"{s.generalization_gap_mean:>10.3f} "
                 f"{s.sample_efficiency_mean:>10.4f} "
                 f"{s.walltime_s_mean:>8.3f} "
@@ -185,7 +187,7 @@ class BenchmarkReport:
         path.write_text(json.dumps(payload, indent=2, default=_json_fallback))
 
 
-# ── Metric computations ─────────────────────────────────────────────────
+# ?? Metric computations ?????????????????????????????????????????????????
 
 def compute_effective_recall(found: set[str], true: set[str]) -> float:
     if not true:
@@ -255,14 +257,14 @@ def compute_spearman(rank_a: list[str], rank_b: list[str]) -> float | None:
     return 1.0 - (6.0 * d_sq_sum) / (n * (n * n - 1))
 
 
-# ── Benchmark runner ────────────────────────────────────────────────────
+# ?? Benchmark runner ????????????????????????????????????????????????????
 
 def run_benchmark(
     specs: list[BenchmarkSpec],
     methods: list[CalibrationMethod],
     output_path: Path | None = None,
 ) -> BenchmarkReport:
-    """Run every (spec × method × seed) combination and collect metrics."""
+    """Run every (spec 횞 method 횞 seed) combination and collect metrics."""
     rows: list[BenchmarkRow] = []
 
     for spec in specs:
@@ -345,7 +347,7 @@ def run_benchmark(
     return report
 
 
-# ── internals ───────────────────────────────────────────────────────────
+# ?? internals ???????????????????????????????????????????????????????????
 
 def _mean(xs: list[float]) -> float:
     return statistics.mean(xs) if xs else 0.0

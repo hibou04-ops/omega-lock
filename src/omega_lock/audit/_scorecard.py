@@ -1,4 +1,6 @@
-"""render_scorecard — text renderer for AuditReport.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
+"""render_scorecard ??text renderer for AuditReport.
 
 Produces a terminal-friendly, markdown-compatible scorecard. Sections:
   1. Identity (method, version, seed, duration)

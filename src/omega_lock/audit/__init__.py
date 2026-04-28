@@ -1,4 +1,6 @@
-"""omega_lock.audit — method-agnostic audit surface for calibration runs.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
+"""omega_lock.audit ??method-agnostic audit surface for calibration runs.
 
 Public API:
     from omega_lock.audit import (
@@ -29,7 +31,7 @@ Usage (multi-target train/test/holdout):
     wtest    = AuditingTarget(test,  constraints, "test",   shared_trail=trail, shared_counter=counter)
     wholdout = AuditingTarget(ho,    constraints, "holdout",shared_trail=trail, shared_counter=counter)
     result = run_p1(wtrain, test_target=wtest, holdout_target=wholdout, config=P1Config())
-    report = make_report(wtrain, method="p1", seed=42)   # any wrapper works — trail is shared
+    report = make_report(wtrain, method="p1", seed=42)   # any wrapper works ??trail is shared
 """
 from __future__ import annotations
 
@@ -58,8 +60,8 @@ def make_report(
     """Freeze an AuditingTarget's trail into an AuditReport.
 
     Args:
-        source: any AuditingTarget — its `.trail` is used (works for
-            shared trails — wrappers share the same list, so passing any
+        source: any AuditingTarget ??its `.trail` is used (works for
+            shared trails ??wrappers share the same list, so passing any
             one of them gives the full trail).
         method: human-readable method tag ("p1", "p2_tpe", "plain_grid", ...).
         seed: optional RNG seed for the method.

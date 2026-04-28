@@ -1,16 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """P1 end-to-end orchestrator.
 
 Pipeline:
     1. Baseline evaluate on train_target (neutral defaults)
-    2. Stress measurement on train_target → KC-2 gate
+    2. Stress measurement on train_target ??KC-2 gate
     3. Top-K unlock selection
     4. Grid search on train_target
-    5. If test_target: walk-forward → KC-4 gate
+    5. If test_target: walk-forward ??KC-4 gate
     6. If hybrid: re-rank top-K with validation_target
     7. KC-1 (time box) + KC-3 (trade counts) at the end
     8. Emit P1Result (JSON-serializable)
 
-Aborts soft on KC fails — pipeline still returns P1Result with status flags
+Aborts soft on KC fails ??pipeline still returns P1Result with status flags
 so the caller can emit a RESULT.md even on failure.
 """
 from __future__ import annotations
@@ -55,12 +57,12 @@ class P1Config:
     grid_verbose: bool = True
     # Zooming grid: if > 1, run ZoomingGridSearch with `zoom_rounds` passes
     # that geometrically narrow around the running winner. Compute scales
-    # as zoom_rounds × grid_points_per_axis^K.
+    # as zoom_rounds 횞 grid_points_per_axis^K.
     zoom_rounds: int = 1
     zoom_factor: float = 0.5
     # SC-2 advisory check: after grid search, run the same-budget RandomSearch
     # and compute top-quartile ratio. Reported as ADVISORY (never hard-fails
-    # the pipeline) — purpose is to surface "grid coverage is wasted" cases
+    # the pipeline) ??purpose is to surface "grid coverage is wasted" cases
     # (Bergstra & Bengio 2012) so the user can decide whether to switch
     # methods, NOT to invalidate the run.
     run_sc2_baseline: bool = False
@@ -86,7 +88,7 @@ class P1Result:
 
     # Final single-shot evaluation on a held-out target (never used for any
     # KC decision during the run). Present only when `holdout_target` is
-    # passed to run_p1(). Use this as independent generalization evidence —
+    # passed to run_p1(). Use this as independent generalization evidence ??
     # especially in iterative mode where test_target is re-consulted across
     # rounds and KC-4 alone becomes weaker per-round evidence.
     holdout_result: dict[str, Any] | None = None
@@ -149,7 +151,7 @@ def run_p1(
             Used by `run_p1_iterative` to restrict stress to currently-unlocked
             params (already-locked params have their values fixed).
         holdout_target: optional third target evaluated exactly ONCE on the
-            final grid_best params. Never consulted for any KC decision —
+            final grid_best params. Never consulted for any KC decision ??
             purely independent generalization evidence. Use a fresh seed /
             disjoint data slice that has not been seen by train or test.
     """
@@ -248,7 +250,7 @@ def run_p1(
             hr.validation_result = validation_target.evaluate(hr.params)
         hybrid_results.sort(key=lambda h: h.final_fitness, reverse=True)
 
-    # 7. SC-2 advisory (optional — never hard-fails)
+    # 7. SC-2 advisory (optional ??never hard-fails)
     if cfg.run_sc2_baseline and grid_points_list:
         rs = RandomSearch(
             target=train_target,
@@ -267,7 +269,7 @@ def run_p1(
                 f"grid_top_q={sc2['grid_top_quartile']:.3f} "
                 f"random_top_q={sc2['random_top_quartile']:.3f} "
                 f"ratio={sc2['ratio']:.3f} "
-                f"({'grid beats random >=1.5x' if sc2_pass else 'grid does NOT beat random >=1.5x — consider switching search method'})"
+                f"({'grid beats random >=1.5x' if sc2_pass else 'grid does NOT beat random >=1.5x ??consider switching search method'})"
             ),
             detail=sc2,
         ))
@@ -373,7 +375,7 @@ def _finalize(
     return result
 
 
-# ── Multi-round (coordinate descent) orchestrator ──────────────────────────
+# ?? Multi-round (coordinate descent) orchestrator ??????????????????????????
 
 @dataclass
 class IterativeConfig:
@@ -385,7 +387,7 @@ class IterativeConfig:
       - top-K of the unlocked set is grid-searched
       - winners are locked in for all subsequent rounds
 
-    KC checks run inside each round with the same thresholds — multi-round
+    KC checks run inside each round with the same thresholds ??multi-round
     does NOT relax any kill criterion. If `stop_on_kc_fail=True`, the first
     round that fails any KC halts the loop.
 
@@ -409,7 +411,7 @@ class IterativeConfig:
     # Per-round zooming (fractal-vise refinement inside each outer round)
     zoom_rounds: int = 1
     zoom_factor: float = 0.5
-    # Per-round SC-2 advisory — identical semantics to P1Config.run_sc2_baseline
+    # Per-round SC-2 advisory ??identical semantics to P1Config.run_sc2_baseline
     run_sc2_baseline: bool = False
     sc2_random_seed: int = 42
 
@@ -427,7 +429,7 @@ class IterativeResult:
     stop_reason: str                         # "max_rounds" | "kc_fail" | "too_few_params" | "no_improvement"
     # Holdout: single-shot evaluation of final_baseline on a target that was
     # NEVER consulted during any round (including KC-4 walk-forward). This
-    # is the honest generalization check — per-round KC-4 gets weaker as
+    # is the honest generalization check ??per-round KC-4 gets weaker as
     # rounds accumulate because test_target is reused for lock-in decisions.
     holdout_result: dict[str, Any] | None = None
 
@@ -458,19 +460,19 @@ def run_p1_iterative(
 
     After each round's grid search, the winning (alpha, window, ...) values
     are locked in and used as the baseline for the next round. Stress is
-    re-measured on the remaining unlocked params only — so a param that
+    re-measured on the remaining unlocked params only ??so a param that
     had low stress at neutrals can surface as load-bearing near the
     emerging optimum.
 
     Each round runs full KC-1..4 checks at the current-round thresholds.
     This is coordinate descent with per-round certification, NOT "retry
-    until pass" — relaxing thresholds is explicitly forbidden (SPEC §3).
+    until pass" ??relaxing thresholds is explicitly forbidden (SPEC 짠3).
 
     Args:
         holdout_target: optional third target evaluated ONCE on the final
             locked configuration (after all rounds halt). Never used in any
             round's KC decisions. Treat this as the honest out-of-sample
-            check — per-round KC-4 on `test_target` becomes weaker evidence
+            check ??per-round KC-4 on `test_target` becomes weaker evidence
             as rounds accumulate because the test set is consulted repeatedly
             for lock-in choices.
     """
@@ -540,7 +542,7 @@ def run_p1_iterative(
         if improvement < cfg.min_improvement:
             break
 
-    # Holdout evaluation — single shot on final_baseline, outside the loop.
+    # Holdout evaluation ??single shot on final_baseline, outside the loop.
     # The holdout target is never consulted for any lock-in decision; its
     # fitness is an honest out-of-sample number, reported as a companion to
     # per-round KC-4 (which becomes weaker per-round evidence as test is
