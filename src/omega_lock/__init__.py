@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
-"""Omega-Lock ??sensitivity-driven coordinate descent calibration framework.
+"""Omega-Lock — sensitivity-driven coordinate descent calibration framework.
 
 Methodology (from research/omega_lock_p1/):
     1. Measure perturbation sensitivity (stress) of each parameter
@@ -33,7 +33,7 @@ from omega_lock.orchestrator import (
     run_p1_iterative, IterativeConfig, IterativeResult,
 )
 
-# P2 (TPE) is an optional path ??importable only if optuna is installed.
+# P2 (TPE) is an optional path — importable only if optuna is installed.
 # The import below always succeeds; run_p2_tpe() raises a clear ImportError
 # at call time if optuna is missing.
 from omega_lock.p2_tpe import run_p2_tpe, P2Config, P2Result
@@ -47,7 +47,7 @@ from omega_lock.benchmark import (
     compute_generalization_gap, compute_spearman,
 )
 
-# Audit surface ??method-agnostic trail + constraints over any CalibrableTarget.
+# Audit surface — method-agnostic trail + constraints over any CalibrableTarget.
 from omega_lock.audit import (
     AuditingTarget, Constraint, AuditedRun, AuditReport,
     make_report, render_scorecard,
