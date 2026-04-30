@@ -101,6 +101,14 @@ class AuditingTarget:
                 ok = False
             (passed if ok else failed).append(c.name)
 
+        # Surface constraint status into result.metadata so downstream
+        # selectors (e.g. orchestrator.run_p1 with constraint_policy !=
+        # "record") can filter feasible candidates without re-walking the
+        # audit trail. Keys are underscore-prefixed to avoid colliding
+        # with caller metadata.
+        r.metadata["_constraints_passed"] = tuple(passed)
+        r.metadata["_constraints_failed"] = tuple(failed)
+
         metadata = dict(r.metadata)
         if self.retain_artifacts and r.artifacts:
             metadata["_artifacts"] = dict(r.artifacts)

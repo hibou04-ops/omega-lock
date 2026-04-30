@@ -67,6 +67,23 @@ class P1Config:
     # methods, NOT to invalidate the run.
     run_sc2_baseline: bool = False
     sc2_random_seed: int = 42
+    # Constraint-aware grid_best selection. Has effect only when the
+    # train_target is wrapped in AuditingTarget with constraints; for a
+    # bare CalibrableTarget all candidates count as feasible regardless
+    # of policy (no constraints exist to violate).
+    #
+    #   "record"          — current behavior: grid_best is the raw
+    #                       fitness-max, constraint violations live in
+    #                       the audit trail only. Backward-compat default.
+    #   "prefer_feasible" — pick fitness-max among constraint-satisfying
+    #                       candidates. Falls back to raw max when every
+    #                       candidate violates (with constraints_violated
+    #                       flag set on the result).
+    #   "hard_fail"       — same selection as "prefer_feasible", but if
+    #                       no candidate is feasible the pipeline emits
+    #                       status="FAIL:CONSTRAINTS" instead of falling
+    #                       back. Use for ship-blocking audits.
+    constraint_policy: str = "record"
 
 
 @dataclass
@@ -125,6 +142,36 @@ def _hybrid_to_dict(h: HybridResult) -> dict[str, Any]:
         d["validation_fitness"] = h.validation_result.fitness
         d["validation_n_trials"] = h.validation_result.n_trials
     return d
+
+
+def _is_feasible(point: GridPoint) -> bool:
+    """A grid point is feasible if it has no recorded constraint failures.
+
+    Looks at `result.metadata['_constraints_failed']` which AuditingTarget
+    populates on each evaluate(). Bare CalibrableTargets have no such
+    key, so all their candidates are trivially feasible.
+    """
+    failed = point.result.metadata.get("_constraints_failed", ())
+    return not failed
+
+
+def _select_grid_best(
+    grid_points: list[GridPoint], policy: str
+) -> tuple[GridPoint, bool]:
+    """Pick grid_best per constraint_policy. Returns (best, constraints_violated).
+
+    `constraints_violated` is True only when policy != "record" and every
+    candidate violated at least one constraint (forcing a fallback to the
+    raw fitness-max).
+    """
+    if policy == "record":
+        return max(grid_points, key=lambda p: p.result.fitness), False
+    feasible = [p for p in grid_points if _is_feasible(p)]
+    if feasible:
+        return max(feasible, key=lambda p: p.result.fitness), False
+    # No feasible candidate — fall back to raw max so the pipeline can
+    # still emit a result. Caller decides whether to fail status.
+    return max(grid_points, key=lambda p: p.result.fitness), True
 
 
 def run_p1(
@@ -215,7 +262,20 @@ def run_p1(
             verbose=cfg.grid_verbose,
         )
     grid_points_list = grid_search.run(base_params=base_params)
-    grid_best = max(grid_points_list, key=lambda p: p.result.fitness)
+    grid_best, constraints_violated = _select_grid_best(
+        grid_points_list, cfg.constraint_policy
+    )
+    if constraints_violated and cfg.constraint_policy == "hard_fail":
+        kc_reports.append(KCReport(
+            name="CONSTRAINTS",
+            status="FAIL",
+            message=(
+                "every grid candidate violated at least one declared constraint; "
+                "selection fell back to raw fitness-max only because "
+                "constraint_policy='hard_fail' is set — pipeline status will be FAIL"
+            ),
+            detail={"n_candidates": len(grid_points_list)},
+        ))
 
     # 5. Walk-forward (optional)
     wf_result: WalkForwardResult | None = None
