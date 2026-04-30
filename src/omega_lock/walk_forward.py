@@ -8,7 +8,7 @@ Two responsibilities:
        (often the same target with different data slices) and runs KC-4.
 
 The split itself is target-specific (time-series slice, fold index, etc.)
-and is NOT part of this module ??the caller constructs the two targets.
+and is NOT part of this module — the caller constructs the two targets.
 """
 from __future__ import annotations
 
