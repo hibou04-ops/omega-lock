@@ -144,6 +144,18 @@ def _hybrid_to_dict(h: HybridResult) -> dict[str, Any]:
     return d
 
 
+def _set_phase(target: Any, phase: str) -> None:
+    """Set audit phase on a target if it supports it (AuditingTarget does).
+
+    Bare CalibrableTargets without set_phase() get a no-op so the
+    orchestrator can auto-track phases without forcing every caller to
+    wrap in AuditingTarget.
+    """
+    fn = getattr(target, "set_phase", None)
+    if callable(fn):
+        fn(phase)
+
+
 def _is_feasible(point: GridPoint) -> bool:
     """A grid point is feasible if it has no recorded constraint failures.
 
@@ -206,12 +218,14 @@ def run_p1(
     t_start = time.time()
 
     # 1. Baseline
+    _set_phase(train_target, "baseline")
     specs = train_target.param_space()
     if base_params is None:
         base_params = neutral_defaults(specs)
     baseline = train_target.evaluate(base_params)
 
     # 2. Stress
+    _set_phase(train_target, "stress")
     stress_opts = StressOptions(verbose=cfg.stress_verbose)
     stress = measure_stress(
         target=train_target,
@@ -245,6 +259,7 @@ def run_p1(
     top_k_ex_ofi = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_ofi=True)
 
     # 4. Grid search on train (plain or zooming)
+    _set_phase(train_target, "grid")
     if cfg.zoom_rounds > 1:
         grid_search = ZoomingGridSearch(
             target=train_target,
@@ -281,6 +296,7 @@ def run_p1(
     wf_result: WalkForwardResult | None = None
     kc4: KCReport | None = None
     if test_target is not None:
+        _set_phase(test_target, "walk_forward")
         wf = WalkForward(test_target=test_target, trade_ratio_scale=cfg.trade_ratio_scale)
         wf_result = wf.run(train_grid=grid_points_list, top_n=cfg.walk_forward_top_n)
         kc4 = check_kc4(
@@ -294,6 +310,7 @@ def run_p1(
     # 6. Hybrid re-rank (optional)
     hybrid_results: list[HybridResult] | None = None
     if validation_target is not None:
+        _set_phase(validation_target, "hybrid")
         hybrid = HybridFitness(
             search_target=train_target,
             validation_target=validation_target,
@@ -354,6 +371,7 @@ def run_p1(
     # 8. Holdout (single-shot, never consulted for KC decisions above)
     holdout_dict: dict[str, Any] | None = None
     if holdout_target is not None:
+        _set_phase(holdout_target, "holdout")
         ho = holdout_target.evaluate(grid_best.params)
         train_fit = grid_best.result.fitness
         test_fit = wf_result.test_fitnesses[0] if wf_result and wf_result.test_fitnesses else None
