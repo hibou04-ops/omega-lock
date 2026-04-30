@@ -21,7 +21,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 TEXT_EXTS = {".py", ".md", ".txt", ".toml", ".yml", ".yaml", ".json", ".cfg", ".ini"}
 
-MOJIBAKE_RX = re.compile(r"�")
+# U+FFFD REPLACEMENT CHARACTER, written as a chr() expression so this
+# script's own source does not embed the literal char and trip itself.
+MOJIBAKE_CHAR = chr(0xFFFD)
+MOJIBAKE_RX = re.compile(MOJIBAKE_CHAR)
 
 
 def tracked_files() -> list[Path]:
