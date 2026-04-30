@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
-"""Kill criteria (KC-1..4) ??pre-declared, non-negotiable gates.
+"""Kill criteria (KC-1..4) — pre-declared, non-negotiable gates.
 
 Philosophy: structural defense against Winchester re-entry. Each KC is
 evaluated at a specific point in the pipeline; failing one stops the
@@ -17,7 +17,7 @@ from typing import Literal
 class KCThresholds:
     """Tunable kill-criteria thresholds.
 
-    Defaults match research/omega_lock_p1/SPEC.md 짠3. Looser thresholds
+    Defaults match research/omega_lock_p1/SPEC.md §3. Looser thresholds
     (e.g. for toy examples) can be passed to P1Config.
     """
     time_box_seconds: float = 3 * 24 * 3600      # KC-1: 3 days

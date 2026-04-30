@@ -57,10 +57,10 @@ class ParamSpec:
 class EvalResult:
     """Single-evaluation result from a target.
 
-    fitness     ??scalar to maximize (required)
-    n_trials    ??action count (e.g. trades, posts); used by KC-3
-    metadata    ??structured info for diagnostics (regime histogram, errors, etc.)
-    artifacts   ??large/binary objects (full trade log, raw signals); optional
+    fitness     — scalar to maximize (required)
+    n_trials    — action count (e.g. trades, posts); used by KC-3
+    metadata    — structured info for diagnostics (regime histogram, errors, etc.)
+    artifacts   — large/binary objects (full trade log, raw signals); optional
     """
     fitness: float
     n_trials: int = 0

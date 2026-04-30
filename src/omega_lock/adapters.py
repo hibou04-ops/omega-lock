@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
-"""Adapter helpers ??bridge arbitrary external systems into CalibrableTarget.
+"""Adapter helpers — bridge arbitrary external systems into CalibrableTarget.
 
 `CalibrableTarget` is a structural Protocol; any object with `param_space()`
 and `evaluate()` satisfies it. These adapters remove boilerplate for common
 wrapping patterns.
 
-`CallableAdapter` ??wrap a plain `(params_dict) -> float` function.
+`CallableAdapter` — wrap a plain `(params_dict) -> float` function.
     Fastest way to calibrate an existing black-box: provide a param spec
     list and a scoring function. No subclassing required.
 
@@ -56,7 +56,7 @@ class CallableAdapter:
             negate it before returning.
         specs: the parameter space.
         n_trials_fn: optional callable returning the evaluation's action
-            count (used by KC-3). If omitted, reports 1 per evaluation ??
+            count (used by KC-3). If omitted, reports 1 per evaluation —
             which is fine for toy problems but will trip `KCThresholds.
             trade_count_min` on realistic configs. Override for real work.
         metadata_fn: optional callable returning per-evaluation diagnostic

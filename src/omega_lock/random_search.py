@@ -2,8 +2,8 @@
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """Random-search baseline for low-dim grid comparison.
 
-Implements the baseline half of P1 SPEC 짠4 SC-2:
-    "?李⑥썝 grid top-quartile >= 1.5 x random baseline"
+Implements the baseline half of P1 SPEC §4 SC-2:
+    "저차원 grid top-quartile >= 1.5 x random baseline"
 
 Given the same unlock set and same n_samples budget, uniformly sample
 the parameter space and compare top-quartile mean fitness to a grid
@@ -83,7 +83,7 @@ class RandomSearch:
         For bool:  coin flip.
 
         Respects clip() defensively (values will never be out of range).
-        Returns a list of GridPoint ??same shape as GridSearch.run, so
+        Returns a list of GridPoint — same shape as GridSearch.run, so
         walk-forward and reporting work downstream.
         """
         if self.n_samples < 0:
@@ -136,7 +136,7 @@ class RandomSearch:
 
 
 def top_quartile_fitness(points: list[GridPoint]) -> float:
-    """Mean fitness of the top 25% of points (P1 SPEC 짠4 SC-2 metric).
+    """Mean fitness of the top 25% of points (P1 SPEC §4 SC-2 metric).
 
     Takes the top `max(1, n // 4)` points by fitness and returns their
     arithmetic mean. For n < 4 the quartile collapses to the single best
@@ -163,7 +163,7 @@ def compare_to_grid(
         - 'random_top_quartile': mean fitness of random's top 25%
         - 'ratio':               grid / random (see note on negative fitness)
         - 'sc2_pass':            1.0 if ratio >= 1.5 else 0.0
-                                 (per original P1 SPEC 짠4 SC-2)
+                                 (per original P1 SPEC §4 SC-2)
 
     Sign / zero handling:
         If both top-quartiles are zero -> ratio = 0.0 (undefined, treated

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
-"""AuditingTarget ??transparent CalibrableTarget decorator.
+"""AuditingTarget — transparent CalibrableTarget decorator.
 
 Every call to `evaluate()` is recorded to a trail with full positional
 context (phase, role, round_index, call_index). The wrapped target is
@@ -31,7 +31,7 @@ from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
 class AuditingTarget:
     """Decorator that records every evaluate() call into an audit trail.
 
-    Impersonates CalibrableTarget via param_space() + evaluate() ??so
+    Impersonates CalibrableTarget via param_space() + evaluate() — so
     GridSearch, RandomSearch, run_p2_tpe, and any CallableAdapter work
     unchanged.
 
@@ -70,7 +70,7 @@ class AuditingTarget:
         self._phase = "search"
         self._round_index = 0
 
-    # ?? Phase / round control ??????????????????????????????????????????????
+    # ── Phase / round control ──────────────────────────────────────────────
     def set_phase(self, phase: str) -> None:
         self._phase = phase
 
@@ -85,7 +85,7 @@ class AuditingTarget:
     def round_index(self) -> int:
         return self._round_index
 
-    # ?? CalibrableTarget Protocol ??????????????????????????????????????????
+    # ── CalibrableTarget Protocol ──────────────────────────────────────────
     def param_space(self) -> list[ParamSpec]:
         return self.inner.param_space()
 
@@ -97,7 +97,7 @@ class AuditingTarget:
             try:
                 ok = bool(c.fn(params, r))
             except Exception:
-                # A raising predicate counts as FAIL ??audit stays running.
+                # A raising predicate counts as FAIL — audit stays running.
                 ok = False
             (passed if ok else failed).append(c.name)
 
