@@ -14,6 +14,7 @@ deliberately dropped to keep the trail small.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, field, asdict
 from typing import Any, Callable, Sequence
@@ -150,8 +151,67 @@ class AuditReport:
                     counts[name] += 1
         return counts
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
+    def hash_chain(self) -> list[dict[str, str]]:
+        """Compute a SHA-256 hash chain over the audit runs.
+
+        Reviewer P2: README's "append-only audit trail" was an in-process
+        guarantee — the trail's order was preserved during a run, but no
+        cryptographic binding kept a reader from editing the JSON
+        artifact later and replaying it as the original. A hash chain
+        gives a tamper-evident option without changing the default
+        artifact shape.
+
+        Each entry is ``{"call_index": int, "previous_hash": str | None,
+        "run_hash": str}``. ``run_hash`` covers the canonical JSON of
+        the AuditedRun PLUS the previous_hash, so any edit to a run
+        breaks every subsequent hash. The first run's previous_hash is
+        ``None``.
+
+        The chain is computed on demand (not cached) so callers can
+        verify a serialized report by recomputing and comparing.
+        """
+        chain: list[dict[str, str]] = []
+        previous_hash: str | None = None
+        for run in self.runs:
+            payload = json.dumps(
+                run.to_dict(),
+                sort_keys=True,
+                default=_json_fallback,
+            )
+            digest_input = (previous_hash or "") + "\n" + payload
+            run_hash = hashlib.sha256(
+                digest_input.encode("utf-8")
+            ).hexdigest()
+            chain.append(
+                {
+                    "call_index": run.call_index,
+                    "previous_hash": previous_hash,
+                    "run_hash": run_hash,
+                }
+            )
+            previous_hash = run_hash
+        return chain
+
+    def verify_hash_chain(self, chain: list[dict[str, Any]]) -> bool:
+        """True iff the supplied chain matches this report's runs.
+
+        Useful for re-checking a serialized report after rehydration:
+        deserialize the artifact, call ``verify_hash_chain(d['hash_chain'])``
+        with the chain that was embedded in the artifact, and confirm
+        the runs haven't been mutated since signing.
+        """
+        recomputed = self.hash_chain()
+        if len(recomputed) != len(chain):
+            return False
+        for actual, expected in zip(recomputed, chain):
+            if actual["run_hash"] != expected.get("run_hash"):
+                return False
+            if actual["previous_hash"] != expected.get("previous_hash"):
+                return False
+        return True
+
+    def to_dict(self, *, with_hash_chain: bool = False) -> dict[str, Any]:
+        d: dict[str, Any] = {
             "method": self.method,
             "omega_lock_version": self.omega_lock_version,
             "seed": self.seed,
@@ -172,9 +232,16 @@ class AuditReport:
                 "constraint_pass_counts": self.constraint_pass_counts(),
             },
         }
+        if with_hash_chain:
+            d["hash_chain"] = self.hash_chain()
+        return d
 
-    def to_json(self, indent: int = 2) -> str:
-        return json.dumps(self.to_dict(), indent=indent, default=_json_fallback)
+    def to_json(self, indent: int = 2, *, with_hash_chain: bool = False) -> str:
+        return json.dumps(
+            self.to_dict(with_hash_chain=with_hash_chain),
+            indent=indent,
+            default=_json_fallback,
+        )
 
     @classmethod
     def from_json(cls, s: str) -> "AuditReport":

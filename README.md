@@ -32,7 +32,7 @@ You ran 1,000 trials. The best one scored 0.95 on training data. **Did it overfi
 
 - **Walk-forward gate (KC-4)** — Pearson + trade-ratio on a held-out slice. Pre-declared, can't be lowered post-hoc.
 - **Declarative hard constraints** — rules like `VDD > 0.6V` or `ROI > 0.5` are evaluated and recorded on every candidate. Set `P1Config.constraint_policy="prefer_feasible"` to make `grid_best` pick the highest-fitness *feasible* candidate, or `"hard_fail"` to abort the run when no candidate is feasible. Default is `"record"` (backward-compat) — constraint violations live on the audit trail but don't change `grid_best` selection.
-- **Append-only audit trail** — every probed candidate logged with phase / role / round context. JSON-diffable. (\"Append-only\" is in-process: rows are appended in run order; tamper-evident hash chains are a future option, not the current default.)
+- **Append-only audit trail** — every probed candidate logged with phase / role / round context. JSON-diffable. Append-only is in-process by default (rows appended in run order); call `report.to_json(with_hash_chain=True)` for an opt-in SHA-256 hash chain that lets a reviewer verify the artifact wasn't edited after signing.
 - **Method-agnostic** — wrap with `AuditingTarget`, hand to grid / TPE / Bayesian / random / your own optimizer.
 - **Built-in pipelines** — three integrated search pipelines if you don't have an optimizer yet (`run_p1`, `run_p1_iterative`, `run_p2_tpe`).
 
