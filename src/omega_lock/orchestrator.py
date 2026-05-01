@@ -632,6 +632,16 @@ class IterativeResult:
     # is the honest generalization check — per-round KC-4 gets weaker as
     # rounds accumulate because test_target is reused for lock-in decisions.
     holdout_result: dict[str, Any] | None = None
+    # Reviewer P2: surface the test-target reuse risk in a place the
+    # artifact reader can't miss. The per-round KC-4 numbers look
+    # superficially fine, but their evidence weight degrades because
+    # the same test_target is consulted for selection at every round.
+    # These fields make the situation explicit:
+    selection_reused_test_target: bool = False
+    test_reuse_rounds: int = 0
+    holdout_recommended: bool = False
+    holdout_present: bool = False
+    advisory_messages: list[str] = field(default_factory=list)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -644,6 +654,12 @@ class IterativeResult:
             "round_best_fitness": self.round_best_fitness,
             "final_baseline": self.final_baseline,
             "rounds": [asdict(r) for r in self.rounds],
+            "holdout_result": self.holdout_result,
+            "selection_reused_test_target": self.selection_reused_test_target,
+            "test_reuse_rounds": self.test_reuse_rounds,
+            "holdout_recommended": self.holdout_recommended,
+            "holdout_present": self.holdout_present,
+            "advisory_messages": list(self.advisory_messages),
         }
         path.write_text(json.dumps(payload, indent=2, default=_json_fallback))
 
@@ -776,6 +792,29 @@ def run_p1_iterative(
         f"FAIL:round{len(rounds)}" if rounds else "FAIL:no_rounds"
     )
 
+    # Reviewer P2: surface the test-target reuse risk explicitly. The
+    # iterative loop calls test_target.evaluate() inside KC-4 every
+    # round, so the test slice is consulted for selection at every
+    # locking step. Per-round KC-4 passes look reassuring, but the
+    # evidence weight degrades as rounds accumulate. Make this visible
+    # in the artifact (and recommend a holdout when none is provided).
+    reuse_active = test_target is not None and len(rounds) > 0
+    holdout_present_flag = holdout_dict is not None
+    advisory_messages: list[str] = []
+    if reuse_active and len(rounds) > 1:
+        advisory_messages.append(
+            f"test_target was reused across {len(rounds)} rounds for "
+            "lock-in decisions; per-round KC-4 evidence weakens as "
+            "rounds accumulate. Provide a held-out slice via "
+            "holdout_target= for an independent generalization check."
+        )
+    if reuse_active and not holdout_present_flag:
+        advisory_messages.append(
+            "iterative mode without holdout_target: no slice escaped "
+            "the per-round selection loop. Recommended: pass a fresh "
+            "data slice as holdout_target, even in evidence_only mode."
+        )
+
     result = IterativeResult(
         rounds=rounds,
         final_baseline=base,
@@ -786,6 +825,11 @@ def run_p1_iterative(
         final_status=final_status,
         stop_reason=stop_reason,
         holdout_result=holdout_dict,
+        selection_reused_test_target=reuse_active,
+        test_reuse_rounds=len(rounds) if reuse_active else 0,
+        holdout_recommended=reuse_active and not holdout_present_flag,
+        holdout_present=holdout_present_flag,
+        advisory_messages=advisory_messages,
     )
     if output_path is not None:
         result.save(output_path)

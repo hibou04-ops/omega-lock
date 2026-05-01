@@ -234,11 +234,56 @@ def compute_fitness_gap_pct(found_fitness: float, true_optimum_fitness: float) -
     return 100.0 * (true_optimum_fitness - found_fitness) / denom
 
 
-def compute_generalization_gap(train_fitness: float, test_fitness: float | None) -> float:
+@dataclass(frozen=True)
+class GeneralizationGap:
+    """Structured generalization gap with explicit degeneracy status.
+
+    Reviewer P2: ``compute_generalization_gap`` defended against zero
+    train fitness via ``max(abs(train_fitness), 1e-9)`` — but the
+    output gave no signal that the value should be read with caution.
+    A train fitness near zero produces a gap that's astronomically
+    large yet meaningless. Structured status lets benchmark consumers
+    (e.g. ``run_benchmark``'s scorecard) flag the row as inconclusive.
+
+    ``status``:
+      - ``OK``: train fitness has meaningful magnitude; gap is reliable.
+      - ``TRAIN_NEAR_ZERO``: |train_fitness| < 1e-6 sentinel; gap returned
+        but should not be compared against thresholds.
+      - ``NO_TEST``: test_fitness is None; gap defaults to 0.0 (caller
+        chose not to compute walk-forward).
+    """
+
+    value: float
+    status: str  # "OK" | "TRAIN_NEAR_ZERO" | "NO_TEST"
+
+
+_TRAIN_NEAR_ZERO_THRESHOLD = 1e-6
+
+
+def compute_generalization_gap_status(
+    train_fitness: float, test_fitness: float | None
+) -> GeneralizationGap:
+    """Structured gap with degeneracy status. See GeneralizationGap docs."""
     if test_fitness is None:
-        return 0.0
-    denom = max(abs(train_fitness), 1e-9)
-    return abs(train_fitness - test_fitness) / denom
+        return GeneralizationGap(value=0.0, status="NO_TEST")
+    if abs(train_fitness) < _TRAIN_NEAR_ZERO_THRESHOLD:
+        denom = max(abs(train_fitness), 1e-9)
+        return GeneralizationGap(
+            value=abs(train_fitness - test_fitness) / denom,
+            status="TRAIN_NEAR_ZERO",
+        )
+    denom = abs(train_fitness)
+    return GeneralizationGap(
+        value=abs(train_fitness - test_fitness) / denom,
+        status="OK",
+    )
+
+
+def compute_generalization_gap(
+    train_fitness: float, test_fitness: float | None
+) -> float:
+    """Backward-compatible numeric wrapper around the structured form."""
+    return compute_generalization_gap_status(train_fitness, test_fitness).value
 
 
 def compute_spearman(rank_a: list[str], rank_b: list[str]) -> float | None:
