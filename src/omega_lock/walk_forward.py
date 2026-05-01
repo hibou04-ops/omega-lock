@@ -13,25 +13,72 @@ and is NOT part of this module — the caller constructs the two targets.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from omega_lock.grid import GridPoint
 from omega_lock.target import CalibrableTarget, EvalResult
 
 
-def pearson(xs: list[float], ys: list[float]) -> float:
-    """Pearson correlation coefficient. Returns 0.0 on degenerate input."""
+PearsonStatus = Literal[
+    "OK",
+    "EMPTY",
+    "LENGTH_MISMATCH",
+    "ZERO_VARIANCE_X",
+    "ZERO_VARIANCE_Y",
+]
+
+
+@dataclass(frozen=True)
+class PearsonResult:
+    """Structured Pearson outcome.
+
+    Reviewer P1: ``pearson()`` previously collapsed every failure mode
+    to ``0.0`` — a degenerate "could not compute" was indistinguishable
+    from a measured "no correlation". Both situations failed KC-4 by
+    falling under ``pearson_min``, but the artifact reader couldn't tell
+    whether the run produced bad evidence or no evidence.
+
+    ``value`` is None when status != OK; the caller must inspect status
+    before comparing against a numeric threshold.
+    """
+
+    value: float | None
+    status: PearsonStatus
+
+    @property
+    def computable(self) -> bool:
+        return self.status == "OK"
+
+
+def pearson_result(xs: list[float], ys: list[float]) -> PearsonResult:
+    """Structured Pearson with explicit degeneracy categories."""
     n = len(xs)
-    if n == 0 or n != len(ys):
-        return 0.0
+    if n == 0:
+        return PearsonResult(value=None, status="EMPTY")
+    if n != len(ys):
+        return PearsonResult(value=None, status="LENGTH_MISMATCH")
     mx = sum(xs) / n
     my = sum(ys) / n
     num = sum((xs[i] - mx) * (ys[i] - my) for i in range(n))
     dx = (sum((x - mx) ** 2 for x in xs)) ** 0.5
     dy = (sum((y - my) ** 2 for y in ys)) ** 0.5
-    if dx == 0 or dy == 0:
-        return 0.0
-    return num / (dx * dy)
+    if dx == 0:
+        return PearsonResult(value=None, status="ZERO_VARIANCE_X")
+    if dy == 0:
+        return PearsonResult(value=None, status="ZERO_VARIANCE_Y")
+    return PearsonResult(value=num / (dx * dy), status="OK")
+
+
+def pearson(xs: list[float], ys: list[float]) -> float:
+    """Pearson correlation coefficient. Returns 0.0 on degenerate input.
+
+    Backward-compatible thin wrapper around ``pearson_result`` — kept so
+    existing callers (and downstream artifacts) read the same number
+    they did before. Use ``pearson_result`` directly when you need to
+    distinguish "uncomputable" from "uncorrelated".
+    """
+    pr = pearson_result(xs, ys)
+    return pr.value if pr.value is not None else 0.0
 
 
 @dataclass

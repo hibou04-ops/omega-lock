@@ -143,16 +143,28 @@ def check_kc4(
 
     - Pearson correlation between train and test fitness on top-N grid points
     - Trade ratio (test_best / train_best, scale-adjusted externally)
-    """
-    from omega_lock.walk_forward import pearson
 
-    corr = pearson(train_fitnesses, test_fitnesses)
-    corr_ok = corr >= thresholds.pearson_min
+    The Pearson computation is done via ``pearson_result`` so the
+    detail dict can distinguish "we measured a low correlation" from
+    "the input was degenerate (empty / mismatched / zero variance)".
+    A degenerate input is a FAIL on KC-4 — but the artifact reader
+    sees ``pearson_status`` and knows why.
+    """
+    from omega_lock.walk_forward import pearson_result
+
+    pr = pearson_result(train_fitnesses, test_fitnesses)
+    # Backward-compat numeric value: None coerces to 0.0 so existing
+    # consumers that only read detail['pearson'] still get a float they
+    # can compare to the threshold.
+    corr = pr.value if pr.value is not None else 0.0
+    corr_ok = pr.computable and corr >= thresholds.pearson_min
     ratio_ok = trade_ratio >= thresholds.trade_ratio_min
     passed = corr_ok and ratio_ok
     detail = {
         "pearson": corr,
         "pearson_ok": corr_ok,
+        "pearson_status": pr.status,
+        "pearson_computable": pr.computable,
         "trade_ratio": trade_ratio,
         "trade_ratio_ok": ratio_ok,
         "n_points": len(train_fitnesses),
@@ -161,7 +173,9 @@ def check_kc4(
         msg = f"PASS: pearson={corr:.3f}, trade_ratio={trade_ratio:.3f}"
     else:
         fails = []
-        if not corr_ok:
+        if not pr.computable:
+            fails.append(f"pearson uncomputable: {pr.status}")
+        elif not corr_ok:
             fails.append(f"pearson={corr:.3f}<{thresholds.pearson_min}")
         if not ratio_ok:
             fails.append(f"trade_ratio={trade_ratio:.3f}<{thresholds.trade_ratio_min}")
