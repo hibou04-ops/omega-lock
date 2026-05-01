@@ -61,8 +61,24 @@ class AuditingTarget:
         shared_trail: list[AuditedRun] | None = None,
         shared_counter: "count[int] | None" = None,
     ) -> None:
+        # Reviewer P2: AuditReport.constraint_pass_counts() keys by
+        # constraint name; duplicate names silently merged their counts
+        # in the report. Validate uniqueness at wrap time so the audit
+        # trail is structurally clean — duplicates are almost always a
+        # copy-paste bug, not intentional.
+        constraint_tuple = tuple(constraints)
+        seen_names: list[str] = [c.name for c in constraint_tuple]
+        if len(set(seen_names)) != len(seen_names):
+            duplicates = sorted(
+                {n for n in seen_names if seen_names.count(n) > 1}
+            )
+            raise ValueError(
+                f"AuditingTarget: duplicate constraint names "
+                f"{duplicates}. Constraint names key the audit report's "
+                "pass-count dict — duplicates would silently merge."
+            )
         self.inner = inner
-        self.constraints: tuple[Constraint, ...] = tuple(constraints)
+        self.constraints: tuple[Constraint, ...] = constraint_tuple
         self.target_role = target_role
         self.retain_artifacts = retain_artifacts
         self.trail: list[AuditedRun] = shared_trail if shared_trail is not None else []
