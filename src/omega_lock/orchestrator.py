@@ -85,6 +85,25 @@ class P1Config:
     #                       back. Use for ship-blocking audits.
     constraint_policy: str = "record"
 
+    # Holdout semantics. The holdout target is evaluated exactly once on
+    # grid_best.params after the run is otherwise complete. Two modes:
+    #
+    #   "evidence_only" (default) — never affects status. Use when a
+    #     reviewer wants independent generalization evidence on a third
+    #     slice (beyond train/test) but does not want the run to fail
+    #     on it. Backward-compat with pre-v0.2 behaviour.
+    #
+    #   "gate" — applies holdout_min_fitness and holdout_min_trade_ratio
+    #     thresholds. If either is violated, status flips to
+    #     "FAIL:HOLDOUT". Use when holdout IS the ship gate (e.g. a
+    #     held-out PVT corner that absolutely must pass).
+    #
+    # Either mode is safe to combine with iterative mode, where holdout
+    # is the only signal that wasn't reused for selection.
+    holdout_mode: str = "evidence_only"
+    holdout_min_fitness: float | None = None  # absolute floor; None disables
+    holdout_min_trade_ratio: float | None = None  # ratio against train_best.n_trials
+
 
 @dataclass
 class P1Result:
@@ -368,24 +387,61 @@ def run_p1(
     else:
         status = "PASS"
 
-    # 8. Holdout (single-shot, never consulted for KC decisions above)
+    # 8. Holdout (single-shot). Default mode is "evidence_only" — never
+    # consulted for KC decisions above and does not affect status.
+    # Set holdout_mode="gate" + thresholds to make it ship-blocking.
     holdout_dict: dict[str, Any] | None = None
+    holdout_gate_status: str = "SKIP"  # SKIP / PASS / FAIL / EVIDENCE_ONLY
     if holdout_target is not None:
         _set_phase(holdout_target, "holdout")
         ho = holdout_target.evaluate(grid_best.params)
         train_fit = grid_best.result.fitness
         test_fit = wf_result.test_fitnesses[0] if wf_result and wf_result.test_fitnesses else None
+        trade_ratio_vs_train = (
+            ho.n_trials / grid_best.result.n_trials
+            if grid_best.result.n_trials > 0 else None
+        )
         holdout_dict = {
             "fitness": ho.fitness,
             "n_trials": ho.n_trials,
             "params": dict(grid_best.params),
             "fitness_vs_train": (ho.fitness - train_fit),
             "fitness_vs_test": (ho.fitness - test_fit) if test_fit is not None else None,
-            "trade_ratio_vs_train": (
-                ho.n_trials / grid_best.result.n_trials
-                if grid_best.result.n_trials > 0 else None
-            ),
+            "trade_ratio_vs_train": trade_ratio_vs_train,
+            "mode": cfg.holdout_mode,
         }
+        if cfg.holdout_mode == "gate":
+            failed_reasons: list[str] = []
+            if (
+                cfg.holdout_min_fitness is not None
+                and ho.fitness < cfg.holdout_min_fitness
+            ):
+                failed_reasons.append(
+                    f"fitness {ho.fitness:.6g} < min {cfg.holdout_min_fitness:.6g}"
+                )
+            if (
+                cfg.holdout_min_trade_ratio is not None
+                and trade_ratio_vs_train is not None
+                and trade_ratio_vs_train < cfg.holdout_min_trade_ratio
+            ):
+                failed_reasons.append(
+                    f"trade_ratio_vs_train {trade_ratio_vs_train:.6g} < min "
+                    f"{cfg.holdout_min_trade_ratio:.6g}"
+                )
+            if failed_reasons:
+                holdout_gate_status = "FAIL"
+                holdout_dict["gate_failed_reasons"] = failed_reasons
+                # Holdout gate is ship-blocking — sharpen the status if we
+                # were heading to PASS, or append to existing FAIL list.
+                if status == "PASS":
+                    status = "FAIL:HOLDOUT"
+                elif status.startswith("FAIL"):
+                    status = status + ",HOLDOUT"
+            else:
+                holdout_gate_status = "PASS"
+        else:
+            holdout_gate_status = "EVIDENCE_ONLY"
+        holdout_dict["gate_status"] = holdout_gate_status
 
     return _finalize(
         status=status,

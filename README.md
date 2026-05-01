@@ -537,6 +537,13 @@ If you're calibrating prompts or running pre-implementation recon, those are pre
 
 Pass a third target that is *never touched during rounds* via `run_p1(..., holdout_target=T3)` or `run_p1_iterative(..., holdout_target=T3)`. The final `grid_best` or `final_baseline` is evaluated on it exactly once, and the result is recorded in `holdout_result`. This is an honest auxiliary check, in iterative mode the test_set gets reused for lock-in decisions round after round, which weakens KC-4 evidence.
 
+**Holdout has two semantics** (set on `P1Config`):
+
+- `holdout_mode="evidence_only"` (default) — never affects status. Reviewers get an independent generalization datapoint without making the run fail on a third slice. Backward-compat with pre-v0.2 behaviour.
+- `holdout_mode="gate"` — applies `holdout_min_fitness` and `holdout_min_trade_ratio` thresholds. Either threshold violated → status flips to `FAIL:HOLDOUT` (or appends `,HOLDOUT` if KC checks already failed). Use when the held-out slice IS the ship gate (e.g. a held-out PVT corner that absolutely must pass).
+
+The artifact's `holdout_result.gate_status` records the verdict: `EVIDENCE_ONLY` / `PASS` / `FAIL` / `SKIP` (no holdout target supplied). CI consumers should key off `gate_status` rather than re-deriving the verdict from the raw fitness.
+
 ## Fractal-vise Mode (multi-scale refinement)
 
 Two independent refinement axes. Both sit inside the same audit envelope.
