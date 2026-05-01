@@ -31,8 +31,8 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 You ran 1,000 trials. The best one scored 0.95 on training data. **Did it overfit?** Most optimizers don't tell you. `omega-lock` wraps any `CalibrableTarget` and decides whether the tuned candidate is reviewable, constraint-feasible, and likely to generalize:
 
 - **Walk-forward gate (KC-4)** — Pearson + trade-ratio on a held-out slice. Pre-declared, can't be lowered post-hoc.
-- **Declarative hard constraints** — rules like `VDD > 0.6V` or `ROI > 0.5` block infeasible candidates regardless of fitness.
-- **Append-only audit trail** — every probed candidate logged with phase / role / round context. JSON-diffable.
+- **Declarative hard constraints** — rules like `VDD > 0.6V` or `ROI > 0.5` are evaluated and recorded on every candidate. Set `P1Config.constraint_policy="prefer_feasible"` to make `grid_best` pick the highest-fitness *feasible* candidate, or `"hard_fail"` to abort the run when no candidate is feasible. Default is `"record"` (backward-compat) — constraint violations live on the audit trail but don't change `grid_best` selection.
+- **Append-only audit trail** — every probed candidate logged with phase / role / round context. JSON-diffable. (\"Append-only\" is in-process: rows are appended in run order; tamper-evident hash chains are a future option, not the current default.)
 - **Method-agnostic** — wrap with `AuditingTarget`, hand to grid / TPE / Bayesian / random / your own optimizer.
 - **Built-in pipelines** — three integrated search pipelines if you don't have an optimizer yet (`run_p1`, `run_p1_iterative`, `run_p2_tpe`).
 
