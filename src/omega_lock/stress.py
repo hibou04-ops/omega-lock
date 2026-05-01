@@ -113,7 +113,22 @@ def measure_stress(
 
             df_plus = abs(r_plus.fitness - baseline_fitness)
             df_minus = abs(r_minus.fitness - baseline_fitness)
-            raw = max(df_plus, df_minus) / float(eps) if eps > 0 else 0.0
+            # Reviewer P2: when clipping pulls plus_val/minus_val back
+            # toward base_val, the *effective* perturbation is smaller
+            # than `eps` — but pre-fix we still divided by `eps`,
+            # under-reporting sensitivity at boundaries. Use the actual
+            # signed delta per side as the denominator. When a side is
+            # fully clipped to base_val (delta = 0), that side's stress
+            # is 0 so it can't dominate the max.
+            actual_plus_delta = abs(float(plus_val) - float(base_val))
+            actual_minus_delta = abs(float(base_val) - float(minus_val))
+            stress_plus = (
+                df_plus / actual_plus_delta if actual_plus_delta > 0 else 0.0
+            )
+            stress_minus = (
+                df_minus / actual_minus_delta if actual_minus_delta > 0 else 0.0
+            )
+            raw = max(stress_plus, stress_minus)
 
             res = StressResult(
                 name=name,
