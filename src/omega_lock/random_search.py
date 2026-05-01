@@ -155,7 +155,7 @@ def top_quartile_fitness(points: list[GridPoint]) -> float:
 def compare_to_grid(
     grid_points: list[GridPoint],
     random_points: list[GridPoint],
-) -> dict[str, float]:
+) -> dict[str, Any]:
     """Compare grid top-quartile to random top-quartile (SC-2).
 
     Returns a dict with:
@@ -164,6 +164,12 @@ def compare_to_grid(
         - 'ratio':               grid / random (see note on negative fitness)
         - 'sc2_pass':            1.0 if ratio >= 1.5 else 0.0
                                  (per original P1 SPEC §4 SC-2)
+        - 'sc2_assumption':      \"fitness_nonnegative_required_for_ratio_interpretation\"
+                                 — recorded so artifact readers know the
+                                 ratio's sign assumption.
+        - 'sc2_warning':         \"negative_top_quartile_ratio_unstable\" when
+                                 either or both top quartiles are negative.
+                                 Absent when the assumption holds.
 
     Sign / zero handling:
         If both top-quartiles are zero -> ratio = 0.0 (undefined, treated
@@ -173,7 +179,12 @@ def compare_to_grid(
         If random top-quartile is exactly zero and grid is negative ->
         ratio = float('-inf').
         The SC-2 threshold (>=1.5) assumes non-negative fitness scaling;
-        callers with negative-valued fitness should shift first.
+        callers with negative-valued fitness should shift first. Reviewer
+        P2: the ratio's sign flips under negative fitness — a ratio of
+        +0.5 with both quartiles negative actually means random is BETTER
+        in absolute terms, but the SC-2 threshold would mark it as PASS
+        if the ratio were >= 1.5 due to the divide-cancellation. The
+        sc2_warning field surfaces this risk to the artifact reader.
     """
     grid_tq = top_quartile_fitness(grid_points)
     rand_tq = top_quartile_fitness(random_points)
@@ -190,9 +201,13 @@ def compare_to_grid(
 
     sc2_pass = 1.0 if (not math.isnan(ratio) and ratio >= 1.5) else 0.0
 
-    return {
+    out: dict[str, Any] = {
         "grid_top_quartile": float(grid_tq),
         "random_top_quartile": float(rand_tq),
         "ratio": float(ratio),
         "sc2_pass": sc2_pass,
+        "sc2_assumption": "fitness_nonnegative_required_for_ratio_interpretation",
     }
+    if grid_tq < 0.0 or rand_tq < 0.0:
+        out["sc2_warning"] = "negative_top_quartile_ratio_unstable"
+    return out
