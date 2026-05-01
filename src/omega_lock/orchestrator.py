@@ -104,6 +104,44 @@ class P1Config:
     holdout_min_fitness: float | None = None  # absolute floor; None disables
     holdout_min_trade_ratio: float | None = None  # ratio against train_best.n_trials
 
+    def __post_init__(self) -> None:
+        # Reviewer P1: invalid configs should fail at construction time, not
+        # halfway through a run. The audit framework's whole point is that
+        # mistakes are surfaced before they corrupt an artifact.
+        if self.unlock_k < 1:
+            raise ValueError(f"unlock_k must be >= 1, got {self.unlock_k}")
+        if self.grid_points_per_axis < 2:
+            raise ValueError(
+                "grid_points_per_axis must be >= 2 (anything less collapses "
+                f"the lattice to a single point), got {self.grid_points_per_axis}"
+            )
+        if self.walk_forward_top_n < 2:
+            raise ValueError(
+                "walk_forward_top_n must be >= 2 — Pearson KC-4 requires at "
+                f"least 2 points to define a correlation, got {self.walk_forward_top_n}"
+            )
+        if self.trade_ratio_scale <= 0:
+            raise ValueError(
+                f"trade_ratio_scale must be > 0, got {self.trade_ratio_scale}"
+            )
+        if self.zoom_rounds < 1:
+            raise ValueError(f"zoom_rounds must be >= 1, got {self.zoom_rounds}")
+        if not (0 < self.zoom_factor < 1):
+            raise ValueError(
+                f"zoom_factor must be in (0, 1), got {self.zoom_factor}"
+            )
+        if self.constraint_policy not in {"record", "prefer_feasible", "hard_fail"}:
+            raise ValueError(
+                f"constraint_policy must be one of "
+                f"{{'record', 'prefer_feasible', 'hard_fail'}}, "
+                f"got {self.constraint_policy!r}"
+            )
+        if self.holdout_mode not in {"evidence_only", "gate"}:
+            raise ValueError(
+                f"holdout_mode must be 'evidence_only' or 'gate', "
+                f"got {self.holdout_mode!r}"
+            )
+
 
 @dataclass
 class P1Result:
@@ -548,6 +586,34 @@ class IterativeConfig:
     # Per-round SC-2 advisory — identical semantics to P1Config.run_sc2_baseline
     run_sc2_baseline: bool = False
     sc2_random_seed: int = 42
+
+    def __post_init__(self) -> None:
+        if self.rounds < 1:
+            raise ValueError(f"rounds must be >= 1, got {self.rounds}")
+        if self.per_round_unlock_k < 1:
+            raise ValueError(
+                f"per_round_unlock_k must be >= 1, got {self.per_round_unlock_k}"
+            )
+        if self.grid_points_per_axis < 2:
+            raise ValueError(
+                "grid_points_per_axis must be >= 2, got "
+                f"{self.grid_points_per_axis}"
+            )
+        if self.walk_forward_top_n < 2:
+            raise ValueError(
+                "walk_forward_top_n must be >= 2, got "
+                f"{self.walk_forward_top_n}"
+            )
+        if self.trade_ratio_scale <= 0:
+            raise ValueError(
+                f"trade_ratio_scale must be > 0, got {self.trade_ratio_scale}"
+            )
+        if self.zoom_rounds < 1:
+            raise ValueError(f"zoom_rounds must be >= 1, got {self.zoom_rounds}")
+        if not (0 < self.zoom_factor < 1):
+            raise ValueError(
+                f"zoom_factor must be in (0, 1), got {self.zoom_factor}"
+            )
 
 
 @dataclass
