@@ -43,6 +43,8 @@ class WalkForwardResult:
     pearson: float
     train_best_trades_mean: float
     test_best_trades: int
+    test_best_fitness: float           # cached from the same evaluation as test_best_trades
+    test_best_params: dict[str, Any]   # params of the train-best candidate (top[0])
     trade_ratio_scaled: float      # test_best_trades / (train_mean_trades * scale)
 
     def to_dict(self) -> dict[str, Any]:
@@ -54,6 +56,8 @@ class WalkForwardResult:
             "pearson": self.pearson,
             "train_best_trades_mean": self.train_best_trades_mean,
             "test_best_trades": self.test_best_trades,
+            "test_best_fitness": self.test_best_fitness,
+            "test_best_params": dict(self.test_best_params),
             "trade_ratio_scaled": self.trade_ratio_scaled,
         }
 
@@ -61,6 +65,13 @@ class WalkForwardResult:
 @dataclass
 class WalkForward:
     """Re-evaluate train-best N grid points on a test target.
+
+    Each top-N candidate is evaluated on ``test_target`` exactly once;
+    the train-best candidate's metrics (fitness AND trade count) come
+    from the same evaluation, so a stochastic test_target cannot produce
+    an internally inconsistent ``WalkForwardResult`` where
+    ``test_fitnesses[0]`` and ``test_best_trades`` come from different
+    runs of the same params.
 
     Typical usage:
         # Caller has trained on `train_target`, now verify on `test_target`
@@ -77,17 +88,25 @@ class WalkForward:
         ranked = sorted(train_grid, key=lambda p: p.result.fitness, reverse=True)
         top = ranked[:top_n]
 
+        # Evaluate each top candidate on the test target ONCE and cache
+        # the EvalResult. Pre-fix: the train-best candidate (top[0]) was
+        # evaluated twice — once in this loop for the fitness vector and
+        # again below for trade-count. Stochastic test_targets produced
+        # an artifact where the "test fitness of best" and "test trade
+        # count of best" came from different runs.
+        test_results: list[EvalResult] = []
         train_fs: list[float] = []
         test_fs: list[float] = []
         test_trials: list[int] = []
         for gp in top:
             r = self.test_target.evaluate(gp.params)
+            test_results.append(r)
             train_fs.append(gp.result.fitness)
             test_fs.append(r.fitness)
             test_trials.append(r.n_trials)
 
         best_on_train = top[0]
-        test_best = self.test_target.evaluate(best_on_train.params)
+        test_best = test_results[0]  # SAME evaluation as test_fs[0] / test_trials[0]
         train_trades_mean = sum(gp.result.n_trials for gp in top) / len(top)
         trade_ratio = (
             test_best.n_trials / (train_trades_mean * self.trade_ratio_scale)
@@ -103,5 +122,7 @@ class WalkForward:
             pearson=pearson(train_fs, test_fs),
             train_best_trades_mean=train_trades_mean,
             test_best_trades=test_best.n_trials,
+            test_best_fitness=test_best.fitness,
+            test_best_params=dict(best_on_train.params),
             trade_ratio_scaled=trade_ratio,
         )
