@@ -23,6 +23,15 @@ class KCThresholds:
     time_box_seconds: float = 3 * 24 * 3600      # KC-1: 3 days
     gini_min: float = 0.2                         # KC-2a: stress differentiation
     top_bot_ratio_min: float = 2.0                # KC-2b: head vs tail ratio
+    # KC-2c (advisory): require at least N params with non-zero stress.
+    # Reviewer P2: a "single spike" stress profile (one axis carries the
+    # signal, everything else is flat zero) sails through Gini + top/bot
+    # because top mean is high and bot mean is zero giving an inf ratio.
+    # That can be a legit effective-dimension signal, OR a noisy target
+    # with one accidental axis. Set this to >=2 to demand evidence of
+    # multi-axis structure. Default None = advisory only (recorded in
+    # KC-2 detail but doesn't gate).
+    min_nonzero_stress_count: int | None = None
     trade_count_min: int = 50                     # KC-3: per best-config trade floor
     pearson_min: float = 0.3                      # KC-4a: walk-forward correlation
     trade_ratio_min: float = 0.5                  # KC-4b: test-trade / train-trade
@@ -85,7 +94,14 @@ def check_kc2(
         ratio_ok = True    # skip meaningless check when only 1 param
 
     gini_ok = gini >= thresholds.gini_min
-    passed = gini_ok and ratio_ok
+    # KC-2c: advisory non-zero stress count. Counts how many params
+    # have any sensitivity at all. Useful to spot "single spike"
+    # profiles that pass Gini + top/bot through degeneracy.
+    nonzero_count = sum(1 for s in sorted_desc if s > 0)
+    nonzero_ok: bool = True
+    if thresholds.min_nonzero_stress_count is not None:
+        nonzero_ok = nonzero_count >= thresholds.min_nonzero_stress_count
+    passed = gini_ok and ratio_ok and nonzero_ok
     detail = {
         "gini": gini,
         "gini_ok": gini_ok,
@@ -94,6 +110,9 @@ def check_kc2(
         "ratio": ratio,
         "ratio_ok": ratio_ok,
         "k": k,
+        "nonzero_stress_count": nonzero_count,
+        "nonzero_ok": nonzero_ok,
+        "min_nonzero_stress_count": thresholds.min_nonzero_stress_count,
     }
     if passed:
         msg = f"PASS: Gini={gini:.3f}, top{k}/bot{k}={ratio:.2f}"
@@ -103,6 +122,11 @@ def check_kc2(
             fails.append(f"Gini={gini:.3f}<{thresholds.gini_min}")
         if not ratio_ok:
             fails.append(f"ratio={ratio:.2f}<{thresholds.top_bot_ratio_min}")
+        if not nonzero_ok:
+            fails.append(
+                f"nonzero_stress_count={nonzero_count}<"
+                f"{thresholds.min_nonzero_stress_count}"
+            )
         msg = "FAIL: " + ", ".join(fails)
     return KCReport(name="KC-2", status="PASS" if passed else "FAIL", message=msg, detail=detail)
 
