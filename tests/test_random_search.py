@@ -213,9 +213,16 @@ def test_compare_to_grid_returns_all_keys():
     rand_pts = RandomSearch(target=target, unlocked=["x", "y"], n_samples=25,
                             seed=42, verbose=False).run({"x": 5.0, "y": 5.0})
     report = compare_to_grid(grid_pts, rand_pts)
-    assert set(report.keys()) == {
-        "grid_top_quartile", "random_top_quartile", "ratio", "sc2_pass",
+    # Required keys (sc2_warning is conditional — only present when
+    # negative fitness makes the ratio unstable; not asserted here).
+    required_keys = {
+        "grid_top_quartile",
+        "random_top_quartile",
+        "ratio",
+        "sc2_pass",
+        "sc2_assumption",
     }
+    assert required_keys.issubset(set(report.keys()))
     assert report["sc2_pass"] in (0.0, 1.0)
 
 
