@@ -93,6 +93,27 @@ class P2Config:
     # stronger than the default univariate TPE on curved optima (e.g. Rosenbrock).
     multivariate: bool = True
 
+    def __post_init__(self) -> None:
+        # Reviewer P1: an audit framework must never report PASS on a run
+        # that didn't actually search anything. n_trials=0 is the obvious
+        # silent-success path — block it at construction.
+        if self.n_trials < 1:
+            raise ValueError(
+                "n_trials must be >= 1 (otherwise nothing is searched and "
+                f"any 'PASS' is meaningless), got {self.n_trials}"
+            )
+        if self.unlock_k < 1:
+            raise ValueError(f"unlock_k must be >= 1, got {self.unlock_k}")
+        if self.walk_forward_top_n < 2:
+            raise ValueError(
+                "walk_forward_top_n must be >= 2 — Pearson KC-4 requires at "
+                f"least 2 points, got {self.walk_forward_top_n}"
+            )
+        if self.trade_ratio_scale <= 0:
+            raise ValueError(
+                f"trade_ratio_scale must be > 0, got {self.trade_ratio_scale}"
+            )
+
 
 @dataclass
 class P2Result:
