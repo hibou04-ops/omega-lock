@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from omega_lock.grid import GridSearch, grid_points
-from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
+from omega_lock.target import EvalResult, ParamSpec
 
 
 def test_bool_axis_is_always_two_points():

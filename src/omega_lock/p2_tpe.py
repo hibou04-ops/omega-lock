@@ -28,7 +28,7 @@ import json
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from omega_lock.grid import GridPoint
 from omega_lock.kill_criteria import (
@@ -50,19 +50,25 @@ from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
 from omega_lock.walk_forward import WalkForward, WalkForwardResult
 
 
+if TYPE_CHECKING:
+    from optuna.trial import Trial
+
+
+_optuna: Any | None = None
+
 try:
-    import optuna
+    import optuna as _optuna_import
     # Silence Optuna's per-trial INFO logs and the ExperimentalWarning
     # emitted by TPESampler(multivariate=True) — stable in practice for years.
     import warnings as _warnings
-    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    _optuna_import.logging.set_verbosity(_optuna_import.logging.WARNING)
     _warnings.filterwarnings(
         "ignore",
-        category=optuna.exceptions.ExperimentalWarning,
+        category=_optuna_import.exceptions.ExperimentalWarning,
     )
+    _optuna = _optuna_import
     _OPTUNA_AVAILABLE = True
 except ImportError:
-    optuna = None  # type: ignore[assignment]
     _OPTUNA_AVAILABLE = False
 
 
@@ -70,6 +76,13 @@ _OPTUNA_INSTALL_HINT = (
     "Optuna is required for run_p2_tpe but is not installed. "
     "Install it via `pip install \"omega-lock[p2]\"` or `pip install \"optuna>=3.0\"`."
 )
+
+
+def _require_optuna() -> Any:
+    """Return the optional optuna module or raise the public install hint."""
+    if not _OPTUNA_AVAILABLE or _optuna is None:
+        raise ImportError(_OPTUNA_INSTALL_HINT)
+    return _optuna
 
 
 @dataclass
@@ -152,7 +165,7 @@ def _eval_to_dict(r: EvalResult) -> dict[str, Any]:
     }
 
 
-def _suggest(trial: "optuna.trial.Trial", spec: ParamSpec) -> Any:
+def _suggest(trial: "Trial", spec: ParamSpec) -> Any:
     """Map a ParamSpec to the corresponding Optuna suggest_* call.
 
     Float/int bounds are inclusive on both sides (matches ParamSpec + Optuna
@@ -191,8 +204,7 @@ def run_p2_tpe(
     Raises:
         ImportError: if optuna is not installed (optional dep `p2`).
     """
-    if not _OPTUNA_AVAILABLE:
-        raise ImportError(_OPTUNA_INSTALL_HINT)
+    _require_optuna()
 
     cfg = config or P2Config()
     t_start = time.time()
@@ -314,7 +326,7 @@ def _run_tpe(
         trial_grid_points: GridPoint objects, one per trial, reusable by
             WalkForward (which expects list[GridPoint], sorts by fitness).
     """
-    assert _OPTUNA_AVAILABLE  # caller guarantees
+    optuna = _require_optuna()
     for name in unlocked:
         if name not in specs_by_name:
             raise KeyError(f"unlocked param '{name}' not in target.param_space()")
@@ -322,7 +334,7 @@ def _run_tpe(
     trial_records: list[dict[str, Any]] = []
     trial_grid_points: list[GridPoint] = []
 
-    def objective(trial: "optuna.trial.Trial") -> float:
+    def objective(trial: "Trial") -> float:
         unlocked_vals: dict[str, Any] = {}
         params = dict(base_params)
         for name in unlocked:

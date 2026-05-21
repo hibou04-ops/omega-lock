@@ -368,7 +368,7 @@ def run_p1(
     hybrid_results: list[HybridResult] | None = None
     if validation_target is not None:
         _set_phase(validation_target, "hybrid")
-        hybrid = HybridFitness(
+        _ = HybridFitness(
             search_target=train_target,
             validation_target=validation_target,
             validation_top_k=cfg.walk_forward_top_n,

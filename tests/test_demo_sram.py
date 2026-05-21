@@ -3,15 +3,6 @@ surrogate, not something to pin down numerically. We test shape, not numbers."""
 from __future__ import annotations
 
 import math
-import sys
-from pathlib import Path
-
-import pytest
-
-# Make the examples/ directory importable so `omega_lock_demos.sram` resolves.
-_EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
-if str(_EXAMPLES_DIR) not in sys.path:
-    sys.path.insert(0, str(_EXAMPLES_DIR))
 
 from omega_lock_demos.sram import (
     BitcellTarget, Corner, PVT_CORNERS, DEMO_CONSTRAINTS,

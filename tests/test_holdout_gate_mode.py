@@ -65,9 +65,10 @@ def test_evidence_only_default_keeps_status_unchanged():
     )
     # Pre-fix status semantics: holdout fitness has no effect.
     assert "HOLDOUT" not in r.status
-    assert r.holdout_result is not None
-    assert r.holdout_result["mode"] == "evidence_only"
-    assert r.holdout_result["gate_status"] == "EVIDENCE_ONLY"
+    holdout_result = r.holdout_result
+    assert holdout_result is not None
+    assert holdout_result["mode"] == "evidence_only"
+    assert holdout_result["gate_status"] == "EVIDENCE_ONLY"
 
 
 def test_evidence_only_thresholds_ignored_even_if_set():
@@ -82,7 +83,9 @@ def test_evidence_only_thresholds_ignored_even_if_set():
         ),
     )
     assert "HOLDOUT" not in r.status
-    assert r.holdout_result["gate_status"] == "EVIDENCE_ONLY"
+    holdout_result = r.holdout_result
+    assert holdout_result is not None
+    assert holdout_result["gate_status"] == "EVIDENCE_ONLY"
 
 
 # ---------------------------------------------------------------------------
@@ -101,8 +104,10 @@ def test_gate_mode_fails_status_on_low_fitness():
         ),
     )
     assert "HOLDOUT" in r.status
-    assert r.holdout_result["gate_status"] == "FAIL"
-    reasons = r.holdout_result.get("gate_failed_reasons", [])
+    holdout_result = r.holdout_result
+    assert holdout_result is not None
+    assert holdout_result["gate_status"] == "FAIL"
+    reasons = holdout_result.get("gate_failed_reasons", [])
     assert any("fitness" in reason for reason in reasons)
 
 
@@ -119,7 +124,9 @@ def test_gate_mode_fails_status_on_low_trade_ratio():
         ),
     )
     assert "HOLDOUT" in r.status
-    reasons = r.holdout_result.get("gate_failed_reasons", [])
+    holdout_result = r.holdout_result
+    assert holdout_result is not None
+    reasons = holdout_result.get("gate_failed_reasons", [])
     assert any("trade_ratio" in reason for reason in reasons)
 
 
@@ -136,8 +143,10 @@ def test_gate_mode_passes_when_thresholds_satisfied():
         ),
     )
     assert "HOLDOUT" not in r.status
-    assert r.holdout_result["gate_status"] == "PASS"
-    assert "gate_failed_reasons" not in r.holdout_result
+    holdout_result = r.holdout_result
+    assert holdout_result is not None
+    assert holdout_result["gate_status"] == "PASS"
+    assert "gate_failed_reasons" not in holdout_result
 
 
 def test_gate_mode_appends_to_existing_kc_failure_status():

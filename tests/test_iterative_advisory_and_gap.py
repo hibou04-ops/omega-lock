@@ -23,14 +23,10 @@ Two changes pinned here:
 """
 from __future__ import annotations
 
-from typing import Any
 
 from omega_lock import (
-    EvalResult,
     IterativeConfig,
     KCThresholds,
-    P1Config,
-    ParamSpec,
     run_p1_iterative,
 )
 from omega_lock.benchmark import (

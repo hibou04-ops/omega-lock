@@ -1,0 +1,398 @@
+warning: in the working copy of 'pyproject.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/omega_lock/audit/_types.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/omega_lock/benchmark.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/omega_lock/orchestrator.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/omega_lock/p2_tpe.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_audit.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_auto_phase_tracking.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_benchmark.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_constraint_aware_selection.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_demo_sram.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_holdout_gate_mode.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_integration_phantom.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_integration_phantom_deep.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_integration_rosenbrock.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_iterative.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_p2_tpe.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_random_search.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_walk_forward_cache.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_zooming.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/pyproject.toml b/pyproject.toml[m
+[1mindex 5fb1898..a10ff5a 100644[m
+[1m--- a/pyproject.toml[m
+[1m+++ b/pyproject.toml[m
+[36m@@ -62,7 +62,7 @@[m [mwhere = ["src"][m
+ [m
+ [tool.pytest.ini_options][m
+ testpaths = ["tests"][m
+[31m-pythonpath = ["src"][m
+[32m+[m[32mpythonpath = ["src", "examples"][m
+ filterwarnings = [[m
+     "ignore::optuna.exceptions.ExperimentalWarning",[m
+ ][m
+[1mdiff --git a/src/omega_lock/audit/_scorecard.py b/src/omega_lock/audit/_scorecard.py[m
+[1mindex 351cf3e..5c7890e 100644[m
+[1m--- a/src/omega_lock/audit/_scorecard.py[m
+[1m+++ b/src/omega_lock/audit/_scorecard.py[m
+[36m@@ -13,7 +13,6 @@[m [mProduces a terminal-friendly, markdown-compatible scorecard. Sections:[m
+ from __future__ import annotations[m
+ [m
+ from datetime import datetime[m
+[31m-from typing import Iterable[m
+ [m
+ from omega_lock.audit._types import AuditReport, AuditedRun[m
+ [m
+[1mdiff --git a/src/omega_lock/audit/_types.py b/src/omega_lock/audit/_types.py[m
+[1mindex 2947287..357cd27 100644[m
+[1m--- a/src/omega_lock/audit/_types.py[m
+[1m+++ b/src/omega_lock/audit/_types.py[m
+[36m@@ -16,16 +16,22 @@[m [mfrom __future__ import annotations[m
+ [m
+ import hashlib[m
+ import json[m
+[31m-from dataclasses import dataclass, field, asdict[m
+[31m-from typing import Any, Callable, Sequence[m
+[32m+[m[32mfrom dataclasses import dataclass[m
+[32m+[m[32mfrom typing import Any, Callable, Mapping, Sequence, TypedDict[m
+ [m
+[31m-from omega_lock.target import EvalResult, ParamSpec[m
+[32m+[m[32mfrom omega_lock.target import EvalResult[m
+ [m
+ [m
+ # Constraint predicate: True = pass, False = violated.[m
+ ConstraintFn = Callable[[dict[str, Any], EvalResult], bool][m
+ [m
+ [m
+[32m+[m[32mclass HashChainEntry(TypedDict):[m
+[32m+[m[32m    call_index: int[m
+[32m+[m[32m    previous_hash: str | None[m
+[32m+[m[32m    run_hash: str[m
+[32m+[m
+[32m+[m
+ @dataclass(frozen=True)[m
+ class Constraint:[m
+     """A named hard constraint on (params, EvalResult).[m
+[36m@@ -151,7 +157,7 @@[m [mclass AuditReport:[m
+                     counts[name] += 1[m
+         return counts[m
+ [m
+[31m-    def hash_chain(self) -> list[dict[str, str]]:[m
+[32m+[m[32m    def hash_chain(self) -> list[HashChainEntry]:[m
+         """Compute a SHA-256 hash chain over the audit runs.[m
+ [m
+         Reviewer P2: README's "append-only audit trail" was an in-process[m
+[36m@@ -170,7 +176,7 @@[m [mclass AuditReport:[m
+         The chain is computed on demand (not cached) so callers can[m
+         verify a serialized report by recomputing and comparing.[m
+         """[m
+[31m-        chain: list[dict[str, str]] = [][m
+[32m+[m[32m        chain: list[HashChainEntry] = [][m
+         previous_hash: str | None = None[m
+         for run in self.runs:[m
+             payload = json.dumps([m
+[36m@@ -192,7 +198,7 @@[m [mclass AuditReport:[m
+             previous_hash = run_hash[m
+         return chain[m
+ [m
+[31m-    def verify_hash_chain(self, chain: list[dict[str, Any]]) -> bool:[m
+[32m+[m[32m    def verify_hash_chain(self, chain: Sequence[Mapping[str, Any]]) -> bool:[m
+         """True iff the supplied chain matches this report's runs.[m
+ [m
+         Useful for re-checking a serialized report after rehydration:[m
+[1mdiff --git a/src/omega_lock/benchmark.py b/src/omega_lock/benchmark.py[m
+[1mindex da1490d..d57545e 100644[m
+[1m--- a/src/omega_lock/benchmark.py[m
+[1m+++ b/src/omega_lock/benchmark.py[m
+[36m@@ -49,9 +49,9 @@[m [mfrom __future__ import annotations[m
+ import json[m
+ import statistics[m
+ import time[m
+[31m-from dataclasses import asdict, dataclass, field[m
+[32m+[m[32mfrom dataclasses import asdict, dataclass[m
+ from pathlib import Path[m
+[31m-from typing import Any, Callable, Protocol[m
+[32m+[m[32mfrom typing import Any, Callable, Mapping[m
+ [m
+ [m
+ # Keyhole ground-truth interface (duck-typed; no formal Protocol enforcement[m
+[36m@@ -202,9 +202,9 @@[m [mdef compute_effective_precision(found: set[str], true: set[str]) -> float:[m
+ [m
+ [m
+ def compute_param_L2_error([m
+[31m-    found_params: dict[str, Any],[m
+[31m-    true_params: dict[str, Any],[m
+[31m-    param_ranges: dict[str, tuple[float, float]],[m
+[32m+[m[32m    found_params: Mapping[str, Any],[m
+[32m+[m[32m    true_params: Mapping[str, Any],[m
+[32m+[m[32m    param_ranges: Mapping[str, tuple[float, float]],[m
+ ) -> float:[m
+     """Normalized L2 over effective params only.[m
+ [m
+[1mdiff --git a/src/omega_lock/fitness.py b/src/omega_lock/fitness.py[m
+[1mindex cb28ba1..9cfa103 100644[m
+[1m--- a/src/omega_lock/fitness.py[m
+[1m+++ b/src/omega_lock/fitness.py[m
+[36m@@ -15,7 +15,7 @@[m [mTypical use:[m
+ """[m
+ from __future__ import annotations[m
+ [m
+[31m-from dataclasses import dataclass, field[m
+[32m+[m[32mfrom dataclasses import dataclass[m
+ from typing import Any[m
+ [m
+ from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec[m
+[1mdiff --git a/src/omega_lock/grid.py b/src/omega_lock/grid.py[m
+[1mindex 1724167..09a29eb 100644[m
+[1m--- a/src/omega_lock/grid.py[m
+[1m+++ b/src/omega_lock/grid.py[m
+[36m@@ -16,8 +16,8 @@[m [mfrom __future__ import annotations[m
+ [m
+ import itertools[m
+ import time[m
+[31m-from dataclasses import dataclass, field[m
+[31m-from typing import Any, Callable[m
+[32m+[m[32mfrom dataclasses import dataclass[m
+[32m+[m[32mfrom typing import Any[m
+ [m
+ from omega_lock.params import clip[m
+ from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec[m
+[1mdiff --git a/src/omega_lock/orchestrator.py b/src/omega_lock/orchestrator.py[m
+[1mindex 2cad2e4..a267de3 100644[m
+[1m--- a/src/omega_lock/orchestrator.py[m
+[1m+++ b/src/omega_lock/orchestrator.py[m
+[36m@@ -368,7 +368,7 @@[m [mdef run_p1([m
+     hybrid_results: list[HybridResult] | None = None[m
+     if validation_target is not None:[m
+         _set_phase(validation_target, "hybrid")[m
+[31m-        hybrid = HybridFitness([m
+[32m+[m[32m        _ = HybridFitness([m
+             search_target=train_target,[m
+             validation_target=validation_target,[m
+             validation_top_k=cfg.walk_forward_top_n,[m
+[1mdiff --git a/src/omega_lock/p2_tpe.py b/src/omega_lock/p2_tpe.py[m
+[1mindex 26a1111..48ec531 100644[m
+[1m--- a/src/omega_lock/p2_tpe.py[m
+[1m+++ b/src/omega_lock/p2_tpe.py[m
+[36m@@ -28,7 +28,7 @@[m [mimport json[m
+ import time[m
+ from dataclasses import asdict, dataclass, field[m
+ from pathlib import Path[m
+[31m-from typing import Any[m
+[32m+[m[32mfrom typing import TYPE_CHECKING, Any[m
+ [m
+ from omega_lock.grid import GridPoint[m
+ from omega_lock.kill_criteria import ([m
+[36m@@ -50,19 +50,25 @@[m [mfrom omega_lock.target import CalibrableTarget, EvalResult, ParamSpec[m
+ from omega_lock.walk_forward import WalkForward, WalkForwardResult[m
+ [m
+ [m
+[32m+[m[32mif TYPE_CHECKING:[m
+[32m+[m[32m    from optuna.trial import Trial[m
+[32m+[m
+[32m+[m
+[32m+[m[32m_optuna: Any | None = None[m
+[32m+[m
+ try:[m
+[31m-    import optuna[m
+[32m+[m[32m    import optuna as _optuna_import[m
+     # Silence Optuna's per-trial INFO logs and the ExperimentalWarning[m
+     # emitted by TPESampler(multivariate=True) — stable in practice for years.[m
+     import warnings as _warnings[m
+[31m-    optuna.logging.set_verbosity(optuna.logging.WARNING)[m
+[32m+[m[32m    _optuna_import.logging.set_verbosity(_optuna_import.logging.WARNING)[m
+     _warnings.filterwarnings([m
+         "ignore",[m
+[31m-        category=optuna.exceptions.ExperimentalWarning,[m
+[32m+[m[32m        category=_optuna_import.exceptions.ExperimentalWarning,[m
+     )[m
+[32m+[m[32m    _optuna = _optuna_import[m
+     _OPTUNA_AVAILABLE = True[m
+ except ImportError:[m
+[31m-    optuna = None  # type: ignore[assignment][m
+     _OPTUNA_AVAILABLE = False[m
+ [m
+ [m
+[36m@@ -72,6 +78,13 @@[m [m_OPTUNA_INSTALL_HINT = ([m
+ )[m
+ [m
+ [m
+[32m+[m[32mdef _require_optuna() -> Any:[m
+[32m+[m[32m    """Return the optional optuna module or raise the public install hint."""[m
+[32m+[m[32m    if not _OPTUNA_AVAILABLE or _optuna is None:[m
+[32m+[m[32m        raise ImportError(_OPTUNA_INSTALL_HINT)[m
+[32m+[m[32m    return _optuna[m
+[32m+[m
+[32m+[m
+ @dataclass[m
+ class P2Config:[m
+     """Configuration for run_p2_tpe.[m
+[36m@@ -152,7 +165,7 @@[m [mdef _eval_to_dict(r: EvalResult) -> dict[str, Any]:[m
+     }[m
+ [m
+ [m
+[31m-def _suggest(trial: "optuna.trial.Trial", spec: ParamSpec) -> Any:[m
+[32m+[m[32mdef _suggest(trial: "Trial", spec: ParamSpec) -> Any:[m
+     """Map a ParamSpec to the corresponding Optuna suggest_* call.[m
+ [m
+     Float/int bounds are inclusive on both sides (matches ParamSpec + Optuna[m
+[36m@@ -191,8 +204,7 @@[m [mdef run_p2_tpe([m
+     Raises:[m
+         ImportError: if optuna is not installed (optional dep `p2`).[m
+     """[m
+[31m-    if not _OPTUNA_AVAILABLE:[m
+[31m-        raise ImportError(_OPTUNA_INSTALL_HINT)[m
+[32m+[m[32m    _require_optuna()[m
+ [m
+     cfg = config or P2Config()[m
+     t_start = time.time()[m
+[36m@@ -314,7 +326,7 @@[m [mdef _run_tpe([m
+         trial_grid_points: GridPoint objects, one per trial, reusable by[m
+             WalkForward (which expects list[GridPoint], sorts by fitness).[m
+     """[m
+[31m-    assert _OPTUNA_AVAILABLE  # caller guarantees[m
+[32m+[m[32m    optuna = _require_optuna()[m
+     for name in unlocked:[m
+         if name not in specs_by_name:[m
+             raise KeyError(f"unlocked param '{name}' not in target.param_space()")[m
+[36m@@ -322,7 +334,7 @@[m [mdef _run_tpe([m
+     trial_records: list[dict[str, Any]] = [][m
+     trial_grid_points: list[GridPoint] = [][m
+ [m
+[31m-    def objective(trial: "optuna.trial.Trial") -> float:[m
+[32m+[m[32m    def objective(trial: "Trial") -> float:[m
+         unlocked_vals: dict[str, Any] = {}[m
+         params = dict(base_params)[m
+         for name in unlocked:[m
+[1mdiff --git a/src/omega_lock/stress.py b/src/omega_lock/stress.py[m
+[1mindex 6118fd2..dc045e9 100644[m
+[1m--- a/src/omega_lock/stress.py[m
+[1m+++ b/src/omega_lock/stress.py[m
+[36m@@ -16,7 +16,7 @@[m [mfrom dataclasses import asdict, dataclass, field[m
+ from typing import Any, Callable[m
+ [m
+ from omega_lock.params import clip, default_epsilon[m
+[31m-from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec[m
+[32m+[m[32mfrom omega_lock.target import CalibrableTarget, EvalResult[m
+ [m
+ [m
+ @dataclass[m
+[1mdiff --git a/src/omega_lock/walk_forward.py b/src/omega_lock/walk_forward.py[m
+[1mindex a683d5a..a3085b4 100644[m
+[1m--- a/src/omega_lock/walk_forward.py[m
+[1m+++ b/src/omega_lock/walk_forward.py[m
+[36m@@ -12,7 +12,7 @@[m [mand is NOT part of this module — the caller constructs the two targets.[m
+ """[m
+ from __future__ import annotations[m
+ [m
+[31m-from dataclasses import dataclass, field[m
+[32m+[m[32mfrom dataclasses import dataclass[m
+ from typing import Any, Literal[m
+ [m
+ from omega_lock.grid import GridPoint[m
+[1mdiff --git a/tests/test_adapters.py b/tests/test_adapters.py[m
+[1mindex b9aa6c7..2663f87 100644[m
+[1m--- a/tests/test_adapters.py[m
+[1m+++ b/tests/test_adapters.py[m
+[36m@@ -1,12 +1,11 @@[m
+ """Tests for adapters — CallableAdapter and the bridge pattern."""[m
+ from __future__ import annotations[m
+ [m
+[31m-from typing import Any[m
+ [m
+ import pytest[m
+ [m
+ from omega_lock import ([m
+[31m-    CallableAdapter, EvalResult, KCThresholds, P1Config, ParamSpec, run_p1,[m
+[32m+[m[32m    CallableAdapter, KCThresholds, P1Config, ParamSpec, run_p1,[m
+ )[m
+ [m
+ [m
+[1mdiff --git a/tests/test_audit.py b/tests/test_audit.py[m
+[1mindex 8d7de46..76c3b65 100644[m
+[1m--- a/tests/test_audit.py[m
+[1m+++ b/tests/test_audit.py[m
+[36m@@ -34,7 +34,8 @@[m [mclass StubTarget:[m
+ [m
+     def evaluate(self, params: dict) -> EvalResult:[m
+         self.n_calls += 1[m
+[31m-        a = params["a"]; b = params["b"][m
+[32m+[m[32m        a = params["a"][m
+[32m+[m[32m        b = params["b"][m
+         fit = 1.0 - ((a - 1.0) ** 2 + (b - 2.0) ** 2) / 10.0[m
+         return EvalResult([m
+             fitness=fit,[m
+[36m@@ -99,9 +100,12 @@[m [mdef test_auditingtarget_delegates_evaluate():[m
+ def test_phase_and_round_stick_until_changed():[m
+     t = StubTarget()[m
+     w = AuditingTarget(t)[m
+[31m-    w.set_phase("stress"); w.evaluate({"a": 0.0, "b": 0.0})[m
+[31m-    w.set_phase("search"); w.evaluate({"a": 0.5, "b": 0.5})[m
+[31m-    w.set_round(1);        w.evaluate({"a": 1.0, "b": 1.0})[m
+[32m+[m[32m    w.set_phase("stress")[m
+[32m+[m[32m    w.evaluate({"a": 0.0, "b": 0.0})[m
+[32m+[m[32m    w.set_phase("search")[m
+[32m+[m[32m    w.evaluate({"a": 0.5, "b": 0.5})[m
+[32m+[m[32m    w.set_round(1)[m
+[32m+[m[32m    w.evaluate({"a": 1.0, "b": 1.0})[m
+     phases = [r.phase for r in w.trail][m
+     rounds = [r.round_index for r in w.trail][m
+     assert phases == ["stress", "search", "search"][m
+[36m@@ -130,7 +134,8 @@[m [mdef test_target_role_is_recorded():[m
+ # ── Shared trail + counter ─────────────────────────────────────────────────[m
+ [m
+ def test_shared_trail_keeps_global_order():[m
+[31m-    t1 = StubTarget(); t2 = StubTarget()[m
+[32m+[m[32m    t1 = StubTarget()[m
+[32m+[m[32m    t2 = StubTarget()[m
+     trail: list[AuditedRun] = [][m
+     cnt = count(0)[m
+     w1 = AuditingTarget(t1, target_role="train", shared_trail=trail, shared_counter=cnt)[m
+[36m@@ -183,15 +188,22 @@[m [mdef test_report_best_feasible_prefers_feasible_even_if_lower_fitness():[m
+     w.evaluate({"a": 1.0, "b": 2.0})   # infeasible, highest fitness[m
+     w.evaluate({"a": -1.0, "b": 2.0})  # feasible, lower fitness[m
+     report = make_report(w, method="stub")[m
+[31m-    assert report.best_any.params["a"] == pytest.approx(1.0)[m
+[31m-    assert report.best_feasible.params["a"] == pytest.approx(-1.0)[m
+[32m+[m[32m    best_any = report.best_any[m
+[32m+[m[32m    best_feasible = report.best_feasible[m
+[32m+[m[32m    assert best_any is not None[m
+[32m+[m[32m    assert best_feasible is not None[m
+[32m+[m[32m    assert best_any.params["a"] == pytest.approx(1.0)[m
+[32m+[m[32m    assert best_feasible.params["a"] == pytest.approx(-1.0)[m
+ [m
+ [m
+ def test_report_by_phase_by_role_by_round_filters():[m
+     t = StubTarget()[m
+     w_train = AuditingTarget(t, target_role="train")[m
+[31m-    w_train.set_phase("stress"); w_train.evaluate({"a": 0.0, "b": 0.0})[m
+[31m-    w_train.set_phase("search"); w_train.set_round(1); w_train.evaluate({"a": 1.0, "b": 1.0})[m
+[32m+[m[32m    w_train.set_phase("stress")[m
+[32m+[m[32m    w_train.evaluate({"a": 0.0, "b": 0.0})[m
+[32m+[m[32m    w_train.set_phase("search")[m
+[32m+[m[32m    w_train.set_round(1)[m
+[32m+[m[32m    w_train.evaluate({"a": 1.0, "b": 1.0})[m
+     rep = make_report(w_train, method="stub")[m
+     assert len(rep.by_phase("stress")) == 1[m
+     assert len(rep.by_phase("search")) == 1[m
+[36m@@ -206,8 +218,10 @@[m [mdef test_report_json_roundtrip_preserves_runs_and_structure():[m
+     t = StubTarget()[m
+     c = Constraint("pos", lambda p, r: r.fitness > 0, "positive fit")[m
+     w = AuditingTarget(t, constraints=[c])[m
+[31m-    w.set_phase("baseline"); w.evaluate({"a": 0.0, "b": 0.0})[m
+[31m-    w.set_phase("search");   w.evaluate({"a": 1.0, "b": 2.0})[m
+[32m+[m[32m    w.set_phase("baseline")[m
+[32m+[m[32m    w.evaluate({"a": 0.0, "b": 0.0})[m
+[32m+[m[32m    w.set_phase("search")[m
+[32m+[m[32m    w.evaluate({"a": 1.0, "b": 2.0})[m
+     report = make_report(w, method="stub", seed=42, stress_ranking=[("a", 0.9), ("b", 0.3)])[m
+ [m
+     js = report.to_json()[m
+[1mdiff --git a/tests/test_audit_hash_chain.py b/tests/test_audit_hash_chain.py[m
+[1mindex c6c7559..3f56608 100644[m
+[1m--- a/tests/test_audit_hash_chain.py[m
+[1m+++ b/tests/test_audit_hash_chain.py[m
+[36m@@ -16,13 +16,11 @@[m [mfrom __future__ import annotations[m
+ [m
+ import json[m
+ from datetime import datetime, timezone[m
+[31m-from i

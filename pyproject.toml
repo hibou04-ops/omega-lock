@@ -62,7 +62,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "examples"]
 filterwarnings = [
     "ignore::optuna.exceptions.ExperimentalWarning",
 ]

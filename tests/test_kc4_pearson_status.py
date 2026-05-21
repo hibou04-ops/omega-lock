@@ -21,7 +21,7 @@ and ``pearson_computable`` so consumers can branch on it.
 from __future__ import annotations
 
 from omega_lock.kill_criteria import KCThresholds, check_kc4
-from omega_lock.walk_forward import PearsonResult, pearson, pearson_result
+from omega_lock.walk_forward import pearson, pearson_result
 
 
 # ---------------------------------------------------------------------------

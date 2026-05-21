@@ -10,11 +10,14 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from typing import Any
 
 from omega_lock import (
+    EvalResult,
     IterativeConfig,
     KCThresholds,
     P1Config,
+    ParamSpec,
     run_p1,
     run_p1_iterative,
 )
@@ -30,17 +33,17 @@ TRAIN_SEED = 42
 TEST_SEED = 1337
 
 
-def _iter_cfg(**overrides) -> IterativeConfig:
-    defaults = dict(
-        rounds=3,
-        per_round_unlock_k=3,
-        grid_points_per_axis=5,
-        walk_forward_top_n=10,
-        trade_ratio_scale=1.0,
-        kc_thresholds=KCThresholds(trade_count_min=50),
-        stress_verbose=False,
-        grid_verbose=False,
-    )
+def _iter_cfg(**overrides: Any) -> IterativeConfig:
+    defaults: dict[str, Any] = {
+        "rounds": 3,
+        "per_round_unlock_k": 3,
+        "grid_points_per_axis": 5,
+        "walk_forward_top_n": 10,
+        "trade_ratio_scale": 1.0,
+        "kc_thresholds": KCThresholds(trade_count_min=50),
+        "stress_verbose": False,
+        "grid_verbose": False,
+    }
     defaults.update(overrides)
     return IterativeConfig(**defaults)
 
@@ -176,14 +179,16 @@ def test_phantom_deep_iterative_holdout_single_eval_across_multiple_rounds():
     iterate and holdout's once-only contract is checked in that regime.
     """
     class Counter:
-        def __init__(self, seed):
+        def __init__(self, seed: int) -> None:
             self.inner = PhantomKeyholeDeep(seed=seed)
             self.calls = 0
-        def param_space(self):
+
+        def param_space(self) -> list[ParamSpec]:
             return self.inner.param_space()
-        def evaluate(self, p):
+
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
             self.calls += 1
-            return self.inner.evaluate(p)
+            return self.inner.evaluate(params)
 
     ho = Counter(seed=9)
     r = run_p1_iterative(
@@ -201,4 +206,6 @@ def test_phantom_deep_iterative_holdout_single_eval_across_multiple_rounds():
         f"contract is exactly-once-at-end"
     )
     assert r.holdout_result is not None
-    assert r.holdout_result["params"] == r.final_baseline
+    holdout_result = r.holdout_result
+    assert holdout_result is not None
+    assert holdout_result["params"] == r.final_baseline

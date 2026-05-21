@@ -105,4 +105,8 @@ def test_no_constraints_means_record_and_prefer_agree():
     """Bare AuditingTarget with no constraints — every policy yields same best."""
     r1 = run_p1(train_target=_make_train([]), config=_cfg("record"))
     r2 = run_p1(train_target=_make_train([]), config=_cfg("prefer_feasible"))
-    assert r1.grid_best["unlocked"] == r2.grid_best["unlocked"]
+    r1_grid_best = r1.grid_best
+    r2_grid_best = r2.grid_best
+    assert r1_grid_best is not None
+    assert r2_grid_best is not None
+    assert r1_grid_best["unlocked"] == r2_grid_best["unlocked"]

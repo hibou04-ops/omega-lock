@@ -41,12 +41,13 @@ def test_rosenbrock_p1_converges_near_optimum():
     )
     result = run_p1(train_target=target, config=cfg, test_target=None, output_path=None)
 
-    assert result.grid_best is not None
-    bx = result.grid_best["unlocked"]["x"]
-    by = result.grid_best["unlocked"]["y"]
+    grid_best = result.grid_best
+    assert grid_best is not None
+    bx = grid_best["unlocked"]["x"]
+    by = grid_best["unlocked"]["y"]
     assert abs(bx - 1.0) <= 0.25, f"x should be near 1.0, got {bx}"
     assert abs(by - 1.0) <= 0.25, f"y should be near 1.0, got {by}"
-    assert result.grid_best["fitness"] >= -1e-6   # optimum = 0
+    assert grid_best["fitness"] >= -1e-6   # optimum = 0
 
 
 def test_rosenbrock_stress_both_params_nonzero():
@@ -73,26 +74,26 @@ def test_run_p1_with_walk_forward_hybrid():
     """Pipeline should accept test_target + validation_target together."""
 
     class LinearTrain:
-        def param_space(self):
+        def param_space(self) -> list[ParamSpec]:
             return [ParamSpec(name="a", dtype="float", low=0.0, high=10.0, neutral=5.0)]
 
-        def evaluate(self, p):
-            return EvalResult(fitness=p["a"] * 2.0, n_trials=10)
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
+            return EvalResult(fitness=params["a"] * 2.0, n_trials=10)
 
     class LinearTest:
-        def param_space(self):
+        def param_space(self) -> list[ParamSpec]:
             return [ParamSpec(name="a", dtype="float", low=0.0, high=10.0, neutral=5.0)]
 
-        def evaluate(self, p):
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
             # Corresponding test fitness: same ranking, different scale
-            return EvalResult(fitness=p["a"] * 1.8, n_trials=8)
+            return EvalResult(fitness=params["a"] * 1.8, n_trials=8)
 
     class Validator:
-        def param_space(self):
+        def param_space(self) -> list[ParamSpec]:
             return [ParamSpec(name="a", dtype="float", low=0.0, high=10.0, neutral=5.0)]
 
-        def evaluate(self, p):
-            return EvalResult(fitness=p["a"] * 1.5 + 1.0, n_trials=5)
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
+            return EvalResult(fitness=params["a"] * 1.5 + 1.0, n_trials=5)
 
     cfg = P1Config(
         unlock_k=1,
@@ -114,8 +115,9 @@ def test_run_p1_with_walk_forward_hybrid():
         validation_target=Validator(),
         config=cfg,
     )
-    assert result.walk_forward is not None
+    walk_forward = result.walk_forward
+    assert walk_forward is not None
     assert result.hybrid_top is not None
     assert len(result.hybrid_top) > 0
     # Perfect-rank preservation → pearson = 1
-    assert result.walk_forward["pearson"] == pytest.approx(1.0, abs=1e-6)
+    assert walk_forward["pearson"] == pytest.approx(1.0, abs=1e-6)

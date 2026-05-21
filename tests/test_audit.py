@@ -34,7 +34,8 @@ class StubTarget:
 
     def evaluate(self, params: dict) -> EvalResult:
         self.n_calls += 1
-        a = params["a"]; b = params["b"]
+        a = params["a"]
+        b = params["b"]
         fit = 1.0 - ((a - 1.0) ** 2 + (b - 2.0) ** 2) / 10.0
         return EvalResult(
             fitness=fit,
@@ -99,9 +100,12 @@ def test_auditingtarget_delegates_evaluate():
 def test_phase_and_round_stick_until_changed():
     t = StubTarget()
     w = AuditingTarget(t)
-    w.set_phase("stress"); w.evaluate({"a": 0.0, "b": 0.0})
-    w.set_phase("search"); w.evaluate({"a": 0.5, "b": 0.5})
-    w.set_round(1);        w.evaluate({"a": 1.0, "b": 1.0})
+    w.set_phase("stress")
+    w.evaluate({"a": 0.0, "b": 0.0})
+    w.set_phase("search")
+    w.evaluate({"a": 0.5, "b": 0.5})
+    w.set_round(1)
+    w.evaluate({"a": 1.0, "b": 1.0})
     phases = [r.phase for r in w.trail]
     rounds = [r.round_index for r in w.trail]
     assert phases == ["stress", "search", "search"]
@@ -130,7 +134,8 @@ def test_target_role_is_recorded():
 # ── Shared trail + counter ─────────────────────────────────────────────────
 
 def test_shared_trail_keeps_global_order():
-    t1 = StubTarget(); t2 = StubTarget()
+    t1 = StubTarget()
+    t2 = StubTarget()
     trail: list[AuditedRun] = []
     cnt = count(0)
     w1 = AuditingTarget(t1, target_role="train", shared_trail=trail, shared_counter=cnt)
@@ -183,15 +188,22 @@ def test_report_best_feasible_prefers_feasible_even_if_lower_fitness():
     w.evaluate({"a": 1.0, "b": 2.0})   # infeasible, highest fitness
     w.evaluate({"a": -1.0, "b": 2.0})  # feasible, lower fitness
     report = make_report(w, method="stub")
-    assert report.best_any.params["a"] == pytest.approx(1.0)
-    assert report.best_feasible.params["a"] == pytest.approx(-1.0)
+    best_any = report.best_any
+    best_feasible = report.best_feasible
+    assert best_any is not None
+    assert best_feasible is not None
+    assert best_any.params["a"] == pytest.approx(1.0)
+    assert best_feasible.params["a"] == pytest.approx(-1.0)
 
 
 def test_report_by_phase_by_role_by_round_filters():
     t = StubTarget()
     w_train = AuditingTarget(t, target_role="train")
-    w_train.set_phase("stress"); w_train.evaluate({"a": 0.0, "b": 0.0})
-    w_train.set_phase("search"); w_train.set_round(1); w_train.evaluate({"a": 1.0, "b": 1.0})
+    w_train.set_phase("stress")
+    w_train.evaluate({"a": 0.0, "b": 0.0})
+    w_train.set_phase("search")
+    w_train.set_round(1)
+    w_train.evaluate({"a": 1.0, "b": 1.0})
     rep = make_report(w_train, method="stub")
     assert len(rep.by_phase("stress")) == 1
     assert len(rep.by_phase("search")) == 1
@@ -206,8 +218,10 @@ def test_report_json_roundtrip_preserves_runs_and_structure():
     t = StubTarget()
     c = Constraint("pos", lambda p, r: r.fitness > 0, "positive fit")
     w = AuditingTarget(t, constraints=[c])
-    w.set_phase("baseline"); w.evaluate({"a": 0.0, "b": 0.0})
-    w.set_phase("search");   w.evaluate({"a": 1.0, "b": 2.0})
+    w.set_phase("baseline")
+    w.evaluate({"a": 0.0, "b": 0.0})
+    w.set_phase("search")
+    w.evaluate({"a": 1.0, "b": 2.0})
     report = make_report(w, method="stub", seed=42, stress_ranking=[("a", 0.9), ("b", 0.3)])
 
     js = report.to_json()

@@ -22,7 +22,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-import pytest
 
 from omega_lock import (
     BenchmarkSpec, CalibrationMethod, IterativeConfig, KCThresholds,
