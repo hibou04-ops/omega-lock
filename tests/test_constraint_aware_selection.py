@@ -71,6 +71,10 @@ def test_record_policy_picks_raw_max_default():
     # Global peak (a=2, b=2) violates constraint but record policy picks it.
     assert result.grid_best is not None
     assert result.grid_best["unlocked"]["a"] > 1.0
+    assert any(
+        "constraints were recorded but did not gate best-candidate selection" in msg
+        for msg in result.warnings
+    )
 
 
 def test_prefer_feasible_picks_constraint_respecting_max():

@@ -163,7 +163,10 @@ constraints = [
 ]
 
 wrapped = AuditingTarget(bitcell_target, constraints=constraints)
-result  = run_p1(train_target=wrapped, config=P1Config())
+result  = run_p1(
+    train_target=wrapped,
+    config=P1Config(constraint_policy="prefer_feasible"),
+)
 report  = make_report(wrapped, method="run_p1", seed=42)
 
 print(render_scorecard(report))
@@ -178,6 +181,12 @@ open("audit.json", "w").write(report.to_json())
 - **Multi-target, one trail.** `run_p1` juggles train + test + holdout targets. Wrap each with `AuditingTarget` sharing `shared_trail` and `shared_counter`; the trail stays globally ordered.
 - **Method-agnostic by construction.** Because `AuditingTarget` implements the `CalibrableTarget` protocol, every optimizer in this repo works unchanged — grid, zooming grid, random, TPE. External optimizers wrapped via `CallableAdapter` work the same way.
 - **JSON roundtrip.** `report.to_json()` / `AuditReport.from_json(s)` — reports are versionable, diffable, archivable.
+
+For normal audit and CI usage, prefer `constraint_policy="prefer_feasible"` so
+`grid_best` is the highest-fitness candidate that satisfies declared
+constraints. The default `constraint_policy="record"` is kept for backward
+compatibility: it records constraint pass/fail on the audit trail but does not
+gate best-candidate selection, and artifacts surface that warning explicitly.
 
 ### When to use it
 
@@ -543,6 +552,9 @@ Pass a third target that is *never touched during rounds* via `run_p1(..., holdo
 - `holdout_mode="gate"` — applies `holdout_min_fitness` and `holdout_min_trade_ratio` thresholds. Either threshold violated → status flips to `FAIL:HOLDOUT` (or appends `,HOLDOUT` if KC checks already failed). Use when the held-out slice IS the ship gate (e.g. a held-out PVT corner that absolutely must pass).
 
 The artifact's `holdout_result.gate_status` records the verdict: `EVIDENCE_ONLY` / `PASS` / `FAIL` / `SKIP` (no holdout target supplied). CI consumers should key off `gate_status` rather than re-deriving the verdict from the raw fitness.
+
+In `evidence_only` mode the artifact also warns that holdout was evaluated
+but did not gate final status.
 
 ## Fractal-vise Mode (multi-scale refinement)
 

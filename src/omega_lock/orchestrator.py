@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import asdict, dataclass, field
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,27 @@ from omega_lock.stress import (
 )
 from omega_lock.target import CalibrableTarget, EvalResult
 from omega_lock.walk_forward import WalkForward, WalkForwardResult
+
+
+P1_RESULT_SCHEMA_VERSION = "omega-lock.p1-result.v2"
+ITERATIVE_RESULT_SCHEMA_VERSION = "omega-lock.iterative-result.v2"
+CONSTRAINT_RECORD_WARNING = (
+    "constraint_policy='record': constraints were recorded but did not gate "
+    "best-candidate selection."
+)
+HOLDOUT_EVIDENCE_ONLY_WARNING = (
+    "holdout_mode='evidence_only': holdout was evaluated but did not gate final status."
+)
+ITERATIVE_TEST_REUSE_WARNING = (
+    "repeated test reuse weakens KC-4 evidence."
+)
+
+
+def _omega_lock_version() -> str:
+    try:
+        return version("omega-lock")
+    except PackageNotFoundError:
+        return "unknown"
 
 
 @dataclass
@@ -168,6 +190,15 @@ class P1Result:
     holdout_result: dict[str, Any] | None = None
 
     kc_reports: list[dict[str, Any]] = field(default_factory=list)
+    schema_version: str = P1_RESULT_SCHEMA_VERSION
+    omega_lock_version: str = field(default_factory=_omega_lock_version)
+    config_full: dict[str, Any] = field(default_factory=dict)
+    constraint_policy: str = "record"
+    holdout_mode: str = "evidence_only"
+    kc_thresholds: dict[str, Any] = field(default_factory=dict)
+    search_settings: dict[str, Any] = field(default_factory=dict)
+    random_seed: int | None = None
+    warnings: list[str] = field(default_factory=list)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -185,6 +216,61 @@ def _eval_to_dict(r: EvalResult) -> dict[str, Any]:
         "fitness": r.fitness,
         "n_trials": r.n_trials,
         "metadata": dict(r.metadata),
+    }
+
+
+def _p1_legacy_config(cfg: P1Config) -> dict[str, Any]:
+    return {
+        "unlock_k": cfg.unlock_k,
+        "grid_points_per_axis": cfg.grid_points_per_axis,
+        "walk_forward_top_n": cfg.walk_forward_top_n,
+        "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
+        "kc_thresholds": asdict(cfg.kc_thresholds),
+    }
+
+
+def _p1_search_settings(cfg: P1Config) -> dict[str, Any]:
+    return {
+        "method": "zooming_grid" if cfg.zoom_rounds > 1 else "grid",
+        "unlock_k": cfg.unlock_k,
+        "grid_points_per_axis": cfg.grid_points_per_axis,
+        "zoom_rounds": cfg.zoom_rounds,
+        "zoom_factor": cfg.zoom_factor,
+        "walk_forward_top_n": cfg.walk_forward_top_n,
+        "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
+        "run_sc2_baseline": cfg.run_sc2_baseline,
+        "sc2_random_seed": cfg.sc2_random_seed,
+    }
+
+
+def _iterative_legacy_config(cfg: IterativeConfig) -> dict[str, Any]:
+    return {
+        "rounds": cfg.rounds,
+        "per_round_unlock_k": cfg.per_round_unlock_k,
+        "grid_points_per_axis": cfg.grid_points_per_axis,
+        "walk_forward_top_n": cfg.walk_forward_top_n,
+        "trade_ratio_scale": cfg.trade_ratio_scale,
+        "kc_thresholds": asdict(cfg.kc_thresholds),
+    }
+
+
+def _iterative_search_settings(cfg: IterativeConfig) -> dict[str, Any]:
+    return {
+        "method": "iterative_zooming_grid" if cfg.zoom_rounds > 1 else "iterative_grid",
+        "rounds": cfg.rounds,
+        "per_round_unlock_k": cfg.per_round_unlock_k,
+        "grid_points_per_axis": cfg.grid_points_per_axis,
+        "zoom_rounds": cfg.zoom_rounds,
+        "zoom_factor": cfg.zoom_factor,
+        "walk_forward_top_n": cfg.walk_forward_top_n,
+        "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
+        "run_sc2_baseline": cfg.run_sc2_baseline,
+        "sc2_random_seed": cfg.sc2_random_seed,
+        "stop_on_kc_fail": cfg.stop_on_kc_fail,
+        "min_improvement": cfg.min_improvement,
     }
 
 
@@ -447,6 +533,7 @@ def run_p1(
             "fitness_vs_test": (ho.fitness - test_fit) if test_fit is not None else None,
             "trade_ratio_vs_train": trade_ratio_vs_train,
             "mode": cfg.holdout_mode,
+            "status_gating": "gated" if cfg.holdout_mode == "gate" else "not_gated",
         }
         if cfg.holdout_mode == "gate":
             failed_reasons: list[str] = []
@@ -479,6 +566,8 @@ def run_p1(
                 holdout_gate_status = "PASS"
         else:
             holdout_gate_status = "EVIDENCE_ONLY"
+            holdout_dict["status_gating"] = "not_gated"
+            holdout_dict["warning"] = HOLDOUT_EVIDENCE_ONLY_WARNING
         holdout_dict["gate_status"] = holdout_gate_status
 
     return _finalize(
@@ -517,17 +606,15 @@ def _finalize(
     holdout: dict[str, Any] | None = None,
 ) -> P1Result:
     elapsed = time.time() - t_start
+    warnings: list[str] = []
+    if cfg.constraint_policy == "record":
+        warnings.append(CONSTRAINT_RECORD_WARNING)
+    if holdout is not None and cfg.holdout_mode == "evidence_only":
+        warnings.append(HOLDOUT_EVIDENCE_ONLY_WARNING)
     result = P1Result(
         status=status,
         elapsed_seconds=elapsed,
-        config={
-            "unlock_k": cfg.unlock_k,
-            "grid_points_per_axis": cfg.grid_points_per_axis,
-            "walk_forward_top_n": cfg.walk_forward_top_n,
-            "trade_ratio_scale": cfg.trade_ratio_scale,
-            "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
-            "kc_thresholds": asdict(cfg.kc_thresholds),
-        },
+        config=_p1_legacy_config(cfg),
         baseline_result=_eval_to_dict(baseline),
         stress_results=[s.to_dict() for s in stress],
         top_k=top_k,
@@ -541,6 +628,15 @@ def _finalize(
             {"name": r.name, "status": r.status, "message": r.message, "detail": r.detail}
             for r in kc_reports
         ],
+        schema_version=P1_RESULT_SCHEMA_VERSION,
+        omega_lock_version=_omega_lock_version(),
+        config_full=asdict(cfg),
+        constraint_policy=cfg.constraint_policy,
+        holdout_mode=cfg.holdout_mode,
+        kc_thresholds=asdict(cfg.kc_thresholds),
+        search_settings=_p1_search_settings(cfg),
+        random_seed=cfg.sc2_random_seed if cfg.run_sc2_baseline else None,
+        warnings=warnings,
     )
     if output_path is not None:
         result.save(output_path)
@@ -642,13 +738,29 @@ class IterativeResult:
     holdout_recommended: bool = False
     holdout_present: bool = False
     advisory_messages: list[str] = field(default_factory=list)
+    schema_version: str = ITERATIVE_RESULT_SCHEMA_VERSION
+    omega_lock_version: str = field(default_factory=_omega_lock_version)
+    config: dict[str, Any] = field(default_factory=dict)
+    config_full: dict[str, Any] = field(default_factory=dict)
+    kc_thresholds: dict[str, Any] = field(default_factory=dict)
+    search_settings: dict[str, Any] = field(default_factory=dict)
+    random_seed: int | None = None
+    test_reuse_warning: str | None = None
+    warnings: list[str] = field(default_factory=list)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
+            "schema_version": self.schema_version,
+            "omega_lock_version": self.omega_lock_version,
             "final_status": self.final_status,
             "stop_reason": self.stop_reason,
             "total_elapsed_seconds": self.total_elapsed_seconds,
+            "config": self.config,
+            "config_full": self.config_full,
+            "kc_thresholds": self.kc_thresholds,
+            "search_settings": self.search_settings,
+            "random_seed": self.random_seed,
             "locked_in_order": self.locked_in_order,
             "fitness_trajectory": self.fitness_trajectory,
             "round_best_fitness": self.round_best_fitness,
@@ -660,6 +772,8 @@ class IterativeResult:
             "holdout_recommended": self.holdout_recommended,
             "holdout_present": self.holdout_present,
             "advisory_messages": list(self.advisory_messages),
+            "test_reuse_warning": self.test_reuse_warning,
+            "warnings": list(self.warnings),
         }
         path.write_text(json.dumps(payload, indent=2, default=_json_fallback))
 
@@ -801,9 +915,11 @@ def run_p1_iterative(
     reuse_active = test_target is not None and len(rounds) > 0
     holdout_present_flag = holdout_dict is not None
     advisory_messages: list[str] = []
+    test_reuse_warning: str | None = None
     if reuse_active and len(rounds) > 1:
+        test_reuse_warning = ITERATIVE_TEST_REUSE_WARNING
         advisory_messages.append(
-            f"test_target was reused across {len(rounds)} rounds for "
+            f"{ITERATIVE_TEST_REUSE_WARNING} test_target was reused across {len(rounds)} rounds for "
             "lock-in decisions; per-round KC-4 evidence weakens as "
             "rounds accumulate. Provide a held-out slice via "
             "holdout_target= for an independent generalization check."
@@ -830,6 +946,15 @@ def run_p1_iterative(
         holdout_recommended=reuse_active and not holdout_present_flag,
         holdout_present=holdout_present_flag,
         advisory_messages=advisory_messages,
+        schema_version=ITERATIVE_RESULT_SCHEMA_VERSION,
+        omega_lock_version=_omega_lock_version(),
+        config=_iterative_legacy_config(cfg),
+        config_full=asdict(cfg),
+        kc_thresholds=asdict(cfg.kc_thresholds),
+        search_settings=_iterative_search_settings(cfg),
+        random_seed=cfg.sc2_random_seed if cfg.run_sc2_baseline else None,
+        test_reuse_warning=test_reuse_warning,
+        warnings=list(advisory_messages),
     )
     if output_path is not None:
         result.save(output_path)

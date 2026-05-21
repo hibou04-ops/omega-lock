@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import asdict, dataclass, field
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -76,6 +77,14 @@ _OPTUNA_INSTALL_HINT = (
     "Optuna is required for run_p2_tpe but is not installed. "
     "Install it via `pip install \"omega-lock[p2]\"` or `pip install \"optuna>=3.0\"`."
 )
+P2_RESULT_SCHEMA_VERSION = "omega-lock.p2-result.v2"
+
+
+def _omega_lock_version() -> str:
+    try:
+        return version("omega-lock")
+    except PackageNotFoundError:
+        return "unknown"
 
 
 def _require_optuna() -> Any:
@@ -145,6 +154,13 @@ class P2Result:
     walk_forward: dict[str, Any] | None = None
 
     kc_reports: list[dict[str, Any]] = field(default_factory=list)
+    schema_version: str = P2_RESULT_SCHEMA_VERSION
+    omega_lock_version: str = field(default_factory=_omega_lock_version)
+    config_full: dict[str, Any] = field(default_factory=dict)
+    kc_thresholds: dict[str, Any] = field(default_factory=dict)
+    search_settings: dict[str, Any] = field(default_factory=dict)
+    seed: int | None = None
+    warnings: list[str] = field(default_factory=list)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -162,6 +178,32 @@ def _eval_to_dict(r: EvalResult) -> dict[str, Any]:
         "fitness": r.fitness,
         "n_trials": r.n_trials,
         "metadata": dict(r.metadata),
+    }
+
+
+def _p2_legacy_config(cfg: P2Config) -> dict[str, Any]:
+    return {
+        "unlock_k": cfg.unlock_k,
+        "n_trials": cfg.n_trials,
+        "seed": cfg.seed,
+        "walk_forward_top_n": cfg.walk_forward_top_n,
+        "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
+        "multivariate": cfg.multivariate,
+        "kc_thresholds": asdict(cfg.kc_thresholds),
+    }
+
+
+def _p2_search_settings(cfg: P2Config) -> dict[str, Any]:
+    return {
+        "method": "tpe",
+        "unlock_k": cfg.unlock_k,
+        "n_trials": cfg.n_trials,
+        "seed": cfg.seed,
+        "walk_forward_top_n": cfg.walk_forward_top_n,
+        "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
+        "multivariate": cfg.multivariate,
     }
 
 
@@ -403,16 +445,7 @@ def _finalize(
     result = P2Result(
         status=status,
         elapsed_seconds=elapsed,
-        config={
-            "unlock_k": cfg.unlock_k,
-            "n_trials": cfg.n_trials,
-            "seed": cfg.seed,
-            "walk_forward_top_n": cfg.walk_forward_top_n,
-            "trade_ratio_scale": cfg.trade_ratio_scale,
-            "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
-            "multivariate": cfg.multivariate,
-            "kc_thresholds": asdict(cfg.kc_thresholds),
-        },
+        config=_p2_legacy_config(cfg),
         baseline_result=_eval_to_dict(baseline),
         stress_results=[s.to_dict() for s in stress],
         top_k=top_k,
@@ -424,6 +457,12 @@ def _finalize(
             {"name": r.name, "status": r.status, "message": r.message, "detail": r.detail}
             for r in kc_reports
         ],
+        schema_version=P2_RESULT_SCHEMA_VERSION,
+        omega_lock_version=_omega_lock_version(),
+        config_full=asdict(cfg),
+        kc_thresholds=asdict(cfg.kc_thresholds),
+        search_settings=_p2_search_settings(cfg),
+        seed=cfg.seed,
     )
     if output_path is not None:
         result.save(output_path)

@@ -22,6 +22,7 @@ import itertools
 from typing import Any
 
 from omega_lock.grid import GridPoint
+from omega_lock.kill_criteria import KCThresholds, check_kc4
 from omega_lock.target import EvalResult, ParamSpec
 from omega_lock.walk_forward import WalkForward
 
@@ -117,10 +118,38 @@ def test_walk_forward_to_dict_round_trips_new_fields():
     d = result.to_dict()
     assert "test_best_fitness" in d
     assert "test_best_params" in d
+    assert d["pearson_status"] == result.pearson_status
+    assert d["pearson_computable"] == result.pearson_computable
     assert d["test_best_params"] == result.test_best_params
     # Ensure the dict is a copy, not a live reference.
     d["test_best_params"]["mutated"] = True
     assert "mutated" not in result.test_best_params
+
+
+def test_walk_forward_surfaces_noncomputable_pearson_status():
+    class _ConstantTestTarget:
+        def param_space(self) -> list[ParamSpec]:
+            return []
+
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
+            return EvalResult(fitness=1.0, n_trials=10)
+
+    train_grid = [_grid_point("a", 0.9), _grid_point("b", 0.8)]
+    wf = WalkForward(test_target=_ConstantTestTarget())
+    result = wf.run(train_grid=train_grid, top_n=2)
+
+    assert result.pearson == 0.0
+    assert result.pearson_status == "ZERO_VARIANCE_Y"
+    assert result.pearson_computable is False
+
+    report = check_kc4(
+        train_fitnesses=result.train_fitnesses,
+        test_fitnesses=result.test_fitnesses,
+        trade_ratio=result.trade_ratio_scaled,
+        thresholds=KCThresholds(trade_count_min=1),
+    )
+    assert report.detail["pearson_status"] == result.pearson_status
+    assert report.detail["pearson_computable"] == result.pearson_computable
 
 
 def test_walk_forward_top_n_smaller_than_grid_only_evals_top_n():

@@ -88,6 +88,8 @@ class WalkForwardResult:
     test_fitnesses: list[float]
     test_n_trials: list[int]
     pearson: float
+    pearson_status: PearsonStatus
+    pearson_computable: bool
     train_best_trades_mean: float
     test_best_trades: int
     test_best_fitness: float           # cached from the same evaluation as test_best_trades
@@ -101,6 +103,8 @@ class WalkForwardResult:
             "test_fitnesses": list(self.test_fitnesses),
             "test_n_trials": list(self.test_n_trials),
             "pearson": self.pearson,
+            "pearson_status": self.pearson_status,
+            "pearson_computable": self.pearson_computable,
             "train_best_trades_mean": self.train_best_trades_mean,
             "test_best_trades": self.test_best_trades,
             "test_best_fitness": self.test_best_fitness,
@@ -160,13 +164,19 @@ class WalkForward:
             if (train_trades_mean > 0 and self.trade_ratio_scale > 0)
             else 0.0
         )
+        pearson_outcome = pearson_result(train_fs, test_fs)
+        pearson_value = (
+            pearson_outcome.value if pearson_outcome.value is not None else 0.0
+        )
 
         return WalkForwardResult(
             top_n=len(top),
             train_fitnesses=train_fs,
             test_fitnesses=test_fs,
             test_n_trials=test_trials,
-            pearson=pearson(train_fs, test_fs),
+            pearson=pearson_value,
+            pearson_status=pearson_outcome.status,
+            pearson_computable=pearson_outcome.computable,
             train_best_trades_mean=train_trades_mean,
             test_best_trades=test_best.n_trials,
             test_best_fitness=test_best.fitness,

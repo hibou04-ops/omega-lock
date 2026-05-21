@@ -69,6 +69,12 @@ def test_evidence_only_default_keeps_status_unchanged():
     assert holdout_result is not None
     assert holdout_result["mode"] == "evidence_only"
     assert holdout_result["gate_status"] == "EVIDENCE_ONLY"
+    assert holdout_result["status_gating"] == "not_gated"
+    assert "holdout was evaluated but did not gate final status" in holdout_result["warning"]
+    assert any(
+        "holdout was evaluated but did not gate final status" in msg
+        for msg in r.warnings
+    )
 
 
 def test_evidence_only_thresholds_ignored_even_if_set():
