@@ -1,18 +1,26 @@
 # Omega-Lock
 
-> An **audit gate for tuned candidates** — stress boundaries, hard constraints, walk-forward validation, and an append-only JSON trail your reviewer can diff. Bring your own optimizer.
+> Audit tuned candidates before they ship: stress boundaries, hard constraints, walk-forward validation, and an append-only JSON trail your reviewer can diff.
 
-[![Release](https://img.shields.io/badge/release-0.2.3-orange.svg)](https://pypi.org/project/omega-lock/0.2.3/)
+[![Release](https://img.shields.io/badge/release-0.2.4-orange.svg)](https://pypi.org/project/omega-lock/0.2.4/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Quality](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-brightgreen.svg)](tests/)
 [![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
 
 ```bash
-pip install omega-lock==0.2.3
+pip install omega-lock==0.2.4
 ```
 
-> *Lock* refers to **locking a candidate behind audit gates** — hard constraints, stability checks, walk-forward generalization — so a tuned result never ships until it clears the same mechanical review every time. Not security or DRM software.
+Omega-Lock is an audit gate for calibration results. It does not try to be the fastest optimizer. It asks whether the candidate produced by your optimizer survives the same mechanical review every time: declared constraints, train→test generalization, stress-boundary checks, and reviewable evidence.
+
+---
+
+### Quick Diagnostic:
+* **What is it?** A structural failure-boundary auditor for tuned calibration candidates.
+* **Why does it matter?** It stops overfit or constraint-violating candidates from shipping by enforcing pre-declared ship gates and leaving an append-only, tamper-evident audit trail.
+* **Does it require ground truth?** **No.** Omega-Lock is not an answer-key evaluator. It audits failure boundaries, requiring stress profiles, invariants, failure criteria, thresholds, and walk-forward slices instead.
+* **How do I see it work in 60 seconds?** Check the demo video below and run `python examples/demo_replay.py`.
 
 ---
 
@@ -320,10 +328,10 @@ Result (JSON-serializable) + status PASS or FAIL:KC-N
 
 ```bash
 # PyPI (recommended)
-pip install omega-lock==0.2.3
+pip install omega-lock==0.2.4
 
 # With optional Optuna TPE (P2) support
-pip install "omega-lock[p2]==0.2.3"
+pip install "omega-lock[p2]==0.2.4"
 
 # From source (development)
 git clone https://github.com/hibou04-ops/omega-lock.git
@@ -439,7 +447,7 @@ print(result.holdout_result)              # {'fitness': 144.41, 'n_trials': ...,
 
 ### 7. Optuna TPE (continuous search)
 
-Install with `pip install "omega-lock[p2]==0.2.3"`. TPE replaces the grid with adaptive Bayesian sampling.
+Install with `pip install "omega-lock[p2]==0.2.4"`. TPE replaces the grid with adaptive Bayesian sampling.
 
 ```python
 from omega_lock import P2Config, run_p2_tpe
@@ -455,6 +463,8 @@ result = run_p2_tpe(
 ---
 
 ## Release History
+
+**0.2.4** (2026-05-22) — **Documentation consistency release.** Restores README_KR.md, EASY_README.md, and EASY_README_KR.md to match the main README’s failure-boundary audit positioning. Clarifies the no-ground-truth-required model across all docs, sharpens the first-screen explanation, preserves the 60-second demo, and aligns version references for PyPI publishing.
 
 **0.2.3** (2026-05-22) — **Structural audit positioning.** Clarifies that Omega-Lock is a failure-boundary auditor, not an answer-key evaluator. Adds explicit no-ground-truth-required guidance, strengthens invariant / threshold / failure-oracle language, restores the 60-second demo near the top, aligns README and package metadata, and preserves the audit-first long-form documentation.
 
@@ -667,96 +677,6 @@ optuna_tpe          0.750   1.000  0.970  23.9%     0.858    10.0%
 ```
 
 Short version: no search method wins on every metric, the audit (KC gates + walk-forward) is what makes the scorecard comparable, and the stress-rank Spearman stays around 0.95 across all 30 runs (stress measurement is reliable even where the search methods disagree).
-
-**CI regression guard**: `tests/test_benchmark_regression.py` compares the current run against a frozen `tests/fixtures/benchmark_gold.json`. Any drift > `1e-6` on deterministic metrics fails the test. Regenerate intentionally via `OMEGA_LOCK_UPDATE_GOLD=1 pytest tests/test_benchmark_regression.py`.
-
----
-
-## Adapter Patterns
-
-Wrap arbitrary external systems as `CalibrableTarget`. Two idiomatic patterns, both in `examples/adapter_example.py`.
-
-### Pattern 1: `CallableAdapter` (one-liner for pure functions)
-
-```python
-from omega_lock import CallableAdapter, ParamSpec, run_p1
-
-def external_score(params: dict) -> float:
-    return -((params["a"] - 3.0) ** 2 + (params["b"] - 7.0) ** 2)
-
-target = CallableAdapter(
-    fitness_fn=external_score,
-    specs=[
-        ParamSpec(name="a", dtype="float", low=0.0, high=10.0, neutral=5.0),
-        ParamSpec(name="b", dtype="float", low=0.0, high=10.0, neutral=5.0),
-    ],
-)
-
-result = run_p1(train_target=target, config=P1Config(unlock_k=2, zoom_rounds=4))
-```
-
-### Pattern 2: Stateful class (for systems with setup cost)
-
-Implement `param_space()` + `evaluate()` directly when your target has internal state (trained models, pre-loaded data, active sessions). The template in `examples/adapter_example.py` shows the full shape.
-
----
-
-## Tests
-
-```bash
-pip install -e ".[dev]"
-pytest tests/                    # all
-pytest tests/test_stress.py -v   # single module
-pytest --cov=omega_lock          # coverage
-```
-
----
-
-## Limitations
-
-- **Determinism assumption.** Stress measurement is accurate only when the target is deterministic. For non-deterministic targets, fix the seed or average multiple evaluations.
-- **Suppressed-stress flag.** If a parameter's stress is known to be artificially low due to an environmental constraint (e.g. an upstream subsystem was mocked or disabled during measurement), mark it with `ParamSpec(ofi_biased=True)`. The flag appears in the result for observability, but nothing is auto-filtered.
-- **Continuous + int mixed.** Epsilon is type-aware (continuous = 10% of range, int = 1, bool = flip). Override via `StressOptions(epsilons={...})`.
-- **Grid dimension explosion.** K=3 / 5 points-per-axis = 125 combos. For larger K, adaptive search like Optuna TPE is better (currently outside P2 TPE's scope; future enhancement).
-
----
-
-## Roadmap
-
-### Shipped in current version
-
-- ✅ **Iterative coordinate descent** — `run_p1_iterative`, multi-round lock-in.
-- ✅ **Zooming grid** — `ZoomingGridSearch`, geometric refinement inside a round.
-- ✅ **Optuna TPE (P2)** — `run_p2_tpe`, continuous-space search as opt-in (`pip install "omega-lock[p2]"`).
-- ✅ **Random-search baseline** — `RandomSearch` + `compare_to_grid`, SC-2 advisory gate in `run_p1`.
-- ✅ **Holdout target** — single-shot out-of-sample evaluation, never touched during rounds.
-- ✅ **Objective benchmark** — `run_benchmark` + `BenchmarkReport`, RAGAS-style scorecard + CI regression guard.
-- ✅ **Adapter patterns** — `CallableAdapter` + stateful-class template.
-
-### Still out of scope (application-specific)
-
-- **Domain-specific adapters** — wrapping a particular external system (trading strategy, ML model, simulation) as a `CalibrableTarget` belongs outside this generic library. See `CallableAdapter` and the stateful-class template in `examples/adapter_example.py` for the general pattern.
-- **Ensemble-averaged `evaluate` helper** — for non-deterministic targets; the `CalibrableTarget` docstring says "report ensemble averages" but no helper ships. Add when a real use case appears.
-
----
-
-## Citation
-
-If you use Omega-Lock in research or a published project, please cite:
-
-```bibtex
-@software{omega_lock_2026,
-  author  = {hibou},
-  title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
-  year    = {2026},
-  version = {0.2.3},
-  url     = {https://github.com/hibou04-ops/omega-lock}
-}
-```
-
----
-
-## License
 
 Apache 2.0 License. See [LICENSE](https://github.com/hibou04-ops/omega-lock/blob/main/LICENSE) for details.
 
