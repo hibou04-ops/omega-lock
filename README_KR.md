@@ -1,14 +1,14 @@
 # Omega-Lock
 
-> 어떤 optimizer나 수동 튜닝 과정이 만든 후보를 배포 전에 검증하는 **옵티마이저 후단 감사 게이트**입니다. Omega-Lock은 튜닝된 후보가 일반화되는지, 선언한 제약조건 안에 있는지, 리뷰 가능한 JSON 아티팩트를 남기는지 확인합니다.
+> 튜닝된 후보를 배포 전에 검증하는 **옵티마이저 후단 감사 게이트**입니다. Omega-Lock은 stress boundary, 하드 제약조건, 워크포워드 검증, 리뷰 가능한 JSON 아티팩트로 후보가 구조적으로 무너지는 지점을 드러냅니다.
 
-[![Release](https://img.shields.io/badge/release-0.2.2-orange.svg)](https://pypi.org/project/omega-lock/0.2.2/)
+[![Release](https://img.shields.io/badge/release-0.2.3-orange.svg)](https://pypi.org/project/omega-lock/0.2.3/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Quality](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-brightgreen.svg)](tests/)
 
 ```bash
-pip install omega-lock==0.2.2
+pip install omega-lock==0.2.3
 ```
 
 Omega-Lock은 **검색 우선(search-first)이 아니라 감사 우선(audit-first)** 도구입니다. Grid search, Optuna, Bayesian search, 사내 optimizer, 사람이 직접 고른 후보까지 어떤 방식으로 후보를 만들었든 상관없습니다. Omega-Lock은 그 다음 단계에서 묻습니다.
@@ -24,6 +24,41 @@ P1Config(constraint_policy="prefer_feasible")
 ```
 
 `prefer_feasible`는 제약조건을 만족한 후보 중 fitness가 가장 높은 후보를 우선합니다. 더 엄격한 릴리스 게이트에는 `hard_fail`을 쓰고, 하위 호환 때문에 제약조건 위반을 기록만 해야 하는 경우에만 `record`를 쓰세요.
+
+## 정답 주입이 필요 없는 이유 — Omega-Lock은 파괴 경계 감사 도구
+
+Omega-Lock은 답안 채점기가 아니라 구조적 파괴 경계 감사 도구입니다. 많은 도메인에는 주입할 수 있는 단일한 “정답”이 없습니다. 금속 피로파괴 시험에 금속의 정답이 필요한 것이 아니라 하중 조건, 반복 조건, 파단 기준, 허용 임계값이 필요한 것처럼, omega-lock에는 정답 라벨이 아니라 stress profile, invariant, failure criterion, threshold가 필요합니다.
+
+Omega-Lock에 필요한 것은 다음입니다.
+
+- **stress profile**: 어떤 파라미터, slice, context, corner, regime을 흔들어 볼지
+- **invariant**: valid JSON, required key, PVT safety margin, max drawdown, audit trail 무결성처럼 항상 유지되어야 하는 조건
+- **failure criterion**: 무엇을 파괴나 실패로 볼지
+- **threshold**: 허용과 실패를 나누는 선언된 선
+- **walk-forward slice**: 후보가 튜닝에 사용하지 않은 데이터나 regime
+- **audit artifact**: 리뷰어가 diff할 수 있는 append-only 증거 trail
+
+Omega-Lock에 일반적으로 필요하지 않은 것은 다음입니다.
+
+- 모든 입력에 대한 gold answer
+- 모든 출력에 대한 human preference label
+- 목표 fitness 자체가 쓰지 않는 semantic judge
+
+요약하면:
+
+```text
+omega-lock = answer key not required.
+omega-lock does require failure oracle / invariant / threshold.
+```
+
+| 오해 | 정확한 해석 |
+|---|---|
+| “Omega-Lock은 답을 채점한다.” | 선언한 gate를 후보가 구조적으로 통과하는지 감사한다. |
+| “ground truth label이 필요하다.” | invariant, failure criterion, threshold, stress case가 필요하다. |
+| “root cause를 수학적으로 증명한다.” | 어디서 어떻게 실패했는지에 대한 증거를 기록한다. |
+| “optimizer를 대체한다.” | optimizer를 감싸거나 동반한다. 감사 규율은 동일하게 유지된다. |
+
+Omega-Lock은 정확성을 보장하지 않고, root cause를 증명하지 않으며, domain validation을 대체하지 않습니다. 또한 per-request runtime wrapper나 security/DRM 도구도 아닙니다. 가장 잘 맞는 위치는 offline audit, CI gate, batch health check, diagnostic replay입니다.
 
 ## 빠른 시작
 
@@ -118,7 +153,9 @@ python examples/demo_sram.py
 
 ## 릴리스 기록
 
-**0.2.2** (2026-05-22) - **Badge hardening and release-surface synchronization.** 동적 PyPI version badge를 정적 release badge로 교체해 Shields/PyPI/Camo 캐시 때문에 오래된 버전이 보이는 문제를 피했습니다. 현재 install command와 citation도 0.2.2로 동기화했습니다. 버전 metadata 외 런타임 동작 변경은 없습니다.
+**0.2.3** (2026-05-22) - **Structural audit positioning.** Omega-Lock이 답안 채점기가 아니라 failure-boundary auditor라는 점을 명확히 했습니다. 정답 라벨이 일반적으로 필요하지 않다는 guidance를 추가하고, invariant / threshold / failure oracle 언어를 강화했으며, 60초 데모와 긴 audit-first 문서를 보존했습니다. 버전 metadata 외 런타임 동작 변경은 없습니다.
+
+**0.2.2** (2026-05-22) - **Badge hardening and release-surface synchronization.** 동적 PyPI version badge를 정적 release badge로 교체해 Shields/PyPI/Camo 캐시 때문에 오래된 버전이 보이는 문제를 피했습니다. 당시 install command와 citation도 0.2.2로 동기화했습니다. 버전 metadata 외 런타임 동작 변경은 없습니다.
 
 **0.2.1** (2026-05-22) - **Release sync and badge cache-bust correction.** 동적 PyPI badge URL에 release-specific cache-bust query를 추가하고, 0.2.0 업로드 이후 release metadata와 README/PyPI 표면을 다시 동기화했습니다. 버전 metadata 외 런타임 동작 변경은 없습니다.
 
