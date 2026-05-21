@@ -1,21 +1,19 @@
-# Omega-Lock — Easy Start
+# Omega-Lock Easy Start
 
-> You already have candidate parameters from some optimizer. Omega-Lock asks: **did this candidate actually generalize?**
+> You already have candidate parameters from an optimizer or manual tuning. Omega-Lock asks: **did this candidate actually generalize?**
 
-[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg)](https://pypi.org/project/omega-lock/)
+[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=60&release=0.2.1)](https://pypi.org/project/omega-lock/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 
 ## What It Does
 
-Omega-Lock is **audit-first, not search-first**. It sits after your optimizer and checks whether the tuned candidate is safe to trust.
+Omega-Lock is **audit-first, not search-first**. It sits after candidate generation and checks:
 
-It records:
-
-- constraints and whether each candidate passed them
-- walk-forward behavior on test data
+- declared constraints
+- walk-forward behavior
 - holdout evidence when you provide a holdout target
-- warnings when a mode records evidence but does not gate selection/status
-- JSON audit artifacts reviewers can inspect and diff
+- warnings for non-gating evidence modes
+- JSON audit artifacts that reviewers can inspect and diff
 
 ## Install
 
@@ -46,7 +44,7 @@ print(result.warnings)
 print(result.config_full)
 ```
 
-Use an `AuditingTarget` with `Constraint` objects when you want a full trail of constraint pass/fail records.
+Use `AuditingTarget` with `Constraint` objects when you want a full constraint pass/fail trail.
 
 ## Constraint Policy
 
@@ -54,12 +52,20 @@ Use an `AuditingTarget` with `Constraint` objects when you want a full trail of 
 - `prefer_feasible`: recommended for normal use. Feasible candidates are preferred.
 - `hard_fail`: stricter release/CI gate.
 
-## What Changed in 0.1.9
+## Local Demos
 
-- README and PyPI long description were sharpened.
-- PyPI badges are dynamic.
-- Korean docs were regenerated as valid UTF-8.
-- Release checklist was added so version, tag, dist artifacts, and PyPI stay in sync.
-- No runtime behavior changed.
+```bash
+python examples/demo_replay.py
+python examples/demo_sram.py
+```
+
+They are deterministic and require no network or API keys.
+
+## What Changed in 0.2.1
+
+- PyPI badge URLs now include a release-specific cache-bust query.
+- Release metadata and README/PyPI surfaces were synchronized after 0.2.0.
+- The badge remains dynamic and is not a hardcoded version badge.
+- No runtime behavior changed beyond version metadata.
 
 See [README.md](README.md) for the full documentation.
