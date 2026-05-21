@@ -108,8 +108,9 @@ def test_iterative_advisory_warns_about_test_reuse_at_multi_round():
         holdout_target=PhantomKeyhole(seed=9),
         config=_iter_config(rounds=3),
     )
+    assert r.test_reuse_warning == "repeated test reuse weakens KC-4 evidence."
     assert any(
-        "reused" in msg and "KC-4" in msg for msg in r.advisory_messages
+        r.test_reuse_warning in msg and "KC-4" in msg for msg in r.advisory_messages
     )
 
 

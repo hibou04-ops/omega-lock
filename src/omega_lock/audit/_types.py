@@ -24,6 +24,7 @@ from omega_lock.target import EvalResult
 
 # Constraint predicate: True = pass, False = violated.
 ConstraintFn = Callable[[dict[str, Any], EvalResult], bool]
+AUDIT_REPORT_SCHEMA_VERSION = "omega-lock.audit-report.v2"
 
 
 class HashChainEntry(TypedDict):
@@ -218,6 +219,7 @@ class AuditReport:
 
     def to_dict(self, *, with_hash_chain: bool = False) -> dict[str, Any]:
         d: dict[str, Any] = {
+            "schema_version": AUDIT_REPORT_SCHEMA_VERSION,
             "method": self.method,
             "omega_lock_version": self.omega_lock_version,
             "seed": self.seed,
