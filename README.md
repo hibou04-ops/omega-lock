@@ -2,13 +2,13 @@
 
 > **Post-optimizer audit gate for tuned candidates.** Use Omega-Lock after an optimizer or manual tuning step to check whether the chosen candidate generalizes, stays inside declared constraints, and leaves a JSON artifact reviewers can inspect.
 
-[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=60&release=0.2.1)](https://pypi.org/project/omega-lock/)
+[![Release](https://img.shields.io/badge/release-0.2.2-orange.svg)](https://pypi.org/project/omega-lock/0.2.2/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Quality](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-brightgreen.svg)](tests/)
 
 ```bash
-pip install omega-lock
+pip install omega-lock==0.2.2
 ```
 
 Omega-Lock is **audit-first, not search-first**. It does not try to be the universal optimizer. It sits after grid search, Optuna, Bayesian search, an internal tuner, or a candidate chosen by hand, then asks the release question:
@@ -168,7 +168,9 @@ Those concepts are implementation and review tools. The first decision remains s
 
 ## Release History
 
-**0.2.1** (2026-05-22) - **Release sync and badge cache-bust correction.** Updates the dynamic PyPI badge URL with a release-specific cache-bust query, synchronizes release metadata after the 0.2.0 upload, and keeps README/PyPI surfaces aligned. No runtime behavior changes beyond version metadata.
+**0.2.2** (2026-05-22) - **Badge hardening and release-surface synchronization.** Replaces the dynamic PyPI version badge with a static release badge to avoid Shields/PyPI/Camo stale badge rendering, synchronizes the current install command and citation, and keeps the README/PyPI release surface unambiguous. No runtime behavior changes beyond version metadata.
+
+**0.2.1** (2026-05-22) - **Release sync and badge cache-bust correction.** Updated the dynamic PyPI badge URL with a release-specific cache-bust query, synchronized release metadata after the 0.2.0 upload, and kept README/PyPI surfaces aligned. No runtime behavior changes beyond version metadata.
 
 **0.2.0** (2026-05-22) - **Public README and release-surface polish.** Sharpens the GitHub/PyPI first screen, removes the misleading missing-video placeholder, makes the quickstart API-correct with `Constraint`, updates English and Korean docs, adds cache-conscious dynamic PyPI badges, and updates release checklist examples for 0.2.0. No runtime behavior changes beyond version metadata.
 
@@ -193,7 +195,7 @@ If you use Omega-Lock in research or a published project, please cite:
   author  = {hibou},
   title   = {Omega-Lock: post-optimizer audit gate for tuned candidates},
   year    = {2026},
-  version = {0.2.1},
+  version = {0.2.2},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```

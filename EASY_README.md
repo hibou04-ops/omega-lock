@@ -2,7 +2,7 @@
 
 > You already have candidate parameters from an optimizer or manual tuning. Omega-Lock asks: **did this candidate actually generalize?**
 
-[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=60&release=0.2.1)](https://pypi.org/project/omega-lock/)
+[![Release](https://img.shields.io/badge/release-0.2.2-orange.svg)](https://pypi.org/project/omega-lock/0.2.2/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 
 ## What It Does
@@ -18,13 +18,13 @@ Omega-Lock is **audit-first, not search-first**. It sits after candidate generat
 ## Install
 
 ```bash
-pip install omega-lock
+pip install omega-lock==0.2.2
 ```
 
 For optional Optuna TPE:
 
 ```bash
-pip install "omega-lock[p2]"
+pip install "omega-lock[p2]==0.2.2"
 ```
 
 ## Start Here
@@ -61,11 +61,11 @@ python examples/demo_sram.py
 
 They are deterministic and require no network or API keys.
 
-## What Changed in 0.2.1
+## What Changed in 0.2.2
 
-- PyPI badge URLs now include a release-specific cache-bust query.
-- Release metadata and README/PyPI surfaces were synchronized after 0.2.0.
-- The badge remains dynamic and is not a hardcoded version badge.
+- The dynamic PyPI version badge was replaced with a static release badge.
+- README and PyPI surfaces now show the exact current install command.
+- This avoids Shields/PyPI/Camo stale badge rendering.
 - No runtime behavior changed beyond version metadata.
 
 See [README.md](README.md) for the full documentation.

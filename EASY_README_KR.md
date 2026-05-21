@@ -2,7 +2,7 @@
 
 > 이미 optimizer나 수동 튜닝으로 후보 파라미터가 있다고 가정합니다. Omega-Lock이 묻는 질문은 하나입니다. **이 후보가 실제로 일반화되었나요?**
 
-[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=60&release=0.2.1)](https://pypi.org/project/omega-lock/)
+[![Release](https://img.shields.io/badge/release-0.2.2-orange.svg)](https://pypi.org/project/omega-lock/0.2.2/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 
 ## 무엇을 하나요?
@@ -18,13 +18,13 @@ Omega-Lock은 **검색 우선이 아니라 감사 우선** 도구입니다. 후�
 ## 설치
 
 ```bash
-pip install omega-lock
+pip install omega-lock==0.2.2
 ```
 
 Optuna TPE 경로까지 쓰려면:
 
 ```bash
-pip install "omega-lock[p2]"
+pip install "omega-lock[p2]==0.2.2"
 ```
 
 ## 먼저 이렇게 시작하세요
@@ -61,11 +61,11 @@ python examples/demo_sram.py
 
 두 데모는 결정적이며 네트워크나 API key가 필요 없습니다.
 
-## 0.2.1에서 바뀐 점
+## 0.2.2에서 바뀐 점
 
-- PyPI badge URL에 release-specific cache-bust query를 추가했습니다.
-- 0.2.0 업로드 이후 release metadata와 README/PyPI 표면을 다시 동기화했습니다.
-- badge는 여전히 동적이며 hardcoded version badge가 아닙니다.
+- 동적 PyPI version badge를 정적 release badge로 교체했습니다.
+- README와 PyPI 표면에 정확한 현재 설치 명령을 표시합니다.
+- Shields/PyPI/Camo 캐시 때문에 오래된 badge가 보이는 문제를 피합니다.
 - 버전 metadata 외 런타임 동작은 바꾸지 않았습니다.
 
 전체 문서는 [README_KR.md](README_KR.md)를 보세요.
