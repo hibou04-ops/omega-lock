@@ -53,7 +53,7 @@ from omega_lock.audit import (
     make_report, render_scorecard,
 )
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 __all__ = [
     "CalibrableTarget", "ParamSpec", "EvalResult",
