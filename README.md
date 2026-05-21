@@ -2,8 +2,8 @@
 
 > An **audit gate for any optimizer's tuned candidate** — walk-forward validation, hard-constraint compliance, and an append-only JSON trail your reviewer can diff. Bring your own optimizer.
 
-[![PyPI version](https://img.shields.io/pypi/v/omega-lock.svg?v=0.1.6)](https://pypi.org/project/omega-lock/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg?v=0.1.6)](https://pypi.org/project/omega-lock/)
+[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Tests](https://img.shields.io/badge/tests-176%20passing-brightgreen.svg)](tests/)
 [![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
@@ -414,6 +414,8 @@ result = run_p2_tpe(
 
 ## Release History
 
+**0.1.8** (2026-05-21) — **Audit reliability and static hygiene release.** Establishes a clean baseline across pytest, pyright, and ruff: 289 tests passing, `pyright src tests` at 0 errors, and `ruff check src tests` clean. Static hygiene work tightened optional `optuna` imports for `run_p2_tpe`, cleaned `CalibrableTarget` Protocol conformance in tests, and fixed hash-chain typing without changing JSON shape. Audit artifacts now include reproducibility metadata such as `schema_version`, `omega_lock_version`, `config_full`, `kc_thresholds`, and `search_settings`. Safety signals are more explicit: artifacts warn when `constraint_policy="record"` records constraints without gating best-candidate selection, when `holdout_mode="evidence_only"` evaluates holdout without gating final status, and when iterative runs reuse test slices across rounds. Walk-forward artifacts now surface `pearson_status` and `pearson_computable` alongside the legacy numeric `pearson`.
+
 **0.1.3** (2026-04-18) — initial public release. Three integrated search pipelines (`run_p1`, `run_p1_iterative`, `run_p2_tpe`), perturbation sensitivity, walk-forward, KC-1..4, holdout support, SC-2 advisory, `run_benchmark` + 30-run gold baseline regression guard. `CallableAdapter` for wrapping external optimizers. Two reference keyholes (`PhantomKeyhole`, `PhantomKeyholeDeep`) with ground-truth methods. 149 tests, PyPI, MIT.
 
 **0.1.4** (2026-04-20) — **audit surface as the headline.** New `omega_lock.audit` submodule: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol-based, so no optimizer changes required — wrap any `CalibrableTarget` and hand it to grid / TPE / random / Bayesian / your own optimizer. Ships alongside `examples/demo_sram.py` — a 6T SRAM bitcell analytical surrogate across 5 PVT corners (TT / SS / FF / FS / SF) with 3 hard constraints, demonstrating the audit scorecard on a realistic-shaped target. Overfit pathology is physics-informed: a candidate optimized for the typical corner systematically breaks fast/slow corners under the transistor strength ratio. Same pattern kills trading-strategy calibrations and silicon tape-outs. 176 tests (149 + 20 audit + 7 SRAM demo). Benchmark gold baseline unchanged.
@@ -693,7 +695,7 @@ If you use Omega-Lock in research or a published project, please cite:
   author  = {hibou},
   title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
   year    = {2026},
-  version = {0.1.6},
+  version = {0.1.8},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```
