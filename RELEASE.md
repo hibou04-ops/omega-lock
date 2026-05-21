@@ -34,7 +34,18 @@ Get-ChildItem dist
 python -m twine check dist/*
 ```
 
-## 0.2.1 Release Note
+## 0.2.2 Release Note
+
+0.2.2 is a badge hardening and release-surface synchronization release:
+
+- dynamic PyPI version badge replaced with a static release badge
+- Shields/PyPI/Camo stale badge rendering avoided
+- current install command and citation synchronized
+- no runtime behavior changes beyond version metadata
+
+## Historical Release Notes
+
+### 0.2.1
 
 0.2.1 is a release sync and badge cache-bust correction:
 
@@ -45,10 +56,10 @@ python -m twine check dist/*
 
 ## Expected Artifacts
 
-For 0.2.1, the expected files are:
+For 0.2.2, the expected files are:
 
-- `omega_lock-0.2.1-py3-none-any.whl`
-- `omega_lock-0.2.1.tar.gz`
+- `omega_lock-0.2.2-py3-none-any.whl`
+- `omega_lock-0.2.2.tar.gz`
 
 If an isolated PEP 517 build cannot download build dependencies in a restricted
 environment, `python -m build --no-isolation` is acceptable for local sandbox
@@ -60,10 +71,10 @@ verification only after pytest, pyright, ruff, dist filename checks, and
 ```bash
 git status
 git add pyproject.toml src/omega_lock/__init__.py README.md README_KR.md EASY_README.md EASY_README_KR.md RELEASE.md
-git commit -m "Prepare release 0.2.1"
-git tag v0.2.1
+git commit -m "Prepare release 0.2.2"
+git tag v0.2.2
 git push origin main
-git push origin v0.2.1
+git push origin v0.2.2
 python -m twine upload dist/*
 ```
 
@@ -71,14 +82,14 @@ python -m twine upload dist/*
 
 ```bash
 python -m pip index versions omega-lock
-python -m pip install --no-cache-dir --upgrade omega-lock==0.2.1
+python -m pip install --no-cache-dir --upgrade omega-lock==0.2.2
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
 
 For cache-sensitive releases, verify the exact wheel URL exposed by PyPI JSON:
 
 ```bash
-python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.2.1/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
+python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.2.2/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
 python -m pip install --no-cache-dir --force-reinstall "<wheel-url-from-pypi-json>"
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
