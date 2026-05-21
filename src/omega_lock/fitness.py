@@ -15,7 +15,7 @@ Typical use:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec

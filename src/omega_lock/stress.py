@@ -16,7 +16,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
 
 from omega_lock.params import clip, default_epsilon
-from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
+from omega_lock.target import CalibrableTarget, EvalResult
 
 
 @dataclass

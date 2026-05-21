@@ -1,7 +1,6 @@
 """Tests for SC-2 advisory gate (run_p1 with run_sc2_baseline=True)."""
 from __future__ import annotations
 
-import pytest
 
 from omega_lock import KCThresholds, P1Config, run_p1
 from omega_lock.keyholes.phantom import PhantomKeyhole

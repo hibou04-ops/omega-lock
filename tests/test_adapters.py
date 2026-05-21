@@ -1,12 +1,11 @@
 """Tests for adapters — CallableAdapter and the bridge pattern."""
 from __future__ import annotations
 
-from typing import Any
 
 import pytest
 
 from omega_lock import (
-    CallableAdapter, EvalResult, KCThresholds, P1Config, ParamSpec, run_p1,
+    CallableAdapter, KCThresholds, P1Config, ParamSpec, run_p1,
 )
 
 

@@ -133,14 +133,15 @@ def test_zooming_stays_within_spec_bounds():
 def test_zooming_with_bool_axis_keeps_bool_fixed():
     """Bool axes should be {False, True} in every zoom round (no shrinking)."""
     class Mixed:
-        def param_space(self):
+        def param_space(self) -> list[ParamSpec]:
             return [
                 ParamSpec("x", "float", low=0.0, high=10.0, neutral=5.0),
                 ParamSpec("flag", "bool", neutral=False),
             ]
-        def evaluate(self, p):
-            bonus = 1.0 if p["flag"] else 0.0
-            return EvalResult(fitness=-(p["x"] - 3.0) ** 2 + bonus, n_trials=1)
+
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
+            bonus = 1.0 if params["flag"] else 0.0
+            return EvalResult(fitness=-(params["x"] - 3.0) ** 2 + bonus, n_trials=1)
 
     gs = ZoomingGridSearch(
         target=Mixed(), unlocked=["x", "flag"], grid_points_per_axis=5,

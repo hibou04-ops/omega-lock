@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from typing import Any
 
 from omega_lock import KCThresholds, P1Config, run_p1
 from omega_lock.keyholes.phantom import PhantomKeyhole
@@ -21,16 +22,16 @@ TEST_SEED = 1337
 JUDGE_SEED = 7
 
 
-def _config(**overrides) -> P1Config:
-    defaults = dict(
-        unlock_k=3,
-        grid_points_per_axis=5,
-        walk_forward_top_n=10,
-        trade_ratio_scale=1.0,
-        kc_thresholds=KCThresholds(trade_count_min=50),
-        stress_verbose=False,
-        grid_verbose=False,
-    )
+def _config(**overrides: Any) -> P1Config:
+    defaults: dict[str, Any] = {
+        "unlock_k": 3,
+        "grid_points_per_axis": 5,
+        "walk_forward_top_n": 10,
+        "trade_ratio_scale": 1.0,
+        "kc_thresholds": KCThresholds(trade_count_min=50),
+        "stress_verbose": False,
+        "grid_verbose": False,
+    }
     defaults.update(overrides)
     return P1Config(**defaults)
 
@@ -128,8 +129,12 @@ def test_phantom_n_trials_exceed_kc3_floor():
         config=_config(),
     )
     assert result.baseline_result["n_trials"] >= 50
-    assert result.grid_best["n_trials"] >= 50
-    assert result.walk_forward["test_best_trades"] >= 50
+    grid_best = result.grid_best
+    walk_forward = result.walk_forward
+    assert grid_best is not None
+    assert walk_forward is not None
+    assert grid_best["n_trials"] >= 50
+    assert walk_forward["test_best_trades"] >= 50
 
 
 def test_phantom_deterministic_per_seed():

@@ -14,8 +14,8 @@ from omega_lock.p2_tpe import (
     _OPTUNA_INSTALL_HINT,
     run_p2_tpe,
 )
-from omega_lock.target import EvalResult, ParamSpec
 from omega_lock.kill_criteria import KCThresholds
+from omega_lock.target import EvalResult, ParamSpec
 
 
 # Loose KC thresholds suitable for toy deterministic targets where n_trials=1
@@ -115,8 +115,10 @@ def test_p2_tpe_rosenbrock_converges_near_optimum():
     result = run_p2_tpe(train_target=target, config=cfg)
 
     assert result.tpe_best is not None
-    bx = result.tpe_best["unlocked"]["x"]
-    by = result.tpe_best["unlocked"]["y"]
+    tpe_best = result.tpe_best
+    assert tpe_best is not None
+    bx = tpe_best["unlocked"]["x"]
+    by = tpe_best["unlocked"]["y"]
     err = ((bx - 0.5) ** 2 + (by - 0.25) ** 2) ** 0.5
     assert err <= 0.05, (
         f"TPE should converge near (0.5, 0.25); got ({bx:.4f}, {by:.4f}) err={err:.4f}"
@@ -149,7 +151,15 @@ def test_p2_tpe_deterministic_by_seed():
         assert t1["trial_idx"] == t2["trial_idx"]
         assert t1["params_unlocked"] == t2["params_unlocked"]
         assert t1["fitness"] == t2["fitness"]
-    assert r1.tpe_best == r2.tpe_best
+    tpe_best1 = r1.tpe_best
+    tpe_best2 = r2.tpe_best
+    assert tpe_best1 is not None
+    assert tpe_best2 is not None
+    assert tpe_best1["wall_s"] >= 0.0
+    assert tpe_best2["wall_s"] >= 0.0
+    deterministic_best1 = {k: v for k, v in tpe_best1.items() if k != "wall_s"}
+    deterministic_best2 = {k: v for k, v in tpe_best2.items() if k != "wall_s"}
+    assert deterministic_best1 == deterministic_best2
 
 
 @pytest.mark.skipif(not _OPTUNA_AVAILABLE, reason="optuna not installed")
@@ -185,8 +195,10 @@ def test_p2_tpe_passes_kcs_on_easy_target():
     )
     assert result.status == "PASS", f"expected PASS, got {result.status}: {result.kc_reports}"
     # And it actually converged (quadratic is easy: err << 0.1)
-    bx = result.tpe_best["unlocked"]["x"]
-    by = result.tpe_best["unlocked"]["y"]
+    tpe_best = result.tpe_best
+    assert tpe_best is not None
+    bx = tpe_best["unlocked"]["x"]
+    by = tpe_best["unlocked"]["y"]
     err = ((bx - 0.7) ** 2 + (by - 0.3) ** 2) ** 0.5
     assert err <= 0.1, f"quadratic should converge tightly; err={err:.4f}"
 
@@ -238,9 +250,9 @@ def test_p2_tpe_with_test_target_runs_walk_forward():
                 ParamSpec(name="b", dtype="float", low=-5.0, high=5.0, neutral=0.0),
             ]
 
-        def evaluate(self, p: dict[str, Any]) -> EvalResult:
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
             # stress in both axes; a dominates
-            return EvalResult(fitness=p["a"] * 2.0 + p["b"] * 0.5, n_trials=10)
+            return EvalResult(fitness=params["a"] * 2.0 + params["b"] * 0.5, n_trials=10)
 
     class LinearTest:
         def param_space(self) -> list[ParamSpec]:
@@ -249,9 +261,9 @@ def test_p2_tpe_with_test_target_runs_walk_forward():
                 ParamSpec(name="b", dtype="float", low=-5.0, high=5.0, neutral=0.0),
             ]
 
-        def evaluate(self, p: dict[str, Any]) -> EvalResult:
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
             # Same ranking, different scale → pearson = 1
-            return EvalResult(fitness=p["a"] * 1.8 + p["b"] * 0.45, n_trials=8)
+            return EvalResult(fitness=params["a"] * 1.8 + params["b"] * 0.45, n_trials=8)
 
     cfg = P2Config(
         unlock_k=2,
@@ -291,7 +303,7 @@ def test_p2_tpe_raises_without_optuna(monkeypatch):
         def param_space(self) -> list[ParamSpec]:
             return [ParamSpec(name="x", dtype="float", low=0.0, high=1.0, neutral=0.5)]
 
-        def evaluate(self, p: dict[str, Any]) -> EvalResult:
+        def evaluate(self, params: dict[str, Any]) -> EvalResult:
             return EvalResult(fitness=0.0, n_trials=1)
 
     with pytest.raises(ImportError) as excinfo:

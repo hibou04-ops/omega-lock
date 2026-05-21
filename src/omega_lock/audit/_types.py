@@ -16,14 +16,20 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, field, asdict
-from typing import Any, Callable, Sequence
+from dataclasses import dataclass
+from typing import Any, Callable, Mapping, Sequence, TypedDict
 
-from omega_lock.target import EvalResult, ParamSpec
+from omega_lock.target import EvalResult
 
 
 # Constraint predicate: True = pass, False = violated.
 ConstraintFn = Callable[[dict[str, Any], EvalResult], bool]
+
+
+class HashChainEntry(TypedDict):
+    call_index: int
+    previous_hash: str | None
+    run_hash: str
 
 
 @dataclass(frozen=True)
@@ -151,7 +157,7 @@ class AuditReport:
                     counts[name] += 1
         return counts
 
-    def hash_chain(self) -> list[dict[str, str]]:
+    def hash_chain(self) -> list[HashChainEntry]:
         """Compute a SHA-256 hash chain over the audit runs.
 
         Reviewer P2: README's "append-only audit trail" was an in-process
@@ -170,7 +176,7 @@ class AuditReport:
         The chain is computed on demand (not cached) so callers can
         verify a serialized report by recomputing and comparing.
         """
-        chain: list[dict[str, str]] = []
+        chain: list[HashChainEntry] = []
         previous_hash: str | None = None
         for run in self.runs:
             payload = json.dumps(
@@ -192,7 +198,7 @@ class AuditReport:
             previous_hash = run_hash
         return chain
 
-    def verify_hash_chain(self, chain: list[dict[str, Any]]) -> bool:
+    def verify_hash_chain(self, chain: Sequence[Mapping[str, Any]]) -> bool:
         """True iff the supplied chain matches this report's runs.
 
         Useful for re-checking a serialized report after rehydration:

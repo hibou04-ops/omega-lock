@@ -70,7 +70,7 @@ def test_walk_forward_evaluates_each_top_candidate_exactly_once():
     ]
     target = _CountingTestTarget()
     wf = WalkForward(test_target=target)
-    result = wf.run(train_grid=train_grid, top_n=3)
+    wf.run(train_grid=train_grid, top_n=3)
 
     # 3 top candidates, 3 calls — not 4.
     assert len(target.call_log) == 3

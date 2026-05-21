@@ -10,7 +10,7 @@ from omega_lock.stress import (
     measure_stress,
     select_unlock_top_k,
 )
-from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
+from omega_lock.target import EvalResult, ParamSpec
 
 
 class LinearTarget:

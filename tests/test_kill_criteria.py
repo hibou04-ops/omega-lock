@@ -1,7 +1,6 @@
 """Tests for KC-1..4 boundary behavior."""
 from __future__ import annotations
 
-import pytest
 
 from omega_lock.kill_criteria import (
     KCThresholds,

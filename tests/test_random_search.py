@@ -140,7 +140,6 @@ def test_top_quartile_is_at_least_median():
 
 def test_top_quartile_single_point_equals_that_point():
     # With n=1 the quartile collapses to just that point.
-    target = QuadraticTargetPositive()
     pts = [
         GridPoint(idx=0, unlocked={"x": 3.0, "y": 7.0},
                   params={"x": 3.0, "y": 7.0},

@@ -16,13 +16,11 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from itertools import count
 from typing import Any
 
-import pytest
 
 from omega_lock.audit._target import AuditingTarget
-from omega_lock.audit._types import AuditedRun, AuditReport, Constraint
+from omega_lock.audit._types import AuditedRun, AuditReport
 from omega_lock.target import EvalResult, ParamSpec
 
 

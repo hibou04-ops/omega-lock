@@ -11,11 +11,9 @@ from typing import Any
 import pytest
 
 from omega_lock import (
-    EvalResult,
     IterativeConfig,
     KCThresholds,
     P1Config,
-    ParamSpec,
     run_p1,
     run_p1_iterative,
 )
@@ -26,17 +24,17 @@ SEED_TRAIN = 42
 SEED_TEST = 1337
 
 
-def _phantom_cfg(**overrides) -> IterativeConfig:
-    defaults = dict(
-        rounds=3,
-        per_round_unlock_k=3,
-        grid_points_per_axis=5,
-        walk_forward_top_n=10,
-        trade_ratio_scale=1.0,
-        kc_thresholds=KCThresholds(trade_count_min=50),
-        stress_verbose=False,
-        grid_verbose=False,
-    )
+def _phantom_cfg(**overrides: Any) -> IterativeConfig:
+    defaults: dict[str, Any] = {
+        "rounds": 3,
+        "per_round_unlock_k": 3,
+        "grid_points_per_axis": 5,
+        "walk_forward_top_n": 10,
+        "trade_ratio_scale": 1.0,
+        "kc_thresholds": KCThresholds(trade_count_min=50),
+        "stress_verbose": False,
+        "grid_verbose": False,
+    }
     defaults.update(overrides)
     return IterativeConfig(**defaults)
 
@@ -48,17 +46,21 @@ def test_iterative_first_round_matches_single_run_p1():
                            stress_verbose=False, grid_verbose=False)
     r_single = run_p1(PhantomKeyhole(seed=SEED_TRAIN), config=cfg_single)
     r_iter = run_p1_iterative(PhantomKeyhole(seed=SEED_TRAIN), config=_phantom_cfg(rounds=1))
-    assert r_iter.rounds[0].grid_best["unlocked"] == r_single.grid_best["unlocked"]
-    assert r_iter.rounds[0].grid_best["fitness"] == pytest.approx(
-        r_single.grid_best["fitness"], abs=1e-9
-    )
+    iter_grid_best = r_iter.rounds[0].grid_best
+    single_grid_best = r_single.grid_best
+    assert iter_grid_best is not None
+    assert single_grid_best is not None
+    assert iter_grid_best["unlocked"] == single_grid_best["unlocked"]
+    assert iter_grid_best["fitness"] == pytest.approx(single_grid_best["fitness"], abs=1e-9)
 
 
 def test_iterative_round2_baseline_equals_round1_best_fitness():
     """Round r's baseline fitness must equal round r-1's grid_best fitness."""
     r = run_p1_iterative(PhantomKeyhole(seed=SEED_TRAIN), config=_phantom_cfg(rounds=2))
     if len(r.rounds) >= 2:
-        r1_best = r.rounds[0].grid_best["fitness"]
+        round1_grid_best = r.rounds[0].grid_best
+        assert round1_grid_best is not None
+        r1_best = round1_grid_best["fitness"]
         r2_baseline = r.rounds[1].baseline_result["fitness"]
         assert r2_baseline == pytest.approx(r1_best, abs=1e-9)
 
@@ -115,13 +117,18 @@ def test_iterative_with_zoom_refines_alpha():
     # Zoomed: alpha should refine to something finer
     r_zoom = run_p1_iterative(PhantomKeyhole(seed=SEED_TRAIN),
                                config=_phantom_cfg(rounds=1, zoom_rounds=4, zoom_factor=0.5))
-    alpha_plain = r_plain.rounds[0].grid_best["unlocked"]["alpha"]
-    alpha_zoom = r_zoom.rounds[0].grid_best["unlocked"]["alpha"]
+    plain_grid_best = r_plain.rounds[0].grid_best
+    zoom_grid_best = r_zoom.rounds[0].grid_best
+    assert plain_grid_best is not None
+    assert zoom_grid_best is not None
+    alpha_plain = plain_grid_best["unlocked"]["alpha"]
+    alpha_zoom = zoom_grid_best["unlocked"]["alpha"]
     # Zoom should produce a value not on the original 5-point grid
     plain_grid_values = [0.0, 0.25, 0.5, 0.75, 1.0]
     assert alpha_plain in plain_grid_values
+    assert alpha_zoom not in plain_grid_values
     # And zoom should improve fitness (at least not worsen)
-    assert r_zoom.rounds[0].grid_best["fitness"] >= r_plain.rounds[0].grid_best["fitness"] - 1e-9
+    assert zoom_grid_best["fitness"] >= plain_grid_best["fitness"] - 1e-9
 
 
 def test_iterative_fitness_trajectory_length_matches_rounds():

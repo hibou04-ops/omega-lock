@@ -13,7 +13,6 @@ Produces a terminal-friendly, markdown-compatible scorecard. Sections:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Iterable
 
 from omega_lock.audit._types import AuditReport, AuditedRun
 

@@ -48,7 +48,7 @@ def test_effective_precision_empty_found_is_0():
 def test_param_L2_error_zero_on_exact_match():
     found = {"x": 0.5, "n": 10, "flag": True}
     true = {"x": 0.5, "n": 10, "flag": True}
-    ranges = {"x": (0.0, 1.0), "n": (0, 100), "flag": (0, 1)}
+    ranges = {"x": (0.0, 1.0), "n": (0.0, 100.0), "flag": (0.0, 1.0)}
     assert compute_param_L2_error(found, true, ranges) == 0.0
 
 
@@ -63,7 +63,7 @@ def test_param_L2_error_normalized_by_range():
 def test_param_L2_error_bool_mismatch_contributes_1():
     found = {"flag": False}
     true = {"flag": True}
-    ranges = {"flag": (0, 1)}
+    ranges = {"flag": (0.0, 1.0)}
     assert compute_param_L2_error(found, true, ranges) == pytest.approx(1.0, abs=1e-9)
 
 

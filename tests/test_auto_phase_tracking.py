@@ -7,6 +7,8 @@ to wire it manually.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from omega_lock.audit import AuditingTarget
 from omega_lock.kill_criteria import KCThresholds
 from omega_lock.orchestrator import P1Config, run_p1
@@ -23,8 +25,8 @@ class _T:
             ParamSpec(name="c", dtype="float", neutral=0.0, low=-1.0, high=1.0),
         ]
 
-    def evaluate(self, p: dict) -> EvalResult:
-        a, b, c = p["a"], p["b"], p["c"]
+    def evaluate(self, params: dict[str, Any]) -> EvalResult:
+        a, b, c = params["a"], params["b"], params["c"]
         fit = 1.0 - 5 * (a - 1.0) ** 2 / 10.0 - (b - 1.0) ** 2 / 10.0 - 0.001 * c**2
         return EvalResult(fitness=fit, n_trials=100, metadata={})
 

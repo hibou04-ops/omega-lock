@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import itertools
 import time
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from dataclasses import dataclass
+from typing import Any
 
 from omega_lock.params import clip
 from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec

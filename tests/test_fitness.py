@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from omega_lock.fitness import BaseFitness, HybridFitness
-from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
+from omega_lock.target import EvalResult, ParamSpec
 
 
 class ScaledTarget:

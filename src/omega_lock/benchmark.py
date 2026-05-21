@@ -49,9 +49,9 @@ from __future__ import annotations
 import json
 import statistics
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Mapping
 
 
 # Keyhole ground-truth interface (duck-typed; no formal Protocol enforcement
@@ -202,9 +202,9 @@ def compute_effective_precision(found: set[str], true: set[str]) -> float:
 
 
 def compute_param_L2_error(
-    found_params: dict[str, Any],
-    true_params: dict[str, Any],
-    param_ranges: dict[str, tuple[float, float]],
+    found_params: Mapping[str, Any],
+    true_params: Mapping[str, Any],
+    param_ranges: Mapping[str, tuple[float, float]],
 ) -> float:
     """Normalized L2 over effective params only.
 
