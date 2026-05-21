@@ -1,26 +1,21 @@
 # Omega-Lock — Easy Start
 
-> The short version, for people who found the main README intimidating.
-> Full doc: [README.md](README.md) · 한국어 Easy: [EASY_README_KR.md](EASY_README_KR.md)
+> You already have candidate parameters from some optimizer. Omega-Lock asks: **did this candidate actually generalize?**
 
-## What problem does it fix?
+[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg)](https://pypi.org/project/omega-lock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 
-You tune some parameters. The score looks amazing on your training data. You ship. **It breaks in production.**
+## What It Does
 
-This is overfitting. Omega-Lock is a bouncer at the door — it refuses to let "amazing on training" pass unless it also survives train→test→holdout checks and your hard constraints.
+Omega-Lock is **audit-first, not search-first**. It sits after your optimizer and checks whether the tuned candidate is safe to trust.
 
-## 60-second mental model
+It records:
 
-```
-Your optimizer (grid / TPE / Bayesian / custom)
-        ↓ produces a candidate
-   [ Omega-Lock audit ]
-        ↓
-   PASS  →  ship it, with a signed trail
-   FAIL  →  told you exactly which gate failed (KC-1..4)
-```
-
-You keep your optimizer. Omega-Lock only decides whether the tuned result is **trustworthy**.
+- constraints and whether each candidate passed them
+- walk-forward behavior on test data
+- holdout evidence when you provide a holdout target
+- warnings when a mode records evidence but does not gate selection/status
+- JSON audit artifacts reviewers can inspect and diff
 
 ## Install
 
@@ -28,56 +23,43 @@ You keep your optimizer. Omega-Lock only decides whether the tuned result is **t
 pip install omega-lock
 ```
 
-## The minimum working example
+For optional Optuna TPE:
 
-```python
-from omega_lock import run_p1, P1Config
-from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
-
-# 1. Wrap your target (something with param_space() + evaluate())
-wrapped = AuditingTarget(
-    my_target,
-    constraints=[
-        Constraint("score_positive",
-                   lambda p, r: r.fitness > 0,
-                   "Score must be positive"),
-    ],
-)
-
-# 2. Hand it to any optimizer. run_p1 is the shipped one.
-result = run_p1(train_target=wrapped, config=P1Config())
-
-# 3. Get an audit report
-report = make_report(wrapped, method="run_p1", seed=42)
-print(render_scorecard(report))
+```bash
+pip install "omega-lock[p2]"
 ```
 
-You get a pass/fail scorecard + a JSON trail of every evaluation. Drop the trail in Git; future-you will thank you.
+## Start Here
 
-## When it's worth it
+For normal audit and CI usage:
 
-- Each evaluation is **expensive** (SPICE sims, backtests, LLM calls).
-- You have a **train / test** split, ideally a **holdout** too.
-- Someone downstream needs to **trust** the tuned candidate (regulator, ops, you in 6 months).
+```python
+from omega_lock import P1Config, run_p1
 
-## When it's overkill
+result = run_p1(
+    train_target=my_target,
+    config=P1Config(constraint_policy="prefer_feasible"),
+)
 
-- Throwaway toy problem.
-- Samples are effectively unlimited and the objective is smooth.
-- Nobody is going to review the run afterwards.
+print(result.status)
+print(result.warnings)
+print(result.config_full)
+```
 
-In those cases, just use Optuna / grid search directly.
+Use an `AuditingTarget` with `Constraint` objects when you want a full trail of constraint pass/fail records.
 
-## Three things newcomers trip on
+## Constraint Policy
 
-1. **"What's KC-4?"** A pre-declared threshold on Pearson correlation between train and test fitness. If train fitness doesn't predict test fitness, the candidate is overfit — and the run is marked `FAIL:KC-4`. Non-negotiable. That's the point.
-2. **"Can I use my own optimizer?"** Yes. Wrap any callable with `CallableAdapter`. The audit doesn't care where the candidate came from.
-3. **"Do I need Optuna?"** No. The default pipeline uses grid search. `pip install "omega-lock[p2]"` only if you want TPE.
+- `record`: backward-compatible. Records violations but does not gate best-candidate selection.
+- `prefer_feasible`: recommended for normal use. Feasible candidates are preferred.
+- `hard_fail`: stricter release/CI gate.
 
-## Where to go from here
+## What Changed in 0.1.9
 
-- **Just try it**: `python examples/phantom_demo.py` — a 12-parameter synthetic problem end-to-end.
-- **Realistic demo**: `python examples/demo_sram.py` — a 6T SRAM bitcell across 5 physical corners with 3 hard constraints.
-- **Full docs**: [README.md](README.md) has the benchmark numbers, the philosophy, and the API reference.
+- README and PyPI long description were sharpened.
+- PyPI badges are dynamic.
+- Korean docs were regenerated as valid UTF-8.
+- Release checklist was added so version, tag, dist artifacts, and PyPI stay in sync.
+- No runtime behavior changed.
 
-License: Apache 2.0. Copyright (c) 2026 hibou.
+See [README.md](README.md) for the full documentation.

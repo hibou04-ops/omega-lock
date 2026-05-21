@@ -1,90 +1,85 @@
 # Omega-Lock
 
-> An **audit gate for any optimizer's tuned candidate** — walk-forward validation, hard-constraint compliance, and an append-only JSON trail your reviewer can diff. Bring your own optimizer.
+> **Post-optimizer audit gate for tuned candidates.** Omega-Lock checks whether a candidate actually generalizes, stays inside declared constraints, and leaves a reviewable JSON artifact.
 
 [![PyPI](https://img.shields.io/pypi/v/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 [![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests](https://img.shields.io/badge/tests-176%20passing-brightgreen.svg)](tests/)
+[![Quality](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-brightgreen.svg)](tests/)
 [![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
-
-> **Part of the omegaprompt toolkit** — [omegaprompt](https://github.com/hibou04-ops/omegaprompt) (calibration engine) · [omega-lock](https://github.com/hibou04-ops/omega-lock) (audit framework, this repo) · [antemortem-cli](https://github.com/hibou04-ops/antemortem-cli) (pre-implementation recon CLI) · [mini-omega-lock](https://github.com/hibou04-ops/mini-omega-lock) (empirical preflight) · [mini-antemortem-cli](https://github.com/hibou04-ops/mini-antemortem-cli) (analytical preflight) · [Antemortem](https://github.com/hibou04-ops/Antemortem) (methodology). Cross-toolkit cookbook (when-to-call-which-tool, 9 agent scenarios): [AGENT_TRIGGERS.md](https://github.com/hibou04-ops/omegaprompt/blob/main/AGENT_TRIGGERS.md).
 
 ```bash
 pip install omega-lock
 ```
 
-> *Lock* refers to **locking a candidate behind audit gates** — hard constraints, stability checks, walk-forward generalization — so a tuned result never ships until it clears the same mechanical review every time. Not security or DRM software.
+Use Omega-Lock after any optimizer: grid search, Optuna, Bayesian search, a custom internal tuner, or a candidate chosen by hand. It prevents the common release failure where the "best" training candidate ships even though it overfits, violates constraints, or lacks evidence that a reviewer can inspect.
 
----
+For normal audit and CI use, start with:
 
-## Demo (60s)
+```python
+P1Config(constraint_policy="prefer_feasible")
+```
 
-https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
+`record` preserves backward-compatible behavior and only records constraint violations. `prefer_feasible` prefers feasible candidates when selecting `grid_best`. `hard_fail` is the stricter CI/release gate when no infeasible result should pass.
 
-> 60-second walkthrough on `examples/phantom_demo.py`: 12-axis sensitivity → top-K unlock (3 effective, 9 decoys) → 50-combo grid → walk-forward (Pearson 0.879) → KC-1..4 all PASS → fractal-vise refines `alpha 0.5 → 0.4375`. Real `phantom_demo.py` output, paced for readability. Reproducible with `python examples/demo_replay.py`.
+## Quick Start
 
----
+Copy-paste example with a tiny target:
 
-## TL;DR — what & why
+```python
+from typing import Any
 
-You ran 1,000 trials. The best one scored 0.95 on training data. **Did it overfit?** Most optimizers don't tell you. `omega-lock` wraps any `CalibrableTarget` and decides whether the tuned candidate is reviewable, constraint-feasible, and likely to generalize:
+from omega_lock import EvalResult, P1Config, ParamSpec, run_p1
 
-- **Walk-forward gate (KC-4)** — Pearson + trade-ratio on a held-out slice. Pre-declared, can't be lowered post-hoc.
-- **Declarative hard constraints** — rules like `VDD > 0.6V` or `ROI > 0.5` are evaluated and recorded on every candidate. Set `P1Config.constraint_policy="prefer_feasible"` to make `grid_best` pick the highest-fitness *feasible* candidate, or `"hard_fail"` to abort the run when no candidate is feasible. Default is `"record"` (backward-compat) — constraint violations live on the audit trail but don't change `grid_best` selection.
-- **Append-only audit trail** — every probed candidate logged with phase / role / round context. JSON-diffable. Append-only is in-process by default (rows appended in run order); call `report.to_json(with_hash_chain=True)` for an opt-in SHA-256 hash chain that lets a reviewer verify the artifact wasn't edited after signing.
-- **Method-agnostic** — wrap with `AuditingTarget`, hand to grid / TPE / Bayesian / random / your own optimizer.
-- **Built-in pipelines** — three integrated search pipelines if you don't have an optimizer yet (`run_p1`, `run_p1_iterative`, `run_p2_tpe`).
 
-Origin: extracted from a quant trading experiment that ended in **KC-4 FAIL** (overfitting detected exactly as designed). That controlled-failure outcome is the behavior the framework is built to produce.
+class TinyTarget:
+    def param_space(self) -> list[ParamSpec]:
+        return [
+            ParamSpec("x", "float", low=0.0, high=1.0, neutral=0.5),
+            ParamSpec("risk", "float", low=0.0, high=1.0, neutral=0.5),
+        ]
 
----
+    def evaluate(self, params: dict[str, Any]) -> EvalResult:
+        fitness = 1.0 - abs(float(params["x"]) - 0.8) - 0.5 * float(params["risk"])
+        metadata = {"risk": float(params["risk"])}
+        return EvalResult(fitness=fitness, n_trials=100, metadata=metadata)
 
-## Quick start
 
-### 0. Run the deterministic demos (no API, no network)
+result = run_p1(
+    train_target=TinyTarget(),
+    config=P1Config(
+        unlock_k=2,
+        grid_points_per_axis=5,
+        constraint_policy="prefer_feasible",
+        stress_verbose=False,
+        grid_verbose=False,
+    ),
+)
+
+print(result.status)
+print(result.warnings)
+print(result.config_full["constraint_policy"])
+print(result.search_settings)
+```
+
+For hard constraints and full audit trails, wrap your target with `AuditingTarget` and add `Constraint` objects. See [EASY_README.md](EASY_README.md) for the short walkthrough, or keep reading for the full API.
+
+## What It Records
+
+- walk-forward results that show whether train ranking survives on test data
+- holdout evidence when you provide a third target
+- declared constraint pass/fail status
+- audit artifacts with `schema_version`, `omega_lock_version`, `config_full`, `kc_thresholds`, and `search_settings`
+- explicit warnings for non-gating modes such as `constraint_policy="record"` and `holdout_mode="evidence_only"`
+
+## Demo
 
 ```bash
-git clone https://github.com/hibou04-ops/omega-lock.git
-cd omega-lock && pip install -e .
-
-# Replay the bundled phantom demo (12-axis sensitivity → top-K unlock → walk-forward)
-python examples/demo_replay.py
-
-# Or run a realistic-shaped target (6T SRAM bitcell across 5 PVT corners, 3 hard constraints)
+python examples/phantom_demo.py
 python examples/demo_sram.py
 ```
 
-Both runs are deterministic — no API keys, no network. Output is an audit report JSON that diffs cleanly in PRs.
-
-### 1. Wrap your own target with the audit module
-
-```python
-from omega_lock.audit import AuditingTarget, Constraint
-from omega_lock import run_p1
-
-audited = AuditingTarget(
-    target=YourCalibrableTarget(),
-    constraints=[
-        Constraint("must_be_feasible", lambda x: x.sharpe > 0.5),
-        Constraint("no_drawdown_blowup", lambda x: x.max_dd < 0.3),
-    ],
-)
-
-result = run_p1(audited, ...)             # any optimizer works — protocol-based
-report = audited.make_report()
-print(report.scorecard)                   # feasible best vs absolute best, full probed trail
-```
-
-### 2. CI regression gate
-
-Diff two audit reports — exits non-zero on regression:
-
-```bash
-omega-lock diff previous_report.json current_report.json
-```
-
----
+The first demo is a deterministic synthetic keyhole. The second is a 6T SRAM bitcell audit across physical corners with declared constraints.
 
 ## Built for
 
@@ -414,6 +409,8 @@ result = run_p2_tpe(
 
 ## Release History
 
+**0.1.9** (2026-05-21) — **README, PyPI metadata, and release hygiene correction.** Sharpens the GitHub/PyPI long description around Omega-Lock's actual position: audit-first, post-optimizer, constraint-aware, and artifact-producing. Keeps the PyPI badge dynamic, removes stale badge/version references, rewrites Korean documentation as valid UTF-8, and adds an explicit release checklist so GitHub tags, package metadata, fresh `dist/` artifacts, and PyPI uploads stay synchronized. No runtime behavior changes.
+
 **0.1.8** (2026-05-21) — **Audit reliability and static hygiene release.** Establishes a clean baseline across pytest, pyright, and ruff: 289 tests passing, `pyright src tests` at 0 errors, and `ruff check src tests` clean. Static hygiene work tightened optional `optuna` imports for `run_p2_tpe`, cleaned `CalibrableTarget` Protocol conformance in tests, and fixed hash-chain typing without changing JSON shape. Audit artifacts now include reproducibility metadata such as `schema_version`, `omega_lock_version`, `config_full`, `kc_thresholds`, and `search_settings`. Safety signals are more explicit: artifacts warn when `constraint_policy="record"` records constraints without gating best-candidate selection, when `holdout_mode="evidence_only"` evaluates holdout without gating final status, and when iterative runs reuse test slices across rounds. Walk-forward artifacts now surface `pearson_status` and `pearson_computable` alongside the legacy numeric `pearson`.
 
 **0.1.3** (2026-04-18) — initial public release. Three integrated search pipelines (`run_p1`, `run_p1_iterative`, `run_p2_tpe`), perturbation sensitivity, walk-forward, KC-1..4, holdout support, SC-2 advisory, `run_benchmark` + 30-run gold baseline regression guard. `CallableAdapter` for wrapping external optimizers. Two reference keyholes (`PhantomKeyhole`, `PhantomKeyholeDeep`) with ground-truth methods. 149 tests, PyPI, MIT.
@@ -695,7 +692,7 @@ If you use Omega-Lock in research or a published project, please cite:
   author  = {hibou},
   title   = {Omega-Lock: Sensitivity-driven coordinate descent calibration framework},
   year    = {2026},
-  version = {0.1.8},
+  version = {0.1.9},
   url     = {https://github.com/hibou04-ops/omega-lock}
 }
 ```
