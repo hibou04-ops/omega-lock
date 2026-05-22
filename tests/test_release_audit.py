@@ -115,8 +115,8 @@ def _by_name(results: list[object]) -> dict[str, object]:
 def test_release_audit_current_repo_offline_json_is_stable():
     root = Path(__file__).resolve().parents[1]
 
-    results = AUDIT.run_release_audit(root, intended_version="0.2.5", offline=True)
-    payload = AUDIT.to_payload(results, root=root, intended_version="0.2.5", offline=True)
+    results = AUDIT.run_release_audit(root, intended_version="0.2.6", offline=True)
+    payload = AUDIT.to_payload(results, root=root, intended_version="0.2.6", offline=True)
     rendered_once = AUDIT.render_json(payload)
     rendered_twice = AUDIT.render_json(payload)
 
@@ -205,7 +205,21 @@ def test_release_audit_fails_on_stale_dist_artifact_version(tmp_path: Path):
     result = AUDIT.check_dist_artifacts(tmp_path, "1.2.3")
 
     assert result.status == "FAIL"
-    assert "omega_lock-1.2.2-py3-none-any.whl" in result.details
+    assert "stale: omega_lock-1.2.2-py3-none-any.whl" in result.details
+
+
+def test_release_audit_warns_when_current_pair_and_preserved_stale_artifacts(tmp_path: Path):
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "omega_lock-1.2.3-py3-none-any.whl").write_text("current wheel", encoding="utf-8")
+    (dist / "omega_lock-1.2.3.tar.gz").write_text("current sdist", encoding="utf-8")
+    (dist / "omega_lock-1.2.2-py3-none-any.whl").write_text("preserved wheel", encoding="utf-8")
+
+    result = AUDIT.check_dist_artifacts(tmp_path, "1.2.3")
+
+    assert result.status == "WARN"
+    assert "stale: omega_lock-1.2.2-py3-none-any.whl" in result.details
+    assert "not release approval" in result.message
 
 
 def test_release_audit_ignores_release_draft_markdown_in_dist(tmp_path: Path):
@@ -222,8 +236,8 @@ def test_release_audit_ignores_release_draft_markdown_in_dist(tmp_path: Path):
 
 
 def test_release_audit_offline_network_checks_are_warn_not_pass():
-    pypi = AUDIT.check_pypi_status("0.2.5", offline=True)
-    github = AUDIT.check_github_status("0.2.5", offline=True)
+    pypi = AUDIT.check_pypi_status("0.2.6", offline=True)
+    github = AUDIT.check_github_status("0.2.6", offline=True)
 
     assert pypi.status == "WARN"
     assert github.status == "WARN"

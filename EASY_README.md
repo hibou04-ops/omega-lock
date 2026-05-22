@@ -1,8 +1,16 @@
 # Omega-Lock Easy Start
 
-Current local package version: `0.2.5`.
+Current local package version: `0.2.6`.
 
-[![Package version](https://img.shields.io/badge/version-0.2.5-orange.svg)](pyproject.toml)
+[![Version 0.2.6](https://img.shields.io/badge/version-0.2.6-orange.svg)](pyproject.toml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
+[![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
+[![Methodology audit gate](https://img.shields.io/badge/methodology-audit--gate-6f42c1.svg)](docs/TRUST_MODEL.md)
+[![Trust first](https://img.shields.io/badge/trust-first-0f766e.svg)](docs/TRUST_MODEL.md)
+[![Measurement grade audit](https://img.shields.io/badge/measurement--grade-audit-555.svg)](docs/TOOLKIT_POSITIONING.md)
+
+[Full README](README.md) · [한국어 README](README_KR.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
 Omega-Lock audits tuned candidates before they ship. It checks whether a
 candidate survives walk-forward validation, declared hard constraints, and a
@@ -49,11 +57,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | Installed console executable | none currently |
 
-Use PyPI only if version `0.2.5` is published in your package index:
+Use PyPI only if version `0.2.6` is published in your package index:
 
 ```bash
-pip install omega-lock==0.2.5
-pip install "omega-lock[p2]==0.2.5"
+pip install omega-lock==0.2.6
+pip install "omega-lock[p2]==0.2.6"
 ```
 
 ## Minimal use

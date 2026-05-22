@@ -1,8 +1,16 @@
 # Omega-Lock 쉬운 설명
 
-현재 로컬 패키지 버전: `0.2.5`.
+현재 로컬 패키지 버전: `0.2.6`.
 
-[![Package version](https://img.shields.io/badge/version-0.2.5-orange.svg)](pyproject.toml)
+[![Version 0.2.6](https://img.shields.io/badge/version-0.2.6-orange.svg)](pyproject.toml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
+[![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
+[![Methodology audit gate](https://img.shields.io/badge/methodology-audit--gate-6f42c1.svg)](docs/TRUST_MODEL.md)
+[![Trust first](https://img.shields.io/badge/trust-first-0f766e.svg)](docs/TRUST_MODEL.md)
+[![Measurement grade audit](https://img.shields.io/badge/measurement--grade-audit-555.svg)](docs/TOOLKIT_POSITIONING.md)
+
+[Full README](README.md) · [한국어 README](README_KR.md) · [Easy README](EASY_README.md)
 
 Omega-Lock은 배포 전 튜닝 후보를 검증합니다. 후보가 walk-forward validation,
 선언된 hard constraints, 검토 가능한 append-only audit trail을 통과하는지
@@ -50,11 +58,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | 설치되는 console executable | 현재 없음 |
 
-사용하는 package index에 `0.2.5`가 게시되어 있는 경우에만 PyPI로 설치하세요.
+사용하는 package index에 `0.2.6`가 게시되어 있는 경우에만 PyPI로 설치하세요.
 
 ```bash
-pip install omega-lock==0.2.5
-pip install "omega-lock[p2]==0.2.5"
+pip install omega-lock==0.2.6
+pip install "omega-lock[p2]==0.2.6"
 ```
 
 ## 최소 사용 예시

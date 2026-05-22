@@ -73,7 +73,7 @@ def _fixed_run(i: int) -> AuditedRun:
 def _build_fixed_report(n_runs: int = 3) -> AuditReport:
     return AuditReport(
         method="hash_chain_fixture",
-        omega_lock_version="0.2.5",
+        omega_lock_version="0.2.6",
         seed=7,
         started_iso="2026-01-01T00:00:00+00:00",
         ended_iso=f"2026-01-01T00:00:0{max(n_runs - 1, 0)}+00:00",

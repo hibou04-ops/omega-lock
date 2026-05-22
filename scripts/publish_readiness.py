@@ -58,13 +58,15 @@ def _fixed_command(*parts: str) -> CommandFactory:
     return lambda _root: command
 
 
-def _twine_command(python_executable: str) -> CommandFactory:
+def _twine_command(python_executable: str, intended_version: str) -> CommandFactory:
     def command(root: Path) -> tuple[str, ...]:
         dist = root / "dist"
-        artifacts = sorted(
+        artifacts = tuple(
             str(path)
-            for pattern in ("*.whl", "*.tar.gz")
-            for path in dist.glob(pattern)
+            for path in (
+                dist / f"omega_lock-{intended_version}-py3-none-any.whl",
+                dist / f"omega_lock-{intended_version}.tar.gz",
+            )
             if path.is_file()
         )
         return (python_executable, "-m", "twine", "check", *artifacts)
@@ -125,7 +127,7 @@ def build_step_specs(
         StepSpec("pyright", _fixed_command(python_executable, "-m", "pyright", "src", "tests")),
         StepSpec("ruff", _fixed_command(python_executable, "-m", "ruff", "check", "src", "tests")),
         StepSpec("build", _fixed_command(python_executable, "-m", "build", "--no-isolation")),
-        StepSpec("twine-check", _twine_command(python_executable)),
+        StepSpec("twine-check", _twine_command(python_executable, intended_version)),
         StepSpec(
             "wheel-smoke-install",
             _fixed_command(

@@ -62,11 +62,15 @@ def _pypi_url(distribution: str, version: str) -> str:
     return f"https://pypi.org/pypi/{dist}/{ver}/json"
 
 
+def _urlopen_with_timeout(request: urllib.request.Request, timeout: float) -> Any:
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
 def fetch_pypi_json(
     distribution: str,
     version: str,
     *,
-    opener: UrlOpen = urllib.request.urlopen,
+    opener: UrlOpen = _urlopen_with_timeout,
     timeout: float = 10.0,
 ) -> tuple[dict[str, Any] | None, VerifyResult]:
     url = _pypi_url(distribution, version)
