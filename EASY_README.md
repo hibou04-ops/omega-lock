@@ -1,8 +1,8 @@
 # Omega-Lock Easy Start
 
-Current local package version: `0.2.6`.
+Current local package version: `0.2.7`.
 
-[![Version 0.2.6](https://img.shields.io/badge/version-0.2.6-orange.svg)](pyproject.toml)
+[![Version 0.2.7](https://img.shields.io/badge/version-0.2.7-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -12,21 +12,37 @@ Current local package version: `0.2.6`.
 
 [Full README](README.md) · [한국어 README](README_KR.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
-Omega-Lock audits tuned candidates before they ship. It checks whether a
-candidate survives walk-forward validation, declared hard constraints, and a
-reviewable append-only audit trail.
+Omega-Lock audits tuned candidates before they ship. It runs after candidate
+generation and checks whether a candidate survives walk-forward validation,
+declared hard constraints, and a reviewable append-only audit trail.
 
-It does not grade answers, prove correctness, provide a dashboard, or install a
-console command. There is currently no installed `omega-lock diff` command.
+## Use it when
+
+- before shipping a tuned or calibrated candidate
+- when the top-scoring candidate may break a hard constraint
+- when reviewers need `best_any` and `best_feasible` separately
+- when you need an offline, reproducible audit artifact
+
+## What it checks
+
+- hard constraints, evaluated and recorded on every candidate
+- `best_feasible` (constraint-satisfying) vs `best_any` (top raw score)
+- walk-forward / holdout transfer, when a test target is configured
+- an append-only JSON audit trail, with optional SHA-256 hash-chain evidence
+
+## What it does not prove
+
+- it does not prove correctness or root cause
+- it does not prove a candidate is globally optimal
+- it does not prove PyPI/GitHub publication — registry status needs separate post-release verification
+- not a dashboard or web app, and ships no installed console command — Omega-Lock does not provide an `omega-lock diff` command
 
 ## The core idea
 
-The highest-fitness candidate is not always the safest candidate. If it violates
-a declared constraint, the audit report can still show it as `best_any`, while
+The highest-fitness candidate is not always the safest. If it violates a
+declared constraint, the audit report still shows it as `best_any`, while
 `best_feasible` shows the highest-fitness candidate that satisfies the hard
-constraints.
-
-For most audit/CI runs, use:
+constraints. For most audit/CI runs, use:
 
 ```python
 P1Config(constraint_policy="prefer_feasible")
@@ -57,11 +73,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | Installed console executable | none currently |
 
-Use PyPI only if version `0.2.6` is published in your package index:
+Use PyPI only if version `0.2.7` is published in your package index:
 
 ```bash
-pip install omega-lock==0.2.6
-pip install "omega-lock[p2]==0.2.6"
+pip install omega-lock==0.2.7
+pip install "omega-lock[p2]==0.2.7"
 ```
 
 ## Minimal use
@@ -88,3 +104,5 @@ print(render_scorecard(report))
 
 For proof behind README claims, see
 [docs/claims/generated_readme_claims.md](docs/claims/generated_readme_claims.md).
+For the trust boundary and what each guarantee does not cover, see
+[docs/TRUST_MODEL.md](docs/TRUST_MODEL.md).

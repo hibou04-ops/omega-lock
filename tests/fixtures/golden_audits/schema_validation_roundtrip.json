@@ -42,7 +42,7 @@
       ],
       "hash_chain_valid": true,
       "method": "golden:schema_validation_roundtrip",
-      "omega_lock_version": "0.2.6",
+      "omega_lock_version": "0.2.7",
       "runs": [
         {
           "call_index": 0,
@@ -137,7 +137,7 @@
       ],
       "hash_chain_valid": true,
       "method": "golden:schema_validation_roundtrip",
-      "omega_lock_version": "0.2.6",
+      "omega_lock_version": "0.2.7",
       "runs": [
         {
           "call_index": 0,
@@ -218,7 +218,7 @@
       }
     ],
     "method": "golden:schema_validation_roundtrip",
-    "omega_lock_version": "0.2.6",
+    "omega_lock_version": "0.2.7",
     "runs": [
       {
         "call_index": 0,

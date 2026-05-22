@@ -1,8 +1,8 @@
 # Repository Surface Baseline
 
-Generated from local files on 2026-05-22. This is an inspection document only;
-it does not approve a release, create a tag, publish to PyPI, or change runtime
-behavior.
+Generated from local files on 2026-05-22; version surfaces updated for the
+0.2.7 release on 2026-05-23. This is an inspection document only; it does not
+approve a release, create a tag, publish to PyPI, or change runtime behavior.
 
 ## Naming Matrix
 
@@ -12,7 +12,7 @@ behavior.
 | PyPI distribution | `omega-lock` | Local `pyproject.toml` project name is `omega-lock`; PyPI registry status is `ENVIRONMENT_BLOCKED`. |
 | Python import package | `omega_lock` | Local package exists under `src/omega_lock`. |
 | CLI executable status | None currently. | No `[project.scripts]`, `[project.gui-scripts]`, `[project.entry-points]`, `console_scripts`, or `gui_scripts` entries were found locally. |
-| Source of current package version | `pyproject.toml` `[project].version = "0.2.6"`; runtime mirror `src/omega_lock/__init__.py` `__version__ = "0.2.6"`. | Verified from local files. |
+| Source of current package version | `pyproject.toml` `[project].version = "0.2.7"`; runtime mirror `src/omega_lock/__init__.py` `__version__ = "0.2.7"`. | Verified from local files. |
 | Release/tag/PyPI verification status | Local tags are listed below; GitHub releases and PyPI publication status are `ENVIRONMENT_BLOCKED`. | No network registry or GitHub release check was performed. |
 
 ## Package Metadata
@@ -20,7 +20,7 @@ behavior.
 | Field | Local value |
 | --- | --- |
 | `project.name` | `omega-lock` |
-| `project.version` | `0.2.6` |
+| `project.version` | `0.2.7` |
 | `requires-python` | `>=3.11` |
 | Runtime dependencies | `numpy>=1.24` |
 | Optional dependency group `dev` | `pytest>=7.0`, `pytest-cov>=4.0`, `pyright>=1.1.0`, `ruff>=0.4.0` |
@@ -30,11 +30,11 @@ behavior.
 
 | File | Local version surface |
 | --- | --- |
-| `src/omega_lock/__init__.py` | `__version__ = "0.2.6"` |
-| `README.md` | Current local package version badge and conditional install examples use `0.2.6`; PyPI publication status is explicitly not asserted. |
-| `README_KR.md` | Current local package version badge and conditional install examples use `0.2.6`; PyPI publication status is explicitly not asserted. |
-| `EASY_README.md` | Current local package version badge and conditional install examples use `0.2.6`; PyPI publication status is explicitly not asserted. |
-| `EASY_README_KR.md` | Current local package version badge and conditional install examples use `0.2.6`; PyPI publication status is explicitly not asserted. |
+| `src/omega_lock/__init__.py` | `__version__ = "0.2.7"` |
+| `README.md` | Current local package version badge and conditional install examples use `0.2.7`; PyPI publication status is explicitly not asserted. |
+| `README_KR.md` | Current local package version badge and conditional install examples use `0.2.7`; PyPI publication status is explicitly not asserted. |
+| `EASY_README.md` | Current local package version badge and conditional install examples use `0.2.7`; PyPI publication status is explicitly not asserted. |
+| `EASY_README_KR.md` | Current local package version badge and conditional install examples use `0.2.7`; PyPI publication status is explicitly not asserted. |
 | `RELEASE.md` | Release checklist uses `<version>` placeholders for current release commands and retains historical notes where explicitly labeled. |
 
 ## Repository Structure
@@ -123,8 +123,8 @@ asserting registry publication status.
 | --- | --- | --- |
 | `python` on PATH | `TOOLING_MISSING` | PowerShell could not resolve `python`. |
 | `.venv/Scripts/python.exe` | `TOOLING_MISSING` | File exists, but execution failed because its base interpreter could not be created. |
-| Bundled Python `pyproject.toml` read | Verified | Printed `omega-lock 0.2.6`. |
-| Bundled Python source import with `PYTHONPATH=src` | Verified | Printed `0.2.6`. |
+| Bundled Python `pyproject.toml` read | Verified | Printed `omega-lock 0.2.7`. |
+| Bundled Python source import with `PYTHONPATH=src` | Verified | Printed `0.2.7`. |
 | `python -m pytest -q` | `TOOLING_MISSING` | PATH `python` is missing; bundled Python also lacks `pytest`. |
 
 ## Local Git Surface
@@ -150,8 +150,10 @@ check. Read-only git inspection was completed with command-scoped
 - `v0.2.2`
 - `v0.2.3`
 - `v0.2.4`
+- `v0.2.5`
+- `v0.2.6`
 
-No local `v0.2.6` tag was observed during the retarget. Existing `v0.2.4`
-and any `v0.2.5` release/tag/artifact state are historical state and are not
-release approval for `0.2.6`.
+No local `v0.2.7` tag exists yet; it is created during the 0.2.7 release flow.
+Existing `v0.2.0` through `v0.2.6` tags are historical state and are not release
+approval for `0.2.7`.
 Remote tag state is `ENVIRONMENT_BLOCKED`.
