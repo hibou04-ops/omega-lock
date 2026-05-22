@@ -1,0 +1,53 @@
+name: Release Readiness (non-publishing)
+
+on:
+  workflow_dispatch:
+    inputs:
+      intended-version:
+        description: Intended release version in X.Y.Z form
+        required: true
+        default: "0.2.5"
+
+permissions:
+  contents: read
+
+jobs:
+  release-readiness:
+    name: Offline release-readiness checks
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package, test tools, and build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pip install build twine
+
+      - name: Run offline release audit
+        run: |
+          python scripts/release_audit.py \
+            --intended-version "${{ inputs.intended-version }}" \
+            --offline \
+            --json
+
+      - name: Run local wheel smoke install
+        run: |
+          python scripts/wheel_smoke_install.py \
+            --dist-dir dist \
+            --intended-version "${{ inputs.intended-version }}"
+
+      - name: Run non-publishing publish readiness gate
+        run: |
+          python scripts/publish_readiness.py \
+            --intended-version "${{ inputs.intended-version }}" \
+            --offline

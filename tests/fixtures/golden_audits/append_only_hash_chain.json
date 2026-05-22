@@ -1,0 +1,420 @@
+{
+  "case_id": "append_only_hash_chain",
+  "description": "Hash-chain enabled audit report preserves append-only prefix.",
+  "golden_schema_version": 1,
+  "offline": true,
+  "semantic": {
+    "append_only_prefix_preserved": true,
+    "base": {
+      "audit_schema_version": "omega-lock.audit-report.v2",
+      "best_any": {
+        "call_index": 2,
+        "constraints_failed": [],
+        "fitness": 3.0,
+        "params": {
+          "x": 1.0
+        }
+      },
+      "best_feasible": {
+        "call_index": 2,
+        "constraints_failed": [],
+        "fitness": 3.0,
+        "params": {
+          "x": 1.0
+        }
+      },
+      "constraints": [
+        {
+          "description": "x must be >= 0",
+          "name": "x_nonnegative"
+        }
+      ],
+      "hash_chain": [
+        {
+          "call_index": 0,
+          "previous_hash": null,
+          "run_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542"
+        },
+        {
+          "call_index": 1,
+          "previous_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542",
+          "run_hash": "9ffff3ed5857bc497f2150c66a7e3f2eddd14d109f430c127add5e3283890ccf"
+        },
+        {
+          "call_index": 2,
+          "previous_hash": "9ffff3ed5857bc497f2150c66a7e3f2eddd14d109f430c127add5e3283890ccf",
+          "run_hash": "a460ba35cbf7f8dd4e10cc3dce744a56e773f2d6eba0409c61229a005fc6ae41"
+        }
+      ],
+      "hash_chain_valid": true,
+      "method": "golden:append_only_hash_chain",
+      "omega_lock_version": "0.2.5",
+      "runs": [
+        {
+          "call_index": 0,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 1.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 0
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 0.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        },
+        {
+          "call_index": 1,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 2.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 1
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 0.5
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        },
+        {
+          "call_index": 2,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 3.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 2
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 1.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        }
+      ],
+      "seed": 101,
+      "summary": {
+        "constraint_pass_counts": {
+          "x_nonnegative": 3
+        },
+        "feasibility_rate": 1.0,
+        "n_feasible": 3,
+        "n_total": 3
+      }
+    },
+    "extended": {
+      "audit_schema_version": "omega-lock.audit-report.v2",
+      "best_any": {
+        "call_index": 3,
+        "constraints_failed": [],
+        "fitness": 4.0,
+        "params": {
+          "x": 1.5
+        }
+      },
+      "best_feasible": {
+        "call_index": 3,
+        "constraints_failed": [],
+        "fitness": 4.0,
+        "params": {
+          "x": 1.5
+        }
+      },
+      "constraints": [
+        {
+          "description": "x must be >= 0",
+          "name": "x_nonnegative"
+        }
+      ],
+      "hash_chain": [
+        {
+          "call_index": 0,
+          "previous_hash": null,
+          "run_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542"
+        },
+        {
+          "call_index": 1,
+          "previous_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542",
+          "run_hash": "9ffff3ed5857bc497f2150c66a7e3f2eddd14d109f430c127add5e3283890ccf"
+        },
+        {
+          "call_index": 2,
+          "previous_hash": "9ffff3ed5857bc497f2150c66a7e3f2eddd14d109f430c127add5e3283890ccf",
+          "run_hash": "a460ba35cbf7f8dd4e10cc3dce744a56e773f2d6eba0409c61229a005fc6ae41"
+        },
+        {
+          "call_index": 3,
+          "previous_hash": "a460ba35cbf7f8dd4e10cc3dce744a56e773f2d6eba0409c61229a005fc6ae41",
+          "run_hash": "363cb81795019713d6fbc19486f1540a9f461895b48ae8d3c6f60ac2ab66aa43"
+        }
+      ],
+      "hash_chain_valid": true,
+      "method": "golden:append_only_hash_chain",
+      "omega_lock_version": "0.2.5",
+      "runs": [
+        {
+          "call_index": 0,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 1.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 0
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 0.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        },
+        {
+          "call_index": 1,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 2.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 1
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 0.5
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        },
+        {
+          "call_index": 2,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 3.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 2
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 1.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        },
+        {
+          "call_index": 3,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 4.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 3
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 1.5
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        }
+      ],
+      "seed": 101,
+      "summary": {
+        "constraint_pass_counts": {
+          "x_nonnegative": 4
+        },
+        "feasibility_rate": 1.0,
+        "n_feasible": 4,
+        "n_total": 4
+      }
+    },
+    "non_append_mutation_would_change_prefix": true
+  },
+  "signed_report": {
+    "constraints": [
+      {
+        "description": "x must be >= 0",
+        "name": "x_nonnegative"
+      }
+    ],
+    "ended_iso": "2026-01-01T00:00:03+00:00",
+    "hash_chain": [
+      {
+        "call_index": 0,
+        "previous_hash": null,
+        "run_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542"
+      },
+      {
+        "call_index": 1,
+        "previous_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542",
+        "run_hash": "9ffff3ed5857bc497f2150c66a7e3f2eddd14d109f430c127add5e3283890ccf"
+      },
+      {
+        "call_index": 2,
+        "previous_hash": "9ffff3ed5857bc497f2150c66a7e3f2eddd14d109f430c127add5e3283890ccf",
+        "run_hash": "a460ba35cbf7f8dd4e10cc3dce744a56e773f2d6eba0409c61229a005fc6ae41"
+      },
+      {
+        "call_index": 3,
+        "previous_hash": "a460ba35cbf7f8dd4e10cc3dce744a56e773f2d6eba0409c61229a005fc6ae41",
+        "run_hash": "363cb81795019713d6fbc19486f1540a9f461895b48ae8d3c6f60ac2ab66aa43"
+      }
+    ],
+    "method": "golden:append_only_hash_chain",
+    "omega_lock_version": "0.2.5",
+    "runs": [
+      {
+        "call_index": 0,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 1.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 0
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 0.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train",
+        "timestamp_iso": "2026-01-01T00:00:00+00:00"
+      },
+      {
+        "call_index": 1,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 2.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 1
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 0.5
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train",
+        "timestamp_iso": "2026-01-01T00:00:01+00:00"
+      },
+      {
+        "call_index": 2,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 3.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 2
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 1.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train",
+        "timestamp_iso": "2026-01-01T00:00:02+00:00"
+      },
+      {
+        "call_index": 3,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 4.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 3
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 1.5
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train",
+        "timestamp_iso": "2026-01-01T00:00:03+00:00"
+      }
+    ],
+    "schema_version": "omega-lock.audit-report.v2",
+    "seed": 101,
+    "started_iso": "2026-01-01T00:00:00+00:00",
+    "stress_ranking": null,
+    "summary": {
+      "constraint_pass_counts": {
+        "x_nonnegative": 4
+      },
+      "feasibility_rate": 1.0,
+      "n_feasible": 4,
+      "n_total": 4
+    }
+  }
+}

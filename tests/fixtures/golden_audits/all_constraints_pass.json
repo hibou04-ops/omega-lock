@@ -1,0 +1,110 @@
+{
+  "case_id": "all_constraints_pass",
+  "description": "All evaluated audit runs satisfy the declared hard constraint.",
+  "golden_schema_version": 1,
+  "offline": true,
+  "semantic": {
+    "audit_schema_version": "omega-lock.audit-report.v2",
+    "best_any": {
+      "call_index": 2,
+      "constraints_failed": [],
+      "fitness": 3.0,
+      "params": {
+        "x": 1.0
+      }
+    },
+    "best_feasible": {
+      "call_index": 2,
+      "constraints_failed": [],
+      "fitness": 3.0,
+      "params": {
+        "x": 1.0
+      }
+    },
+    "constraints": [
+      {
+        "description": "x must be >= 0",
+        "name": "x_nonnegative"
+      }
+    ],
+    "method": "golden:all_constraints_pass",
+    "omega_lock_version": "0.2.5",
+    "runs": [
+      {
+        "call_index": 0,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 1.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 0
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 0.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      },
+      {
+        "call_index": 1,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 2.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 1
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 0.5
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      },
+      {
+        "call_index": 2,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 3.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 2
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 1.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      }
+    ],
+    "seed": 101,
+    "summary": {
+      "constraint_pass_counts": {
+        "x_nonnegative": 3
+      },
+      "feasibility_rate": 1.0,
+      "n_feasible": 3,
+      "n_total": 3
+    }
+  }
+}

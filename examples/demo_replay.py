@@ -16,6 +16,9 @@ size it to 100x40 minimum, set font size 16-18pt, then run.
 
 from __future__ import annotations
 
+import argparse
+import hashlib
+import json
 import sys
 import time
 from pathlib import Path
@@ -82,6 +85,10 @@ SECTION_PAUSES: list[tuple[str, float]] = [
 DEFAULT_PAUSE = 0.05
 
 
+def _capture_path() -> Path:
+    return Path(__file__).parent / "_demo_output.txt"
+
+
 def _pause_for(line: str) -> float:
     for pattern, pause in SECTION_PAUSES:
         if pattern in line:
@@ -89,12 +96,57 @@ def _pause_for(line: str) -> float:
     return DEFAULT_PAUSE
 
 
-def main() -> int:
-    here = Path(__file__).parent
-    capture = here / "_demo_output.txt"
+def build_check_summary(text: str) -> dict[str, object]:
+    lines = text.splitlines()
+    markers = {
+        "status_pass": "  status:   PASS" in text,
+        "top_k_effective": "top_k:    ['alpha', 'long_mode', 'window']" in text,
+        "grid_best_effective": (
+            "grid_best: {'alpha': 0.5, 'long_mode': True, 'window': 3}" in text
+        ),
+        "walk_forward_gate_pass": "[PASS] KC-4: PASS:" in text,
+        "kc3_pass": "[PASS] KC-3: PASS:" in text,
+        "fractal_final_pass": "final_status:  PASS" in text,
+        "demo_completed": "PhantomKeyhole demo PASSED." in text,
+    }
+    return {
+        "demo": "demo_replay",
+        "source": "examples/_demo_output.txt",
+        "line_count": len(lines),
+        "capture_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "markers": markers,
+        "status": "PASS" if all(markers.values()) else "FAIL",
+    }
+
+
+def check_capture(capture: Path | None = None) -> dict[str, object]:
+    capture = capture or _capture_path()
+    if not capture.exists():
+        return {
+            "demo": "demo_replay",
+            "source": capture.as_posix(),
+            "status": "FAIL",
+            "error": "capture missing",
+        }
+    text = capture.read_text(encoding="utf-8", errors="replace")
+    return build_check_summary(text)
+
+
+def _run_check() -> int:
+    summary = check_capture()
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0 if summary["status"] == "PASS" else 1
+
+
+def _run_replay() -> int:
+    capture = _capture_path()
     if not capture.exists():
         print(f"ERROR: capture missing at {capture}", file=sys.stderr)
-        print("Regenerate with: python examples/phantom_demo.py > examples/_demo_output.txt 2>&1", file=sys.stderr)
+        print(
+            "Regenerate with: python examples/phantom_demo.py > "
+            "examples/_demo_output.txt 2>&1",
+            file=sys.stderr,
+        )
         return 1
 
     text = capture.read_text(encoding="utf-8", errors="replace")
@@ -110,6 +162,13 @@ def main() -> int:
     time.sleep(0.5)
     print(f"\n[demo_replay] elapsed: {elapsed:.1f}s", file=sys.stderr)
     return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="run deterministic self-check")
+    args = parser.parse_args(argv)
+    return _run_check() if args.check else _run_replay()
 
 
 if __name__ == "__main__":

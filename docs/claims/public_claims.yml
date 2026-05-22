@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "readme": "README.md",
+  "claims": [
+    {
+      "id": "walk_forward_validation",
+      "claim": "README.md says Omega-Lock performs walk-forward validation and KC-4 train-to-test checks.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": ["README.md:3", "README.md:39", "README.md:303"],
+      "readme_markers": ["walk-forward validation", "Walk-forward gate (KC-4)", "walk-forward re-evaluation on test target"],
+      "proof": [
+        {"type": "source_of_truth", "path": "src/omega_lock/walk_forward.py", "note": "WalkForward implementation."},
+        {"type": "source_of_truth", "path": "src/omega_lock/orchestrator.py", "note": "run_p1 wires test_target through WalkForward and check_kc4."},
+        {"type": "reproducible_command", "command": "python -m pytest tests/test_walk_forward_cache.py tests/test_integration_phantom.py -q", "network": false}
+      ]
+    },
+    {
+      "id": "hard_constraint_compliance",
+      "claim": "README.md says hard constraints are declared, evaluated, recorded, and can gate selection through constraint_policy.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": ["README.md:21", "README.md:56", "README.md:121"],
+      "readme_markers": ["Declarative hard constraints", "constraint_policy=\"prefer_feasible\"", "constraints are evaluated and recorded"],
+      "proof": [
+        {"type": "source_of_truth", "path": "src/omega_lock/audit/_target.py", "note": "AuditingTarget evaluates Constraint predicates and records pass/fail metadata."},
+        {"type": "source_of_truth", "path": "src/omega_lock/orchestrator.py", "note": "P1Config.constraint_policy controls feasible selection and hard_fail status."},
+        {"type": "reproducible_command", "command": "python -m pytest tests/test_constraint_aware_selection.py tests/test_constraint_uniqueness.py -q", "network": false}
+      ]
+    },
+    {
+      "id": "feasible_best_vs_absolute_best",
+      "claim": "README.md says audit reports distinguish best_feasible from best_any / absolute best.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": ["README.md:127", "README.md:230", "README.md:543"],
+      "readme_markers": ["feasible best vs absolute best", "best_feasible", "best_any"],
+      "proof": [
+        {"type": "source_of_truth", "path": "src/omega_lock/audit/_types.py", "note": "AuditReport.best_feasible and AuditReport.best_any are computed properties."},
+        {"type": "source_of_truth", "path": "src/omega_lock/audit/_scorecard.py", "note": "render_scorecard renders best feasible and best any."},
+        {"type": "reproducible_command", "command": "python -m pytest tests/test_audit.py::test_report_best_feasible_prefers_feasible_even_if_lower_fitness -q", "network": false}
+      ]
+    },
+    {
+      "id": "append_only_audit_trail",
+      "claim": "README.md says each probed candidate is appended to a reviewable JSON audit trail with phase, role, round, and call index context.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": ["README.md:3", "README.md:41", "README.md:229"],
+      "readme_markers": ["append-only JSON trail", "Append-only audit trail", "call_index"],
+      "proof": [
+        {"type": "source_of_truth", "path": "src/omega_lock/audit/_types.py", "note": "AuditedRun and AuditReport define positional trail fields and JSON serialization."},
+        {"type": "source_of_truth", "path": "src/omega_lock/audit/_target.py", "note": "AuditingTarget appends one AuditedRun per evaluate call."},
+        {"type": "reproducible_command", "command": "python -m pytest tests/test_audit.py tests/test_auto_phase_tracking.py -q", "network": false}
+      ]
+    },
+    {
+      "id": "sha256_hash_chain_tamper_detection",
+      "claim": "README.md says audit JSON can include an optional SHA-256 hash chain and can verify tamper evidence on readback.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": ["README.md:29", "README.md:138"],
+      "readme_markers": ["SHA-256 hash", "verify_hash_chain", "tamper-evident audit reports"],
+      "proof": [
+        {"type": "source_of_truth", "path": "src/omega_lock/audit/_types.py", "note": "AuditReport.hash_chain, verify_hash_chain, and to_json(with_hash_chain=True)."},
+        {"type": "reproducible_command", "command": "python -m pytest tests/test_audit_hash_chain.py -q", "network": false}
+      ]
+    },
+    {
+      "id": "deterministic_offline_demos",
+      "claim": "README.md says the bundled demos are deterministic and require no network or API keys.",
+      "classification": "deterministic_artifact",
+      "status": "validated",
+      "readme_refs": ["README.md:23", "README.md:91", "README.md:104"],
+      "readme_markers": ["Run the deterministic demos (no API, no network)", "Both runs are deterministic", "python examples/demo_replay.py"],
+      "proof": [
+        {"type": "deterministic_artifact", "path": "examples/_demo_output.txt", "note": "Captured phantom demo output used by demo_replay.py."},
+        {"type": "source_of_truth", "path": "examples/demo_replay.py", "note": "Replay reads the checked-in capture file."},
+        {"type": "source_of_truth", "path": "examples/demo_sram.py", "note": "Local SRAM demo entry point."},
+        {"type": "reproducible_command", "command": "python examples/demo_replay.py", "network": false},
+        {"type": "reproducible_command", "command": "python examples/demo_sram.py", "network": false}
+      ]
+    },
+    {
+      "id": "benchmark_scorecard",
+      "claim": "README.md says benchmark_battery.py and run_benchmark produce an objective scorecard with mechanically computed metrics.",
+      "classification": "reproducible_command",
+      "status": "validated",
+      "readme_refs": ["README.md:148"],
+      "readme_markers": ["run_benchmark", "mechanically computed metrics", "stress_rank_spearman"],
+      "proof": [
+        {"type": "source_of_truth", "path": "src/omega_lock/benchmark.py", "note": "BenchmarkReport, BenchmarkRow, and metric computations."},
+        {"type": "source_of_truth", "path": "examples/benchmark_battery.py", "note": "Example battery that prints the scorecard."},
+        {"type": "reproducible_command", "command": "python -m pytest tests/test_benchmark.py -q", "network": false}
+      ]
+    },
+    {
+      "id": "stress_rank_spearman",
+      "claim": "README.md says the frozen benchmark regression fixture tracks deterministic stress_rank_spearman values.",
+      "classification": "deterministic_artifact",
+      "status": "validated",
+      "readme_refs": ["README.md:153"],
+      "readme_markers": ["stress_rank_spearman", "frozen fixture"],
+      "proof": [
+        {"type": "deterministic_artifact", "path": "tests/fixtures/benchmark_gold.json", "note": "Frozen deterministic benchmark regression fixture."},
+        {"type": "source_of_truth", "path": "tests/test_benchmark_regression.py", "note": "Regression guard compares deterministic metrics against benchmark_gold.json."},
+        {"type": "reproducible_command", "command": "python -m pytest tests/test_benchmark_regression.py -q", "network": false}
+      ]
+    },
+    {
+      "id": "package_naming_install",
+      "claim": "README.md uses omega-lock as the PyPI distribution and omega_lock as the Python import package.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": ["README.md:12", "README.md:109", "README.md:331"],
+      "readme_markers": ["pip install omega-lock==", "from omega_lock import", "git clone https://github.com/hibou04-ops/omega-lock.git"],
+      "proof": [
+        {"type": "source_of_truth", "path": "pyproject.toml", "note": "project.name is omega-lock and package-dir is src."},
+        {"type": "source_of_truth", "path": "src/omega_lock", "note": "Import package directory."},
+        {"type": "generated_doc", "path": "docs/REPO_SURFACE.md", "note": "Repository surface matrix separates GitHub repo, PyPI distribution, import package, and CLI status."},
+        {"type": "reproducible_command", "command": "python scripts/check_repo_consistency.py --check", "network": false}
+      ]
+    },
+    {
+      "id": "no_omega_lock_diff_cli",
+      "claim": "README.md says no installed omega-lock diff console command currently ships.",
+      "classification": "generated_doc",
+      "status": "validated",
+      "readme_refs": ["README.md:132"],
+      "readme_markers": ["`omega-lock diff` command"],
+      "proof": [
+        {"type": "generated_doc", "path": "docs/REPO_SURFACE.md", "note": "CLI executable status is documented as none currently."},
+        {"type": "source_of_truth", "path": "pyproject.toml", "note": "No [project.scripts] entry is present."},
+        {"type": "reproducible_command", "command": "python scripts/check_repo_consistency.py --check", "network": false}
+      ]
+    },
+    {
+      "id": "audit_first_positioning",
+      "claim": "README.md positions Omega-Lock as audit-first rather than search-first.",
+      "classification": "qualitative_marker",
+      "status": "qualitative",
+      "readme_refs": ["README.md:158"],
+      "readme_markers": ["audit-first framework"],
+      "proof": [],
+      "note": "Qualitative positioning marker; not upgraded to a quantitative proof claim."
+    },
+    {
+      "id": "badge_download_analytics_boundaries",
+      "claim": "README.md says static badges and any download/star signals are not proof of correctness, trustworthiness, release readiness, adoption, or package quality.",
+      "classification": "qualitative_marker",
+      "status": "qualitative",
+      "readme_refs": ["README.md:14"],
+      "readme_markers": [
+        "Badge and download analytics boundaries",
+        "Downloads or stars may indicate visibility",
+        "No PyPI or GitHub download analytics are asserted here"
+      ],
+      "proof": [],
+      "note": "Conservative wording boundary; no download numbers or vanity metrics are asserted."
+    }
+  ]
+}

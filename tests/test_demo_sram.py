@@ -2,8 +2,13 @@
 surrogate, not something to pin down numerically. We test shape, not numbers."""
 from __future__ import annotations
 
+from contextlib import redirect_stdout
+import io
+import json
 import math
 
+import demo_replay
+import demo_sram
 from omega_lock_demos.sram import (
     BitcellTarget, Corner, PVT_CORNERS, DEMO_CONSTRAINTS,
     eval_corner, read_snm,
@@ -84,3 +89,41 @@ def test_demo_runs_end_to_end_quickly():
     assert elapsed < 2.0, f"demo too slow: {elapsed:.2f}s"
     report = make_report(wrapped, method="test_demo")
     assert report.n_total > 0
+
+
+def _run_check_json(module):
+    out = io.StringIO()
+    with redirect_stdout(out):
+        code = module.main(["--check"])
+    assert code == 0
+    return json.loads(out.getvalue())
+
+
+def test_demo_replay_check_mode_verifies_captured_audit_markers():
+    summary = _run_check_json(demo_replay)
+
+    assert summary["status"] == "PASS"
+    markers = summary["markers"]
+    assert markers["top_k_effective"] is True
+    assert markers["walk_forward_gate_pass"] is True
+    assert markers["demo_completed"] is True
+    assert summary["source"] == "examples/_demo_output.txt"
+
+
+def test_demo_sram_check_mode_verifies_audit_markers_and_hash_chain():
+    summary = _run_check_json(demo_sram)
+
+    assert summary["status"] == "PASS"
+    assert summary["audit_schema_version"] == "omega-lock.audit-report.v2"
+    assert summary["n_total"] == 138
+    assert summary["n_feasible"] == 3
+    assert summary["hash_chain_length"] == summary["n_total"]
+    assert summary["walk_forward_gate_result"] == "NOT_APPLICABLE_NO_TEST_TARGET"
+    markers = summary["markers"]
+    assert markers["best_feasible_present"] is True
+    assert markers["best_feasible_has_no_failed_constraints"] is True
+    assert markers["hard_constraint_failures_visible"] is True
+    assert markers["feasible_best_differs_from_absolute_best"] is True
+    assert markers["absolute_best_is_infeasible"] is True
+    assert markers["hash_chain_valid"] is True
+    assert markers["schema_roundtrip_valid"] is True

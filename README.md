@@ -1,121 +1,138 @@
 # Omega-Lock
 
-> Audit tuned candidates before they ship: stress boundaries, hard constraints, walk-forward validation, and an append-only JSON trail your reviewer can diff.
+> Audit tuned candidates before they ship: walk-forward validation, declarative hard constraints, feasible-best selection, and an append-only JSON trail.
 
-[![Release](https://img.shields.io/badge/release-0.2.4-orange.svg)](https://pypi.org/project/omega-lock/0.2.4/)
-[![Python versions](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Quality](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-brightgreen.svg)](tests/)
-[![Methodology](https://img.shields.io/badge/methodology-Antemortem-blueviolet.svg)](https://github.com/hibou04-ops/Antemortem)
+[![Package version](https://img.shields.io/badge/version-0.2.5-orange.svg)](pyproject.toml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-```bash
-pip install omega-lock==0.2.4
-```
+Current local package version: `0.2.5`.
 
-Omega-Lock is an audit gate for calibration results. It does not try to be the fastest optimizer. It asks whether the candidate produced by your optimizer survives the same mechanical review every time: declared constraints, train→test generalization, stress-boundary checks, and reviewable evidence.
+Registry status is not asserted here. In this environment, PyPI/GitHub release
+verification is `ENVIRONMENT_BLOCKED`; do not treat a local version string as
+proof that the same version is published.
 
----
+## Badge and download analytics boundaries
 
-### Quick Diagnostic:
-* **What is it?** A structural failure-boundary auditor for tuned calibration candidates.
-* **Why does it matter?** It stops overfit or constraint-violating candidates from shipping by enforcing pre-declared ship gates and leaving an append-only, tamper-evident audit trail.
-* **Does it require ground truth?** **No.** Omega-Lock is not an answer-key evaluator. It audits failure boundaries, requiring stress profiles, invariants, failure criteria, thresholds, and walk-forward slices instead.
-* **How do I see it work in 60 seconds?** Check the demo video below and run `python examples/demo_replay.py`.
+Static badges in this README identify local metadata surfaces such as package
+version and license. They do not prove release readiness, correctness,
+trustworthiness, adoption, or package quality.
 
----
+Downloads or stars may indicate visibility, not correctness, trustworthiness, or
+release readiness. Stars/downloads must not be used as audit evidence or release
+approval. No PyPI or GitHub download analytics are asserted here.
 
-## Demo (60s)
+## What omega-lock audits
+
+Omega-Lock is an audit-first framework for tuned calibration candidates. It sits
+after candidate generation and asks whether a candidate survives declared gates:
+
+- **Walk-forward gate (KC-4)**: walk-forward re-evaluation on test target data,
+  using Pearson and trade-ratio checks.
+- **Declarative hard constraints**: constraints are evaluated and recorded on
+  every candidate; `constraint_policy="prefer_feasible"` makes selection prefer
+  candidates that satisfy all declared constraints.
+- **Feasible-best vs absolute-best**: audit reports expose `best_feasible` and
+  `best_any`, so reviewers can see when the highest-fitness candidate violated
+  a hard constraint.
+- **Append-only audit trail**: every evaluated candidate is appended as an
+  `AuditedRun` with phase, role, round, and `call_index` context.
+- **Optional tamper evidence**: audit reports can include an opt-in SHA-256 hash
+  chain via `report.to_json(with_hash_chain=True)` and can verify it with
+  `AuditReport.verify_hash_chain(...)`.
+
+## What it does not do
+
+- It does not grade answers or require gold labels unless your own target
+  fitness function requires them.
+- It does not prove root cause, guarantee correctness, or replace domain
+  validation.
+- It does not provide a runtime production wrapper, dashboard, or web app.
+- It does not currently ship an installed console CLI. In particular,
+  Omega-Lock emits JSON artifacts; it does not currently ship a console
+  `omega-lock diff` command.
+- It does not assert PyPI publication status for `0.2.5`; verify registries
+  separately before treating a version as published.
+
+## Why feasible-best matters
+
+The absolute-best candidate can be the wrong candidate to ship if it violates a
+hard constraint. `best_any` answers "what scored highest?" while
+`best_feasible` answers "what scored highest while satisfying the declared
+constraints?" In audit and CI contexts, the second answer is often the one that
+can actually move forward.
+
+Use `constraint_policy="prefer_feasible"` for normal audit runs. Use
+`constraint_policy="hard_fail"` when a run with no feasible candidate should
+fail immediately. The backward-compatible default, `record`, records constraint
+violations but does not gate `grid_best` selection.
+
+## Run the deterministic demos (no API, no network)
+
+The 60-second demo video is preserved because it shows the actual local demo
+flow:
 
 https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 
-> 60-second walkthrough on `examples/phantom_demo.py`: 12-axis sensitivity → top-K unlock (3 effective, 9 decoys) → 50-combo grid → walk-forward (Pearson 0.879) → KC-1..4 all PASS → fractal-vise refines `alpha 0.5 → 0.4375`. Real `phantom_demo.py` output, paced for readability. Reproducible with `python examples/demo_replay.py`.
-
----
-
-## TL;DR — what & why
-
-You ran 1,000 trials. The best one scored 0.95 on training data. **Did it overfit?** Most optimizers don't tell you. `omega-lock` wraps any `CalibrableTarget` and decides whether the tuned candidate is reviewable, constraint-feasible, and likely to generalize:
-
-- **Walk-forward gate (KC-4)** — Pearson + trade-ratio on a held-out slice. Pre-declared, can't be lowered post-hoc.
-- **Declarative hard constraints** — rules like `VDD > 0.6V` or `ROI > 0.5` are evaluated and recorded on every candidate. Set `P1Config.constraint_policy="prefer_feasible"` to make `grid_best` pick the highest-fitness *feasible* candidate, or `"hard_fail"` to abort the run when no candidate is feasible. Default is `"record"` (backward-compat) — constraint violations live on the audit trail but don't change `grid_best` selection.
-- **Append-only audit trail** — every probed candidate logged with phase / role / round context. JSON-diffable. Append-only is in-process by default (rows appended in run order); call `report.to_json(with_hash_chain=True)` for an opt-in SHA-256 hash chain that lets a reviewer verify the artifact wasn't edited after signing.
-- **Method-agnostic** — wrap with `AuditingTarget`, hand to grid / TPE / Bayesian / random / your own optimizer.
-- **Built-in pipelines** — three integrated search pipelines if you don't have an optimizer yet (`run_p1`, `run_p1_iterative`, `run_p2_tpe`).
-- **Failure-boundary audit, not answer grading** — no gold labels are required unless your target's own fitness definition needs semantic correctness.
-
-Origin: extracted from a quant trading experiment that ended in **KC-4 FAIL** (overfitting detected exactly as designed). That controlled-failure outcome is the behavior the framework is built to produce.
-
----
-
-## No answer key required — this audits failure boundaries
-
-Omega-Lock is not an answer-key evaluator. In many domains there is no single "correct answer" to inject. A metal fatigue rig does not need a correct answer for a beam; it needs a load profile, a stress schedule, a crack/failure criterion, and a threshold. Omega-Lock works the same way for calibration candidates.
-
-It needs:
-
-- **stress profiles** — which parameters, slices, contexts, corners, or regimes to perturb
-- **invariants** — things that must remain true, such as valid JSON, required keys, PVT safety margin, max drawdown, or audit-trail integrity
-- **failure criteria** — what counts as breakage
-- **thresholds** — the declared line between acceptable and failed
-- **walk-forward slices** — data or regimes the candidate did not tune against
-- **audit artifacts** — the append-only evidence trail reviewers can diff
-
-It does not need:
-
-- a gold answer for every input
-- a human preference label for every output
-- a semantic judge unless your own target fitness uses one
-
-The compact formulation is:
-
-```text
-omega-lock = answer key not required.
-omega-lock does require failure oracle / invariant / threshold.
-```
-
-It audits whether a tuned candidate structurally breaks: under which schema or contract conditions it fails, below which context or stability margin output becomes unreliable, under which provider or infrastructure noise calibration collapses, whether walk-forward performance remains predictive, whether hard constraints are violated, and whether the audit trail remains reproducible and reviewable.
-
-| Misread | Correct read |
-|---|---|
-| "Omega-Lock grades answers." | It audits whether a candidate structurally survives declared gates. |
-| "It needs ground truth labels." | It needs invariants, failure criteria, thresholds, and stress cases. |
-| "It proves root cause." | It records evidence about where and how the candidate fails. |
-| "It is an optimizer replacement." | It wraps or accompanies optimizers; the audit discipline stays constant. |
-
-Omega-Lock does not guarantee correctness, prove root cause, replace domain validation, act as a runtime production wrapper, or provide security/DRM. It is an offline/CI/batch diagnostic audit gate for calibrated candidates.
-
----
-
-## Quick start
-
-### 0. Run the deterministic demos (no API, no network)
+It is a paced replay of checked-in `examples/phantom_demo.py` output:
+12-axis sensitivity, top-K unlock, grid search, walk-forward validation, KC
+reports, and zoom refinement. Both runs are deterministic and require no
+network or API keys.
 
 ```bash
 git clone https://github.com/hibou04-ops/omega-lock.git
-cd omega-lock && pip install -e ".[dev]"
+cd omega-lock
+pip install -e ".[dev]"
 
-# Replay the bundled phantom demo (12-axis sensitivity → top-K unlock → walk-forward)
 python examples/demo_replay.py
-
-# Or run a realistic-shaped target (6T SRAM bitcell across 5 PVT corners, 3 hard constraints)
 python examples/demo_sram.py
 ```
 
-Both runs are deterministic — no API keys, no network. Output is an audit report JSON that diffs cleanly in PRs.
+## Install and import names
 
-### 1. Wrap your own target with the audit module
+Name boundaries are intentionally distinct:
+
+| Surface | Name |
+| --- | --- |
+| GitHub repo | `hibou04-ops/omega-lock` |
+| PyPI distribution | `omega-lock` |
+| Python import package | `omega_lock` |
+| Installed console executable | none currently |
+
+From source:
+
+```bash
+git clone https://github.com/hibou04-ops/omega-lock.git
+cd omega-lock
+pip install -e ".[dev]"
+```
+
+From PyPI, only if version `0.2.5` is published in the index you use:
+
+```bash
+pip install omega-lock==0.2.5
+pip install "omega-lock[p2]==0.2.5"
+```
+
+Python import:
+
+```python
+from omega_lock import P1Config, run_p1
+from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
+```
+
+## Minimal audit example
 
 ```python
 from omega_lock import P1Config, run_p1
 from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
 
 audited = AuditingTarget(
-    YourCalibrableTarget(),
+    my_target,
     constraints=[
-        Constraint("must_be_feasible",
-                   lambda params, result: result.metadata["sharpe"] > 0.5),
-        Constraint("no_drawdown_blowup",
-                   lambda params, result: result.metadata["max_dd"] < 0.3),
+        Constraint(
+            "must_be_feasible",
+            lambda params, result: result.metadata["sharpe"] > 0.5,
+        ),
     ],
 )
 
@@ -123,563 +140,54 @@ result = run_p1(
     train_target=audited,
     config=P1Config(constraint_policy="prefer_feasible"),
 )
+
 report = make_report(audited, method="run_p1", seed=42)
-print(render_scorecard(report))            # feasible best vs absolute best, full probed trail
+print(render_scorecard(report))  # feasible best vs absolute best
 ```
 
-### 2. CI regression gate
-
-Omega-Lock emits JSON artifacts; it does not currently ship a console `omega-lock diff` command. In CI, compare the serialized `P1Result` or `AuditReport` with your normal JSON diff/regression tooling, or assert directly on fields such as `status`, `warnings`, `kc_reports`, `holdout_result.gate_status`, `best_feasible`, and `hash_chain`.
-
-For tamper-evident audit reports, serialize with `report.to_json(with_hash_chain=True)` and verify the chain on readback with `AuditReport.verify_hash_chain(...)`.
-
----
-
-## Built for
-
-- **Quant / strategy tuning** — filter candidates that look great in-sample but collapse under walk-forward, with KC-4 (Pearson + trade-ratio) as the gate.
-- **Hardware / simulation calibration** — PVT sweeps, process control, materials discovery: costly surrogate or SPICE-like evaluation with hard physical constraints (see `examples/demo_sram.py`).
-- **ML / HPO governance** — turn an optimizer's "best trial" into a deployment-safe artifact with an append-only trail, not a lone fitness number.
-
----
-
-## How is this different?
-
-| Capability | Omega-Lock | Typical optimizers (Optuna, Ray Tune) | Manual eval scripts | Vendor dashboards |
-|---|:-:|:-:|:-:|:-:|
-| Search execution | ✓ (3 pipelines) | ✓ | ✓ | ✓ |
-| **Walk-forward ship gate (KC-4)** | ✓ | usually manual | usually manual | ✗ |
-| **Declarative hard constraints** | ✓ | partial | manual | ✗ |
-| **Append-only audit trail** | ✓ | logs | logs | ✗ |
-| Feasible vs absolute best split | ✓ | manual | manual | ✗ |
-| Method-agnostic (BYO optimizer) | ✓ | n/a | n/a | varies |
-| Pre-declared kill criteria | ✓ | partial | manual | ✗ |
-
-> **Position**: Omega-Lock is **audit-first**, not search-first. It assumes you already picked candidates and asks "did you actually generalize, and are you within constraints?" — the question downstream of search.
-
----
-
-📖 **Want depth?** Full pipeline architecture, KC-1..4 details, hybrid fitness, fractal-vise mode, philosophy, and validation below.
-👋 **Want simpler?** [EASY_README.md](EASY_README.md) (English) · [EASY_README_KR.md](EASY_README_KR.md)
-🇰🇷 한국어 README: [README_KR.md](https://github.com/hibou04-ops/omega-lock/blob/main/README_KR.md)
-
-> **Methodology**: This framework is the first shipped instance of the [Antemortem methodology](https://github.com/hibou04-ops/Antemortem). The `Methodology` badge above links to the protocol.
-
----
-
-## Table of Contents
-
-- [Demo (60s)](#demo-60s)
-- [No answer key required — this audits failure boundaries](#no-answer-key-required--this-audits-failure-boundaries)
-- [Audit Module (new in 0.1.4)](#audit-module-new-in-014)
-- [Philosophy](#philosophy)
-- [Pipeline](#pipeline)
-- [Quick Start](#quick-start)
-- [Release History](#release-history)
-- [Origin](#origin)
-- [Kill Criteria](#kill-criteria-pre-declared)
-- [Module Structure](#module-structure)
-- [Search Strategy Comparison](#search-strategy-comparison)
-- [vs External Alternatives](#vs-external-alternatives)
-- [Holdout Target](#holdout-target)
-- [Fractal-vise Mode](#fractal-vise-mode-multi-scale-refinement)
-- [Objective Benchmark (RAGAS-style)](#objective-benchmark-ragas-style)
-- [Adapter Patterns](#adapter-patterns)
-- [Tests](#tests)
-- [Limitations](#limitations)
-- [Roadmap](#roadmap)
-- [Citation](#citation)
-- [License](#license)
-
----
-
-## Audit Module (new in 0.1.4)
-
-Every calibration run should produce a reviewable artifact. `omega_lock.audit` is the minimal surface that makes that possible for any optimizer conforming to the `CalibrableTarget` protocol.
-
-### 30-second Quick Start
+For tamper-evident audit reports:
 
 ```python
-from omega_lock import run_p1, P1Config
-from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
-
-constraints = [
-    Constraint("read_margin_ok",
-               lambda p, r: r.metadata["read_snm_mv_worst"] > 150.0,
-               "Worst-corner read SNM must exceed 150 mV"),
-    Constraint("leakage_ok",
-               lambda p, r: r.metadata["leakage_na_worst"] < 5.0,
-               "Worst-corner leakage must stay below 5 nA"),
-]
-
-wrapped = AuditingTarget(bitcell_target, constraints=constraints)
-result  = run_p1(
-    train_target=wrapped,
-    config=P1Config(constraint_policy="prefer_feasible"),
-)
-report  = make_report(wrapped, method="run_p1", seed=42)
-
-print(render_scorecard(report))
-open("audit.json", "w").write(report.to_json())
+signed = report.to_json(with_hash_chain=True)
+rehydrated = type(report).from_json(signed)
+# Pass the embedded hash_chain from the parsed JSON object to verify_hash_chain.
 ```
 
-### What it gives you
+## Benchmark and claim evidence
 
-- **Append-only trail.** Every `evaluate()` call becomes one `AuditedRun`. Append-only means no post-hoc rewrites — the trail is the source of truth.
-- **Positional context per call.** `phase` (baseline / stress / search / walk_forward / holdout), `target_role` (train / test / validation / holdout), `round_index` (for coordinate-descent runs), `call_index` (monotonic).
-- **Constraints as first-class.** Declare hard predicates once; every call records pass/fail. The report distinguishes `best_feasible` from `best_any` — the separation that matters in real-world deployment.
-- **Multi-target, one trail.** `run_p1` juggles train + test + holdout targets. Wrap each with `AuditingTarget` sharing `shared_trail` and `shared_counter`; the trail stays globally ordered.
-- **Method-agnostic by construction.** Because `AuditingTarget` implements the `CalibrableTarget` protocol, every optimizer in this repo works unchanged — grid, zooming grid, random, TPE. External optimizers wrapped via `CallableAdapter` work the same way.
-- **JSON roundtrip.** `report.to_json()` / `AuditReport.from_json(s)` — reports are versionable, diffable, archivable.
+`run_benchmark` and `examples/benchmark_battery.py` produce an objective
+scorecard from mechanically computed metrics such as effective recall,
+generalization gap, and `stress_rank_spearman`.
 
-For normal audit and CI usage, prefer `constraint_policy="prefer_feasible"` so
-`grid_best` is the highest-fitness candidate that satisfies declared
-constraints. The default `constraint_policy="record"` is kept for backward
-compatibility: it records constraint pass/fail on the audit trail but does not
-gate best-candidate selection, and artifacts surface that warning explicitly.
+The checked-in benchmark regression fixture tracks deterministic
+`stress_rank_spearman` values in the frozen fixture. This is a regression
+signal, not a claim that Omega-Lock is superior to other optimizers.
 
-### When to use it
+Public README claims are tracked in the generated claim ledger:
 
-Any setting where "was this calibration run valid?" needs a mechanical answer. Typical: chip-design PVT sweeps, process control, materials discovery, any multi-constraint expensive-evaluation problem. See `examples/demo_sram.py` for a worked 6T SRAM bitcell demo across 5 PVT corners with 3 hard constraints.
+- Source ledger: [docs/claims/public_claims.yml](docs/claims/public_claims.yml)
+- Generated review table:
+  [docs/claims/generated_readme_claims.md](docs/claims/generated_readme_claims.md)
+- Repository surface:
+  [docs/REPO_SURFACE.md](docs/REPO_SURFACE.md)
+- Trust model:
+  [docs/TRUST_MODEL.md](docs/TRUST_MODEL.md)
+- Toolkit positioning:
+  [docs/TOOLKIT_POSITIONING.md](docs/TOOLKIT_POSITIONING.md)
 
-### When it's overkill
-
-If you're running a one-shot toy optimization and nobody else is going to look at the trail, skip it. Audit is for the case where the run itself ends up as a decision artifact someone downstream has to trust.
-
-### Methodology behind the build
-
-The `omega_lock.audit` module was built with a pre-implementation reconnaissance discipline I call [**Antemortem**](https://github.com/hibou04-ops/Antemortem) — an AI-assisted protocol for stress-testing a change on paper before writing code. The discipline emerged during `omega_lock.audit`'s own development. Applied to this module, Antemortem caught one ghost trap, downgraded three risks, and surfaced one new spec requirement — before a line was written.
-
----
-
-## Philosophy
-
-The framework separates two concerns that most optimization tools conflate.
-
-**Search** is how you propose candidates. Grid, zoom, random, Bayesian, gradient-based, a custom heuristic, whatever. Every method has a region where it does well and a region where it fails. There is no universal best.
-
-**Audit** is how you decide whether a proposed candidate actually generalizes. This has nothing to do with how the candidate was produced. It has everything to do with whether its train fitness predicts its test fitness, whether the optimum is stable under perturbation, whether it clears a pre-declared bar on action count and time, whether it still looks good on data the searcher never saw.
-
-Omega-Lock is an audit-first framework. It ships multiple search methods, but the value proposition is that **the audit is the same for all of them**. If you bring your own optimizer (via `CallableAdapter`), it gets the same audit.
-
-Three assumptions the framework still leans on:
-
-- **Effective dim ≪ nominal dim is common.** When it holds, stress measurement is a cheap screening step that shrinks the search region before the expensive part.
-- **Pre-declared kill criteria are non-negotiable.** Thresholds cannot be fudged post-hoc. This is the structural defense against the common failure mode where a founder tunes the test set, declares victory, and ships an overfit.
-- **No method is immune to overfitting.** The nicer your optimizer, the more skill it has at finding plausible-looking false peaks. This is why the audit layer is method-agnostic by design.
-
-If all three hold, the framework earns its keep. If effective dim ≈ nominal dim or samples are effectively unlimited, a stock optimizer is fine and this framework is overkill.
-
----
-
-## Pipeline
-
-Two axes, independent.
-
-### Axis 1 — Search (swappable)
-
-Pick one. Or bring your own via `CallableAdapter`. They all return the same downstream shape, so the audit does not care which one you chose.
-
-| Method | Module | When it fits |
-|---|---|---|
-| `GridSearch` | `grid.py` | Low-dim, want exhaustive, easy to debug |
-| `ZoomingGridSearch` | `grid.py` | Refine around a winner to below the initial lattice |
-| `RandomSearch` | `random_search.py` | SC-2 baseline, or when you suspect grid coverage is wasted |
-| `run_p2_tpe` | `p2_tpe.py` | Continuous Bayesian, non-separable objectives (opt-in Optuna dep) |
-| any callable | `adapters.py` | Your existing optimizer. The framework wraps it, not replaces it. |
-
-### Axis 2 — Audit (invariant)
-
-This runs for every method. Same gates, same thresholds, same scorecard.
-
-```
-baseline evaluation on neutrals
-    ↓
-stress measurement                        # KC-2: Gini + top/bot ratio
-    (optional: a cheap screening to pick a smaller search region)
-    ↓
-[ Search runs here, whichever method you chose ]
-    ↓
-walk-forward re-evaluation on test target  # KC-4: Pearson + trade_ratio
-    ↓
-[optional] hybrid re-rank with judge target
-    ↓
-[optional] SC-2 advisory                    # grid top-q vs random top-q
-    ↓
-KC-1 time box + KC-3 action-count floor
-    ↓
-[optional] holdout_target evaluated ONCE   # honest out-of-sample, never touched by search
-    ↓
-Result (JSON-serializable) + status PASS or FAIL:KC-N
-```
-
-### High-level orchestrators
-
-- **`run_p1`** — one pass through the axis 2 audit with axis 1 set to `GridSearch` (or `ZoomingGridSearch` if `zoom_rounds > 1`).
-- **`run_p1_iterative`** — runs `run_p1` in a loop. Each round locks the grid winners, then re-measures stress on what remains, then searches again. Same KCs per round, not relaxed across rounds (Winchester defense). This is still inside the lock-by-weight frame; useful when effective dim > unlock_k and the landscape is approximately additive, less useful when parameters interact.
-- **`run_p2_tpe`** — axis 2 audit with axis 1 set to Optuna TPE. Drops the lock-by-weight commitment: TPE samples the unlocked subspace adaptively without ranking params.
-- **`run_benchmark`** — run multiple (search method × keyhole × seed) combinations, emit the objective scorecard shown in the [Objective Benchmark](#objective-benchmark-ragas-style) section.
-
----
-
-## Quick Start
-
-### 1. Install
+Regenerate and check claim artifacts offline:
 
 ```bash
-# PyPI (recommended)
-pip install omega-lock==0.2.4
-
-# With optional Optuna TPE (P2) support
-pip install "omega-lock[p2]==0.2.4"
-
-# From source (development)
-git clone https://github.com/hibou04-ops/omega-lock.git
-cd omega-lock
-pip install -e ".[dev]"
+python scripts/generate_readme_claims.py
+python scripts/generate_readme_claims.py --check
+python scripts/check_repo_consistency.py --check
 ```
 
-### 2. Run the toy examples
+## Scope
 
-```bash
-python examples/rosenbrock_demo.py      # 2D Rosenbrock — grid convergence sanity check
-python examples/phantom_demo.py         # 12-param synthetic keyhole — full P1 end-to-end
-python examples/full_showcase.py        # 5-mode comprehensive: plain / fractal / random / TPE / deep-iteration
-python examples/benchmark_battery.py    # RAGAS-style objective scorecard across methods × keyholes × seeds
-python examples/adapter_example.py      # wrap arbitrary external systems as CalibrableTarget
-```
+Omega-Lock is a CLI/Python package/CI audit tool. It should remain offline by
+default, deterministic where possible, and conservative about public claims.
 
-- `rosenbrock_demo.py` — 2D static function, no walk-forward / KC-4.
-- `phantom_demo.py` — **`PhantomKeyhole`** (12 params: 3 effective + 9 decoy, seed-driven train / test / validation). Exercises stress → top-K unlock → grid → walk-forward → hybrid, with KC-1..4 all PASS. The reference keyhole.
-- `full_showcase.py` — every search mode against both reference keyholes, prints results side-by-side.
-- `benchmark_battery.py` — runs every method × keyhole × seed combination, prints an objective scorecard (effective_recall, param_L2_error, fitness_gap, generalization_gap, stress_rank_spearman, pass_rate).
-- `adapter_example.py` — two patterns for wrapping external systems: `CallableAdapter` (one-liner for pure functions) and a stateful class template.
+## License
 
-### 3. Implement your own target
-
-Implement the `CalibrableTarget` protocol:
-
-```python
-from omega_lock import CalibrableTarget, EvalResult, ParamSpec, P1Config, run_p1
-
-class MyTarget:
-    def param_space(self) -> list[ParamSpec]:
-        return [
-            ParamSpec(name="threshold", dtype="float", low=0.0, high=1.0, neutral=0.5),
-            ParamSpec(name="window",    dtype="int",   low=10,  high=100, neutral=50),
-            ParamSpec(name="use_cache", dtype="bool",  neutral=False),
-        ]
-
-    def evaluate(self, params: dict) -> EvalResult:
-        # ... your logic here ...
-        return EvalResult(
-            fitness=score,       # scalar to maximize
-            n_trials=n_actions,  # for KC-3
-            metadata={"mode": ...},
-        )
-
-result = run_p1(train_target=MyTarget())
-print(result.status)               # "PASS" or "FAIL:KC-..."
-print(result.grid_best["unlocked"])
-```
-
-### 4. Walk-forward
-
-For time-series targets, pass separate train / test targets:
-
-```python
-result = run_p1(
-    train_target=MyTarget(data=train_slice),
-    test_target=MyTarget(data=test_slice),
-    config=P1Config(trade_ratio_scale=len(test_slice) / len(train_slice)),
-)
-```
-
-### 5. Hybrid fitness (A+B pattern)
-
-Search cheaply with A, re-validate the top-K with an expensive-but-accurate B:
-
-```python
-# A: fast heuristic (e.g. diversity score from history)
-class FastTarget:
-    def param_space(self): return SHARED_SPECS
-    def evaluate(self, params): return EvalResult(fitness=cheap_score(params))
-
-# B: slow judge (e.g. LLM rubric)
-class JudgeTarget:
-    def param_space(self): return SHARED_SPECS
-    def evaluate(self, params): return EvalResult(fitness=gemini_judge(params))
-
-result = run_p1(
-    train_target=FastTarget(),
-    validation_target=JudgeTarget(),   # B re-evaluates only the top-K
-    config=P1Config(walk_forward_top_n=5),
-)
-# result.hybrid_top[0] is the #1 by B's score
-```
-
-### 6. Fractal-vise mode (iterative lock-in + zooming grid)
-
-When `effective_dim > unlock_k`, single-round grid search can only capture K effectives — the rest stay at neutrals. The iterative orchestrator locks each round's winners and re-measures stress on what remains, surfacing the next wave. Zooming narrows the grid geometrically around each winner so the final values aren't stuck on the coarse lattice.
-
-```python
-from omega_lock import IterativeConfig, KCThresholds, run_p1_iterative
-
-result = run_p1_iterative(
-    train_target=MyTarget(),
-    test_target=MyTargetAtDifferentSlice(),
-    holdout_target=MyTargetAtThirdSlice(),          # evaluated ONCE at the end, never during rounds
-    config=IterativeConfig(
-        rounds=3,
-        per_round_unlock_k=3,
-        zoom_rounds=4,          # geometric refinement inside each round
-        zoom_factor=0.5,        # range shrinks by half each zoom pass
-        min_improvement=0.5,
-        kc_thresholds=KCThresholds(trade_count_min=50),
-    ),
-)
-
-print(result.final_status)                # "PASS" only if every round passed KC-1..4
-print(result.locked_in_order)             # [['alpha', 'long_mode', 'beta'], ['window', 'use_ema', 'horizon'], ...]
-print(result.round_best_fitness)          # [32.4, 143.6, 143.61]  — each round's grid_best
-print(result.holdout_result)              # {'fitness': 144.41, 'n_trials': ..., 'params': ...}
-```
-
-### 7. Optuna TPE (continuous search)
-
-Install with `pip install "omega-lock[p2]==0.2.4"`. TPE replaces the grid with adaptive Bayesian sampling.
-
-```python
-from omega_lock import P2Config, run_p2_tpe
-
-result = run_p2_tpe(
-    train_target=MyTarget(),
-    test_target=MyTargetAtDifferentSlice(),
-    config=P2Config(unlock_k=3, n_trials=200, seed=42),
-)
-# Same KC-1..4 gates as run_p1 — TPE is a search-method swap, not a threshold relaxation.
-```
-
----
-
-## Release History
-
-**0.2.4** (2026-05-22) — **Documentation consistency release.** Restores README_KR.md, EASY_README.md, and EASY_README_KR.md to match the main README’s failure-boundary audit positioning. Clarifies the no-ground-truth-required model across all docs, sharpens the first-screen explanation, preserves the 60-second demo, and aligns version references for PyPI publishing.
-
-**0.2.3** (2026-05-22) — **Structural audit positioning.** Clarifies that Omega-Lock is a failure-boundary auditor, not an answer-key evaluator. Adds explicit no-ground-truth-required guidance, strengthens invariant / threshold / failure-oracle language, restores the 60-second demo near the top, aligns README and package metadata, and preserves the audit-first long-form documentation.
-
-**0.2.2** (2026-05-22) — **Badge hardening and release-surface synchronization.** Replaced the dynamic PyPI version badge with a static release badge to avoid Shields/PyPI/Camo stale badge rendering. Synchronized the then-current install command and citation. No runtime behavior changes beyond version metadata.
-
-**0.2.1** (2026-05-22) — **Release sync and badge cache-bust correction.** Updated release metadata and README/PyPI surface synchronization after the 0.2.0 upload. No runtime behavior changes beyond version metadata.
-
-**0.2.0** (2026-05-22) — **Public README and release-surface polish.** Sharpened the public README/PyPI surface, corrected quickstart examples against the current `Constraint` API, and documented the deterministic local demos. No runtime behavior changes beyond version metadata.
-
-**0.1.9** (2026-05-22) — **README, PyPI metadata, and release hygiene correction.** Cleaned stale README/PyPI long-description text, repaired Korean documentation encoding/content, and added a release checklist so GitHub and PyPI stay synchronized.
-
-**0.1.8** (2026-05-21) — **Audit reliability and static hygiene release.** Establishes a clean baseline across pytest, pyright, and ruff: 289 tests passing, `pyright src tests` at 0 errors, and `ruff check src tests` clean. Static hygiene work tightened optional `optuna` imports for `run_p2_tpe`, cleaned `CalibrableTarget` Protocol conformance in tests, and fixed hash-chain typing without changing JSON shape. Audit artifacts now include reproducibility metadata such as `schema_version`, `omega_lock_version`, `config_full`, `kc_thresholds`, and `search_settings`. Safety signals are more explicit: artifacts warn when `constraint_policy="record"` records constraints without gating best-candidate selection, when `holdout_mode="evidence_only"` evaluates holdout without gating final status, and when iterative runs reuse test slices across rounds. Walk-forward artifacts now surface `pearson_status` and `pearson_computable` alongside the legacy numeric `pearson`.
-
-**0.1.3** (2026-04-18) — initial public release. Three integrated search pipelines (`run_p1`, `run_p1_iterative`, `run_p2_tpe`), perturbation sensitivity, walk-forward, KC-1..4, holdout support, SC-2 advisory, `run_benchmark` + 30-run gold baseline regression guard. `CallableAdapter` for wrapping external optimizers. Two reference keyholes (`PhantomKeyhole`, `PhantomKeyholeDeep`) with ground-truth methods. 149 tests, PyPI, MIT.
-
-**0.1.4** (2026-04-20) — **audit surface as the headline.** New `omega_lock.audit` submodule: `AuditingTarget`, `Constraint`, `AuditReport`, `make_report`, `render_scorecard`. Protocol-based, so no optimizer changes required — wrap any `CalibrableTarget` and hand it to grid / TPE / random / Bayesian / your own optimizer. Ships alongside `examples/demo_sram.py` — a 6T SRAM bitcell analytical surrogate across 5 PVT corners (TT / SS / FF / FS / SF) with 3 hard constraints, demonstrating the audit scorecard on a realistic-shaped target. Overfit pathology is physics-informed: a candidate optimized for the typical corner systematically breaks fast/slow corners under the transistor strength ratio. Same pattern kills trading-strategy calibrations and silicon tape-outs. 176 tests (149 + 20 audit + 7 SRAM demo). Benchmark gold baseline unchanged.
-
-## Origin
-
-`omega-lock`'s origin is a calibration experiment in one domain (trading strategies) that failed its own overfitting check. The 0.1.4 SRAM bitcell demo shows the same pathology catching a bitcell sized for typical-process silicon that dies in slow-slow corner. The audit surface is domain-agnostic by design: any candidate from any source, verified through the same mechanical checks.
-
----
-
-## Kill Criteria (pre-declared)
-
-| KC | Checked at | Default threshold | Purpose |
-|----|-----------|-------------------|---------|
-| KC-1 | end of run | elapsed ≤ 3 days | time box |
-| KC-2 | after stress measurement | Gini ≥ 0.2, top/bot ratio ≥ 2.0 | differentiation guaranteed |
-| KC-3 | final stage | baseline / train_best / test_best ≥ 50 trades | statistical power |
-| KC-4 | after walk-forward | Pearson ≥ 0.3, trade_ratio ≥ 0.5 | overfitting defense |
-
-All thresholds are overridable via the `KCThresholds` dataclass. Toy examples typically relax them (e.g. `trade_count_min=1`).
-
----
-
-## Module Structure
-
-```
-src/omega_lock/
-├── target.py         # CalibrableTarget Protocol + ParamSpec + EvalResult
-├── params.py         # LockedParams + clip / default_epsilon
-├── stress.py         # measure_stress + gini + select_unlock_top_k
-├── grid.py           # GridSearch + ZoomingGridSearch + grid_points(_in)
-├── random_search.py  # RandomSearch + top_quartile_fitness + compare_to_grid (SC-2)
-├── walk_forward.py   # WalkForward + pearson
-├── fitness.py        # BaseFitness + HybridFitness
-├── kill_criteria.py  # KCThresholds + check_kc1..4 (+ KCStatus "ADVISORY" for SC-2)
-├── orchestrator.py   # run_p1 + run_p1_iterative (+ holdout + SC-2 wire-in)
-├── p2_tpe.py         # run_p2_tpe — Optuna TPE continuous-space optimizer (optional dep)
-├── adapters.py       # CallableAdapter — wrap any callable as a CalibrableTarget
-├── benchmark.py      # run_benchmark + BenchmarkReport — RAGAS-style objective scorecard
-└── keyholes/
-    ├── phantom.py        # PhantomKeyhole — effective_dim 3 / nominal 12 (happy-path demo)
-    └── phantom_deep.py   # PhantomKeyholeDeep — effective_dim 6 / nominal 20 (iteration required)
-```
-
-## Search Strategy Comparison
-
-| Method | Continuity | Resolution | Use case |
-|---|---|---|---|
-| `GridSearch` | discrete | 1 round × $n^K$ | fast first pass |
-| `ZoomingGridSearch` | discrete (geometric shrink) | $n^K \times r$ rounds | refine beyond grid lattice |
-| `RandomSearch` | mixed discrete / continuous | same-budget random sampling | SC-2 baseline (grid top-q ≥ 1.5× random) |
-| `run_p2_tpe` (Optuna) | fully continuous | TPE adaptive | true continuous-space optimizer, optional `pip install "omega-lock[p2]"` |
-
-## vs External Alternatives
-
-### Capability matrix
-
-| Capability | Omega-Lock | Optuna | Ray Tune | scikit-learn HPO | Hyperopt | sklearn-Optuna combos | Nelder-Mead / scipy.optimize |
-|---|---|---|---|---|---|---|---|
-| **Sensitivity-driven axis unlock** (Gini → top-K) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Walk-forward held-out replay** as first-class | ✅ | manual (`study.optimize` + your CV) | manual | k-fold CV only | manual | manual | ❌ |
-| **Pre-declared kill criteria** (KC-1..4, immutable post-search) | ✅ | ❌ | partial (early-stop callbacks) | ❌ | ❌ | ❌ | ❌ |
-| **Constraint-feasible vs absolute-best split** | ✅ (`AuditingTarget` + `Constraint`) | manual (penalize) | manual | ❌ | manual | manual | manual |
-| **Diff-able JSON artifacts** for CI regression gating | ✅ (`P1Result` / `AuditReport`) | DB-based (study) | DB-based | ❌ | ❌ | ❌ | ❌ |
-| **Domain-agnostic Protocol** (any `CalibrableTarget`) | ✅ | objective fn | `Trainable` class | sklearn estimator only | objective fn | sklearn estimator | callable only |
-| **30-run gold baseline regression guard** | ✅ (`benchmark_battery.py`) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Mixed int / bool / continuous params** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | continuous only |
-| **TPE / Bayesian search** | ✅ via `run_p2_tpe` (Optuna under hood) | ✅ (TPE primary) | ✅ (multiple) | ❌ | ✅ | ✅ | ❌ |
-| **Random search baseline (SC-2 advisory)** | ✅ (auto, flags wasted grid coverage) | manual | manual | ✅ | manual | manual | N/A |
-| **Distributed multi-machine** | ❌ (by design) | partial (RDB) | ✅ (primary) | ❌ | partial (MongoDB) | partial | ❌ |
-| **Lightweight install** (no heavy deps) | ✅ (numpy + Pydantic; Optuna optional via `[p2]`) | ✅ | ❌ (Ray, pyarrow, ...) | ✅ | ✅ | ❌ | ✅ |
-| **Tests, zero network in CI** | yes | yes (no specific count claimed) | yes | yes | yes | n/a | yes |
-
-### Where each shines
-
-- **Optuna / Hyperopt** — sample-efficient TPE search. Best when each evaluation is expensive *and* you trust the optimizer to find the optimum in fewest trials. Pair with omega-lock's `run_p2_tpe` to keep the audit gates.
-- **Ray Tune** — distributed multi-node search with ASHA / Population Based Training schedulers. Best for clusters and massively parallel tuning. Different problem domain than omega-lock.
-- **scikit-learn HPO** (`GridSearchCV`, `RandomizedSearchCV`, `HalvingRandomSearchCV`) — built into the sklearn ecosystem. Best when your model is a sklearn pipeline and k-fold CV is enough validation. omega-lock's walk-forward is stricter than k-fold for time-series-shaped problems.
-- **scipy.optimize** (`Nelder-Mead`, `Powell`, `differential_evolution`) — pure-continuous local optimizers. No mixed-type support, no audit. Best when you have a smooth differentiable surrogate.
-- **Omega-Lock** — **calibration discipline**. Best when overfitting is the failure mode (trading, prompts, hardware calibration, anything where train ≠ ship). KC-1..4 + walk-forward + constraint feasibility are the protective layer the other tools leave to you.
-
-### Composition is the real story
-
-Omega-Lock is **not trying to be a faster searcher**. It's a *protective discipline* that wraps any search:
-
-```python
-from omega_lock import run_p1, run_p2_tpe, run_p1_iterative, P1Config, P2Config
-
-# Your target implements CalibrableTarget — works for trading, ML, prompts, hardware, anything.
-target = MyTarget()
-
-# Same discipline, different search engines:
-result = run_p1(target, P1Config(unlock_k=3))               # grid + walk-forward + KC
-result = run_p2_tpe(target, P2Config(n_trials=200))         # TPE (Optuna) + walk-forward + KC
-result = run_p1_iterative(target, IterativeConfig(rounds=3)) # iterative refinement + KC
-
-# All three return the same JSON artifact shape — diff-able across runs:
-result.grid_best        # best parameters from search
-result.kc_reports       # KC-1..4 pass/fail with explanations
-result.walk_forward     # train_best vs test_best vs Pearson + trade_ratio
-result.holdout_result   # honest single-shot check on a third slice (optional)
-```
-
-You can plug Optuna's TPE inside via `run_p2_tpe` — omega-lock contributes the **sensitivity unlock + walk-forward + kill criteria** that surround the search. Swap the searcher; the discipline stays.
-
-### When NOT to use Omega-Lock
-
-Honest scope boundaries:
-
-- **Distributed compute is the bottleneck.** Use Ray Tune. Omega-Lock is single-machine by design.
-- **You need 50+ search algorithms / schedulers.** Use Optuna or Hyperopt directly. Omega-Lock ships P1, P1-iterative, P2-TPE.
-- **Effective dim ≈ nominal dim.** Stress + top-K unlock buy you nothing if every axis matters. Use stock TPE.
-- **Out-of-sample stability is not a concern.** Walk-forward + KC-4 are overhead if you only care about in-sample fit. Use `GridSearchCV`.
-- **You need GPU-aware scheduling, ASHA, hyperband.** Ray Tune is the right tool.
-- **You need per-request runtime moderation.** Omega-Lock is an offline/CI/batch audit layer, not a production request wrapper.
-- **You need semantic factuality scoring.** Provide that as your target fitness or use a domain evaluator; Omega-Lock audits the declared gates and artifacts.
-
-Omega-Lock pays off when each evaluation is **non-trivial** (running a backtest, calling an LLM, training a model, simulating a circuit) **and shipping the wrong configuration is expensive**. That's where the kill criteria + walk-forward gate earn their keep.
-
-### Family integration
-
-Omega-Lock is the calibration kernel for two downstream applications in the [hibou04-ops](https://github.com/hibou04-ops) family:
-
-- **[antemortem-cli](https://github.com/hibou04-ops/antemortem-cli)** — applies the same *pre-declared discipline* idea to LLM-assisted code review (REAL / GHOST / NEW classifications with disk-verified citations).
-- **[omegaprompt](https://github.com/hibou04-ops/omegaprompt)** — applies omega-lock's calibration kernel to LLM prompt configuration (provider-neutral meta-axes, LLM-as-judge, walk-forward over prompts).
-
-If you're calibrating prompts or running pre-implementation recon, those are pre-built. If you're calibrating *anything else*, omega-lock is the layer underneath.
-
-**Omega-Lock's USP**: *pre-declared kill criteria + low-dim subspace hypothesis + protocol-based audit.* Not another adaptive-sampling optimizer, a **methodology framework**. Ideally layered on top of existing optimizers (TPE / Bayesian / Genetic); `run_p2_tpe` is the reference example.
-
-## Holdout Target
-
-Pass a third target that is *never touched during rounds* via `run_p1(..., holdout_target=T3)` or `run_p1_iterative(..., holdout_target=T3)`. The final `grid_best` or `final_baseline` is evaluated on it exactly once, and the result is recorded in `holdout_result`. This is an honest auxiliary check, in iterative mode the test_set gets reused for lock-in decisions round after round, which weakens KC-4 evidence.
-
-**Holdout has two semantics** (set on `P1Config`):
-
-- `holdout_mode="evidence_only"` (default) — never affects status. Reviewers get an independent generalization datapoint without making the run fail on a third slice. Backward-compat with pre-v0.2 behaviour.
-- `holdout_mode="gate"` — applies `holdout_min_fitness` and `holdout_min_trade_ratio` thresholds. Either threshold violated → status flips to `FAIL:HOLDOUT` (or appends `,HOLDOUT` if KC checks already failed). Use when the held-out slice IS the ship gate (e.g. a held-out PVT corner that absolutely must pass).
-
-The artifact's `holdout_result.gate_status` records the verdict: `EVIDENCE_ONLY` / `PASS` / `FAIL` / `SKIP` (no holdout target supplied). CI consumers should key off `gate_status` rather than re-deriving the verdict from the raw fitness.
-
-In `evidence_only` mode the artifact also warns that holdout was evaluated
-but did not gate final status.
-
-## Fractal-vise Mode (multi-scale refinement)
-
-Two independent refinement axes. Both sit inside the same audit envelope.
-
-1. **Iterative lock-in** (`run_p1_iterative` + `IterativeConfig`):
-   After round 1 unlocks top-K and locks the grid-best, round 2 re-measures stress on the remaining params, and so on. Useful when `effective_dim > unlock_k` AND parameters are approximately additive. Still inside the lock-by-weight frame. Per the benchmark, this is not a strict win over a single wider round, so use it when you have reason to believe the landscape separates.
-
-2. **Zooming grid** (`ZoomingGridSearch`, or `P1Config(zoom_rounds=N)`):
-   Within a single round, the grid shrinks geometrically around the previous winner. Reaches values that the initial discrete lattice cannot express. Roughly 4× error reduction per two zoom rounds on smooth landscapes. This is geometric, not weight-based, so it composes with any search method.
-
-The two axes compose: `run_p1_iterative(config=IterativeConfig(rounds=3, zoom_rounds=4))`. On a single seed of `PhantomKeyhole`, this moves `alpha` from `0.5` (on the 5-point grid) to `0.4375` (between lattice points) with fitness 12 → 13. Across 5 seeds the picture is more mixed; use the [Objective Benchmark](#objective-benchmark-ragas-style) scorecard for the raw comparison.
-
-**KC thresholds are enforced every round and never relaxed across rounds** — this is the Winchester defense. Because `test_target` is consulted repeatedly for lock-in decisions, `KC-4 PASS` becomes weaker evidence as rounds accumulate. Pair iterative runs with a `holdout_target` when you care about the final answer.
-
----
-
-## Objective Benchmark (RAGAS-style)
-
-"Does it pass?" (binary KC gate) is necessary but not sufficient. For comparing methods or detecting silent regressions, Omega-Lock provides a mechanical scorecard where every metric is computed from run outputs + keyhole ground truth (no human judgment).
-
-| Metric | Definition | Want |
-|---|---|---|
-| `effective_recall` | \|found ∩ true_effective\| / \|true_effective\| | → 1.0 |
-| `effective_precision` | \|found ∩ true_effective\| / \|found\| | → 1.0 |
-| `param_L2_error` | Normalized L2 of found params vs true optimum | → 0.0 |
-| `fitness_gap_pct` | `(optimum − found) / |optimum|` | ≤ 0 (found beats reference) |
-| `generalization_gap` | `|train_best − test_best| / |train_best|` | small |
-| `stress_rank_spearman` | ρ(measured stress ranking, true importance ranking) | → 1.0 |
-| `pass_rate` | fraction of runs with `status == "PASS"` | — |
-| `walltime_s` / `n_evaluations` | efficiency | — |
-
-```python
-from omega_lock import BenchmarkSpec, CalibrationMethod, run_benchmark
-from omega_lock.keyholes.phantom import PhantomKeyhole
-
-spec = BenchmarkSpec("PhantomKeyhole", PhantomKeyhole, seeds=[42, 7, 100, 314, 55])
-methods = [
-    CalibrationMethod("plain_grid",   runner=lambda t, s: _wrap_p1(run_p1(t, ...))),
-    CalibrationMethod("fractal_vise", runner=lambda t, s: _wrap_iter(run_p1_iterative(t, ...))),
-]
-
-report = run_benchmark([spec], methods, output_path=Path("bench.json"))
-print(report.render_scorecard())
-```
-
-Sample output (combined over 10 runs):
-
-```
-method              recall  prec   L2err  fit_gap%  gen_gap  pass%
-plain_grid          0.750   1.000  1.052  32.3%     0.958    60.0%
-fractal_vise        0.400   0.217  1.003  14.7%     0.820    40.0%
-optuna_tpe          0.750   1.000  0.970  23.9%     0.858    10.0%
-```
-
-Short version: no search method wins on every metric, the audit (KC gates + walk-forward) is what makes the scorecard comparable, and the stress-rank Spearman stays around 0.95 across all 30 runs (stress measurement is reliable even where the search methods disagree).
-
-Apache 2.0 License. See [LICENSE](https://github.com/hibou04-ops/omega-lock/blob/main/LICENSE) for details.
-
-Copyright (c) 2026 hibou.
-
-**License history.** PyPI distributions of versions 0.1.0 through 0.1.4 were shipped with an MIT `LICENSE` file. The repository was relicensed to Apache 2.0 on 2026-04-22 (commit `8a5e66d`); 0.1.5 (2026-04-28) and all later versions ship under Apache 2.0. Anyone who installed 0.1.0 through 0.1.4 holds an MIT license to that copy — license changes do not apply retroactively.
+Apache 2.0. See [LICENSE](LICENSE).

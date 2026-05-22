@@ -1,0 +1,113 @@
+name: Release blocker
+description: Report a local or registry issue that blocks release approval.
+title: "[Release blocker]: "
+labels: ["release-blocker", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue records a blocker only. It must not publish to PyPI, create
+        git tags, or create GitHub releases.
+  - type: input
+    id: intended_version
+    attributes:
+      label: Intended version
+      placeholder: "0.2.5"
+    validations:
+      required: true
+  - type: dropdown
+    id: blocker_surface
+    attributes:
+      label: Blocked surface
+      options:
+        - repository consistency
+        - generated README claims
+        - golden audit artifacts
+        - demo self-check
+        - pytest
+        - pyright
+        - ruff
+        - build
+        - twine check
+        - wheel smoke install
+        - release audit
+        - post-release verification
+        - PyPI/GitHub/network access
+        - other
+    validations:
+      required: true
+  - type: dropdown
+    id: affected_invariant
+    attributes:
+      label: Affected audit invariant
+      options:
+        - unknown
+        - none / release surface only
+        - hard constraint semantics
+        - walk-forward / holdout gate behavior
+        - append-only audit trail
+        - schema validation
+        - hash-chain / tamper detection
+        - claim ledger / public documentation
+    validations:
+      required: true
+  - type: dropdown
+    id: hard_constraints
+    attributes:
+      label: Are hard constraints affected?
+      options:
+        - unknown
+        - no
+        - yes
+    validations:
+      required: true
+  - type: dropdown
+    id: walk_forward
+    attributes:
+      label: Does walk-forward or holdout gate behavior change?
+      options:
+        - unknown
+        - no
+        - yes
+    validations:
+      required: true
+  - type: dropdown
+    id: schema_artifact_hash
+    attributes:
+      label: Does schema, artifact, or hash-chain behavior change?
+      options:
+        - unknown
+        - no
+        - yes
+    validations:
+      required: true
+  - type: dropdown
+    id: live_api
+    attributes:
+      label: Is live provider/API or registry behavior involved?
+      options:
+        - no
+        - yes, ENVIRONMENT_BLOCKED
+        - yes, explicitly requested network check
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and exact verification commands run
+      description: Include statuses. Missing tools are TOOLING_MISSING; blocked network/registry checks are ENVIRONMENT_BLOCKED.
+      placeholder: |
+        python scripts/release_audit.py --intended-version 0.2.5 --offline --json -> FAIL
+        python -m twine check dist/*.whl dist/*.tar.gz -> TOOLING_MISSING: twine unavailable
+    validations:
+      required: true
+  - type: checkboxes
+    id: release_safety
+    attributes:
+      label: Release-safety confirmation
+      options:
+        - label: This report is not approval to publish, tag, or create a GitHub release.
+          required: true
+        - label: TOOLING_MISSING or ENVIRONMENT_BLOCKED is treated as non-approval.
+          required: true

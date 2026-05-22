@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Trust model
+    url: https://github.com/hibou04-ops/omega-lock/blob/main/docs/TRUST_MODEL.md
+    about: Review local trust boundaries before filing an issue.
+  - name: Claim ledger
+    url: https://github.com/hibou04-ops/omega-lock/blob/main/docs/claims/public_claims.yml
+    about: Check how public README claims are classified and backed.

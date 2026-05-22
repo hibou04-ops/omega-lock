@@ -1,0 +1,57 @@
+name: Quality CI (release-safe)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-quality:
+    name: Offline quality checks (Python 3.11)
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package and development tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run encoding guard
+        run: python scripts/check_encoding.py
+
+      - name: Check repository naming and version consistency
+        run: python scripts/check_repo_consistency.py --check
+
+      - name: Check generated README claims
+        run: python scripts/generate_readme_claims.py --check
+
+      - name: Check golden audit cases
+        run: python scripts/run_golden_audit_cases.py --check
+
+      - name: Run deterministic demo replay self-check
+        run: python examples/demo_replay.py --check
+
+      - name: Run deterministic SRAM demo self-check
+        run: python examples/demo_sram.py --check
+
+      - name: Run offline test suite
+        run: python -m pytest -q
+
+      - name: Run pyright
+        run: python -m pyright src tests
+
+      - name: Run ruff
+        run: python -m ruff check src tests

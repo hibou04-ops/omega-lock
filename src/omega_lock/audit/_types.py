@@ -211,6 +211,8 @@ class AuditReport:
         if len(recomputed) != len(chain):
             return False
         for actual, expected in zip(recomputed, chain):
+            if actual["call_index"] != expected.get("call_index"):
+                return False
             if actual["run_hash"] != expected.get("run_hash"):
                 return False
             if actual["previous_hash"] != expected.get("previous_hash"):
@@ -256,6 +258,12 @@ class AuditReport:
         """Rehydrate a report. Constraint predicates are NOT restored — we keep
         only names + descriptions, since function objects can't round-trip."""
         d = json.loads(s)
+        schema_version = d.get("schema_version")
+        if schema_version != AUDIT_REPORT_SCHEMA_VERSION:
+            raise ValueError(
+                "Unsupported audit report schema_version "
+                f"{schema_version!r}; expected {AUDIT_REPORT_SCHEMA_VERSION!r}."
+            )
         constraints = tuple(
             Constraint(name=c["name"], fn=_unavailable_predicate, description=c.get("description", ""))
             for c in d.get("constraints", [])

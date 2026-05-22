@@ -1,0 +1,283 @@
+{
+  "case_id": "schema_validation_roundtrip",
+  "description": "Current audit schema round-trips and mismatched schema is rejected.",
+  "golden_schema_version": 1,
+  "offline": true,
+  "semantic": {
+    "original": {
+      "audit_schema_version": "omega-lock.audit-report.v2",
+      "best_any": {
+        "call_index": 1,
+        "constraints_failed": [],
+        "fitness": 2.0,
+        "params": {
+          "x": 1.0
+        }
+      },
+      "best_feasible": {
+        "call_index": 1,
+        "constraints_failed": [],
+        "fitness": 2.0,
+        "params": {
+          "x": 1.0
+        }
+      },
+      "constraints": [
+        {
+          "description": "x must be >= 0",
+          "name": "x_nonnegative"
+        }
+      ],
+      "hash_chain": [
+        {
+          "call_index": 0,
+          "previous_hash": null,
+          "run_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542"
+        },
+        {
+          "call_index": 1,
+          "previous_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542",
+          "run_hash": "056ebd6bdaa7bc9079ff225c31f3f585ea17ce3d39554e9786e1582b17533634"
+        }
+      ],
+      "hash_chain_valid": true,
+      "method": "golden:schema_validation_roundtrip",
+      "omega_lock_version": "0.2.5",
+      "runs": [
+        {
+          "call_index": 0,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 1.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 0
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 0.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        },
+        {
+          "call_index": 1,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 2.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 1
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 1.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        }
+      ],
+      "seed": 101,
+      "summary": {
+        "constraint_pass_counts": {
+          "x_nonnegative": 2
+        },
+        "feasibility_rate": 1.0,
+        "n_feasible": 2,
+        "n_total": 2
+      }
+    },
+    "roundtrip": {
+      "audit_schema_version": "omega-lock.audit-report.v2",
+      "best_any": {
+        "call_index": 1,
+        "constraints_failed": [],
+        "fitness": 2.0,
+        "params": {
+          "x": 1.0
+        }
+      },
+      "best_feasible": {
+        "call_index": 1,
+        "constraints_failed": [],
+        "fitness": 2.0,
+        "params": {
+          "x": 1.0
+        }
+      },
+      "constraints": [
+        {
+          "description": "x must be >= 0",
+          "name": "x_nonnegative"
+        }
+      ],
+      "hash_chain": [
+        {
+          "call_index": 0,
+          "previous_hash": null,
+          "run_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542"
+        },
+        {
+          "call_index": 1,
+          "previous_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542",
+          "run_hash": "056ebd6bdaa7bc9079ff225c31f3f585ea17ce3d39554e9786e1582b17533634"
+        }
+      ],
+      "hash_chain_valid": true,
+      "method": "golden:schema_validation_roundtrip",
+      "omega_lock_version": "0.2.5",
+      "runs": [
+        {
+          "call_index": 0,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 1.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 0
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 0.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        },
+        {
+          "call_index": 1,
+          "constraints_failed": [],
+          "constraints_passed": [
+            "x_nonnegative"
+          ],
+          "fitness": 2.0,
+          "metadata": {
+            "_constraints_failed": [],
+            "_constraints_passed": [
+              "x_nonnegative"
+            ],
+            "case_call": 1
+          },
+          "n_trials": 100,
+          "params": {
+            "x": 1.0
+          },
+          "phase": "grid",
+          "round_index": 0,
+          "target_role": "train"
+        }
+      ],
+      "seed": 101,
+      "summary": {
+        "constraint_pass_counts": {
+          "x_nonnegative": 2
+        },
+        "feasibility_rate": 1.0,
+        "n_feasible": 2,
+        "n_total": 2
+      }
+    },
+    "roundtrip_semantics_equal": true,
+    "schema_mismatch_rejected": true
+  },
+  "signed_report": {
+    "constraints": [
+      {
+        "description": "x must be >= 0",
+        "name": "x_nonnegative"
+      }
+    ],
+    "ended_iso": "2026-01-01T00:00:01+00:00",
+    "hash_chain": [
+      {
+        "call_index": 0,
+        "previous_hash": null,
+        "run_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542"
+      },
+      {
+        "call_index": 1,
+        "previous_hash": "31b4499c2fe143018af2a0349b7bd92414b4080ad51fe4f1f3694bf217852542",
+        "run_hash": "056ebd6bdaa7bc9079ff225c31f3f585ea17ce3d39554e9786e1582b17533634"
+      }
+    ],
+    "method": "golden:schema_validation_roundtrip",
+    "omega_lock_version": "0.2.5",
+    "runs": [
+      {
+        "call_index": 0,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 1.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 0
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 0.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train",
+        "timestamp_iso": "2026-01-01T00:00:00+00:00"
+      },
+      {
+        "call_index": 1,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_nonnegative"
+        ],
+        "fitness": 2.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_nonnegative"
+          ],
+          "case_call": 1
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 1.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train",
+        "timestamp_iso": "2026-01-01T00:00:01+00:00"
+      }
+    ],
+    "schema_version": "omega-lock.audit-report.v2",
+    "seed": 101,
+    "started_iso": "2026-01-01T00:00:00+00:00",
+    "stress_ranking": null,
+    "summary": {
+      "constraint_pass_counts": {
+        "x_nonnegative": 2
+      },
+      "feasibility_rate": 1.0,
+      "n_feasible": 2,
+      "n_total": 2
+    }
+  }
+}

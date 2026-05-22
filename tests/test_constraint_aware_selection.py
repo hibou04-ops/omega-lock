@@ -5,7 +5,9 @@ and that orchestrator.run_p1 honors the policy when picking grid_best.
 """
 from __future__ import annotations
 
-from omega_lock.audit import AuditingTarget, Constraint
+from typing import Any
+
+from omega_lock.audit import AuditingTarget, Constraint, make_report
 from omega_lock.kill_criteria import KCThresholds
 from omega_lock.orchestrator import P1Config, run_p1
 from omega_lock.target import EvalResult, ParamSpec
@@ -40,7 +42,7 @@ def _make_train(constraints):
     return AuditingTarget(_BiasedTarget(), constraints=constraints)
 
 
-def _cfg(policy: str = "record") -> P1Config:
+def _cfg(policy: str = "record", **overrides: Any) -> P1Config:
     return P1Config(
         unlock_k=2,
         grid_points_per_axis=5,
@@ -48,6 +50,7 @@ def _cfg(policy: str = "record") -> P1Config:
         stress_verbose=False,
         grid_verbose=False,
         constraint_policy=policy,
+        **overrides,
     )
 
 
@@ -86,6 +89,27 @@ def test_prefer_feasible_picks_constraint_respecting_max():
     assert result.grid_best["unlocked"]["a"] <= 1.0
 
 
+def test_audit_report_preserves_raw_best_and_feasible_best_distinction():
+    """The audit trail keeps raw optimizer output and feasible selection separate."""
+    c = Constraint("a_le_1", lambda p, r: p["a"] <= 1.0, "")
+    train = _make_train([c])
+    result = run_p1(train_target=train, config=_cfg("prefer_feasible"))
+    report = make_report(train, method="contract")
+
+    best_any = report.best_any
+    best_feasible = report.best_feasible
+
+    assert best_any is not None
+    assert best_feasible is not None
+    assert best_any.fitness > best_feasible.fitness
+    assert best_any.params["a"] > 1.0
+    assert best_any.constraints_failed == ("a_le_1",)
+    assert best_feasible.params["a"] <= 1.0
+    assert best_feasible.constraints_failed == ()
+    assert result.grid_best is not None
+    assert result.grid_best["unlocked"]["a"] == best_feasible.params["a"]
+
+
 def test_hard_fail_blocks_status_when_no_feasible_candidate():
     """All-violating constraint forces FAIL:CONSTRAINTS under hard_fail."""
     c_always_fail = Constraint("never_ok", lambda p, r: False, "")
@@ -93,6 +117,16 @@ def test_hard_fail_blocks_status_when_no_feasible_candidate():
     result = run_p1(train_target=train, config=_cfg("hard_fail"))
     assert "FAIL" in result.status
     assert "CONSTRAINTS" in result.status
+    assert result.grid_best is not None
+
+    constraints_report = next(k for k in result.kc_reports if k["name"] == "CONSTRAINTS")
+    assert constraints_report["status"] == "FAIL"
+    assert constraints_report["detail"]["n_candidates"] > 0
+
+    report = make_report(train, method="contract")
+    assert report.best_feasible is None
+    assert report.best_any is not None
+    assert all(run.constraints_failed == ("never_ok",) for run in report.runs)
 
 
 def test_hard_fail_passes_when_feasible_candidate_exists():
@@ -114,3 +148,19 @@ def test_no_constraints_means_record_and_prefer_agree():
     assert r1_grid_best is not None
     assert r2_grid_best is not None
     assert r1_grid_best["unlocked"] == r2_grid_best["unlocked"]
+
+
+def test_sc2_advisory_is_visible_but_never_a_hard_constraint():
+    """SC-2 is reported for review but must not enter release-blocking status."""
+    result = run_p1(
+        train_target=_make_train([]),
+        config=_cfg("prefer_feasible", run_sc2_baseline=True),
+    )
+
+    sc2 = next(k for k in result.kc_reports if k["name"] == "SC-2")
+    hard_fail_names = {k["name"] for k in result.kc_reports if k["status"] == "FAIL"}
+
+    assert sc2["status"] == "ADVISORY"
+    assert "sc2_pass" in sc2["detail"]
+    assert "SC-2" not in hard_fail_names
+    assert "SC-2" not in result.status
