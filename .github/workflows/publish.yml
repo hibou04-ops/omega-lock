@@ -45,5 +45,8 @@ jobs:
       - name: Check package
         run: python -m twine check dist/*.whl dist/*.tar.gz
 
+      - name: Publish readiness gate
+        run: python scripts/publish_readiness.py --intended-version 0.2.6 --offline
+
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
