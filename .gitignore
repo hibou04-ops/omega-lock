@@ -25,6 +25,7 @@ __pycache__/
 *.egg
 build/
 dist/
+release_drafts/
 .eggs/
 
 # ── Test & coverage caches ─────────────────────────────────────────────

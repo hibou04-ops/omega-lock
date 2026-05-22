@@ -1,0 +1,113 @@
+name: Public claim request
+description: Request or review a README/public documentation claim.
+title: "[Claim]: "
+labels: ["claim-ledger", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Public claims must be backed by the claim ledger or marked qualitative/TODO.
+        Do not use downloads, stars, or badges as correctness proof.
+  - type: textarea
+    id: claim_text
+    attributes:
+      label: Proposed claim text
+      description: Quote the exact wording and target document.
+    validations:
+      required: true
+  - type: dropdown
+    id: proof_type
+    attributes:
+      label: Required proof type
+      description: Pick the strongest available proof type. Use qualitative_marker only for conservative positioning/scope language.
+      options:
+        - source_of_truth
+        - generated_doc
+        - reproducible_command
+        - deterministic_artifact
+        - qualitative_marker
+        - TODO / not yet proven
+    validations:
+      required: true
+  - type: textarea
+    id: proof
+    attributes:
+      label: Proof path, command, artifact, or qualitative rationale
+      description: Include local paths or offline commands. Do not include live API credentials.
+      placeholder: |
+        docs/claims/public_claims.yml
+        python scripts/generate_readme_claims.py --check
+    validations:
+      required: true
+  - type: dropdown
+    id: affected_invariant
+    attributes:
+      label: Affected audit invariant
+      options:
+        - none / documentation wording only
+        - hard constraint semantics
+        - walk-forward / holdout gate behavior
+        - append-only audit trail
+        - schema validation
+        - hash-chain / tamper detection
+        - feasible-best vs absolute-best selection
+        - release audit / repository consistency
+        - unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: hard_constraints
+    attributes:
+      label: Are hard constraints affected?
+      options:
+        - no
+        - yes
+        - unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: walk_forward
+    attributes:
+      label: Does walk-forward or holdout gate behavior change?
+      options:
+        - no
+        - yes
+        - unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: schema_artifact_hash
+    attributes:
+      label: Does schema, artifact, or hash-chain behavior change?
+      options:
+        - no
+        - yes
+        - unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: live_api
+    attributes:
+      label: Is live provider/API behavior involved?
+      options:
+        - no
+        - yes, not for default CI
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Exact verification commands run
+      description: Include PASS, FAIL, WARN, TOOLING_MISSING, or ENVIRONMENT_BLOCKED.
+    validations:
+      required: true
+  - type: checkboxes
+    id: claim_safety
+    attributes:
+      label: Claim-safety confirmation
+      options:
+        - label: This claim does not use downloads, stars, or badges as correctness proof.
+          required: true
+        - label: Claim ledger updates are needed if this claim appears in README/public docs.
+          required: true

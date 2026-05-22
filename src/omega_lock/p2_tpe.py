@@ -27,9 +27,10 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import asdict, dataclass, field
+from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, Protocol, Sequence, cast
 
 from omega_lock.grid import GridPoint
 from omega_lock.kill_criteria import (
@@ -51,14 +52,20 @@ from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
 from omega_lock.walk_forward import WalkForward, WalkForwardResult
 
 
-if TYPE_CHECKING:
-    from optuna.trial import Trial
+class TrialLike(Protocol):
+    number: int
+
+    def suggest_float(self, name: str, low: float, high: float) -> float: ...
+
+    def suggest_int(self, name: str, low: int, high: int) -> int: ...
+
+    def suggest_categorical(self, name: str, choices: Sequence[bool]) -> bool: ...
 
 
 _optuna: Any | None = None
 
 try:
-    import optuna as _optuna_import
+    _optuna_import = cast(Any, import_module("optuna"))
     # Silence Optuna's per-trial INFO logs and the ExperimentalWarning
     # emitted by TPESampler(multivariate=True) — stable in practice for years.
     import warnings as _warnings
@@ -207,7 +214,7 @@ def _p2_search_settings(cfg: P2Config) -> dict[str, Any]:
     }
 
 
-def _suggest(trial: "Trial", spec: ParamSpec) -> Any:
+def _suggest(trial: TrialLike, spec: ParamSpec) -> Any:
     """Map a ParamSpec to the corresponding Optuna suggest_* call.
 
     Float/int bounds are inclusive on both sides (matches ParamSpec + Optuna
@@ -376,7 +383,7 @@ def _run_tpe(
     trial_records: list[dict[str, Any]] = []
     trial_grid_points: list[GridPoint] = []
 
-    def objective(trial: "Trial") -> float:
+    def objective(trial: TrialLike) -> float:
         unlocked_vals: dict[str, Any] = {}
         params = dict(base_params)
         for name in unlocked:

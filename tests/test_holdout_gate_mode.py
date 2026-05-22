@@ -50,6 +50,32 @@ class _LowFitnessHoldout:
         return EvalResult(fitness=self._fitness, n_trials=self._n_trials)
 
 
+class _LinearTrainTarget:
+    """Train target with a clear raw optimizer ranking."""
+
+    def param_space(self) -> list[ParamSpec]:
+        return [
+            ParamSpec(name="x", dtype="float", neutral=0.0, low=0.0, high=1.0),
+            ParamSpec(name="y", dtype="float", neutral=0.0, low=0.0, high=1.0),
+        ]
+
+    def evaluate(self, params: dict[str, Any]) -> EvalResult:
+        return EvalResult(
+            fitness=10.0 * float(params["x"]) + float(params["y"]),
+            n_trials=100,
+        )
+
+
+class _AntiCorrelatedWalkForwardTarget(_LinearTrainTarget):
+    """Test target that rejects the train ranking while keeping trade count valid."""
+
+    def evaluate(self, params: dict[str, Any]) -> EvalResult:
+        return EvalResult(
+            fitness=-(10.0 * float(params["x"]) + float(params["y"])),
+            n_trials=100,
+        )
+
+
 # ---------------------------------------------------------------------------
 # evidence_only mode (default) — existing contract.
 # ---------------------------------------------------------------------------
@@ -190,3 +216,33 @@ def test_gate_mode_skip_when_no_holdout_target():
     )
     assert r.holdout_result is None
     assert "HOLDOUT" not in r.status
+
+
+def test_walk_forward_kc4_failure_blocks_release_status():
+    """A raw train winner still fails when walk-forward rejects the ranking."""
+    r = run_p1(
+        train_target=_LinearTrainTarget(),
+        test_target=_AntiCorrelatedWalkForwardTarget(),
+        config=P1Config(
+            unlock_k=2,
+            grid_points_per_axis=3,
+            walk_forward_top_n=4,
+            kc_thresholds=KCThresholds(
+                gini_min=0.0,
+                top_bot_ratio_min=1.0,
+                trade_count_min=1,
+                pearson_min=0.9,
+                trade_ratio_min=0.0,
+            ),
+            stress_verbose=False,
+            grid_verbose=False,
+        ),
+    )
+
+    kc4 = next(k for k in r.kc_reports if k["name"] == "KC-4")
+    assert r.grid_best is not None
+    assert r.grid_best["unlocked"] == {"x": 1.0, "y": 1.0}
+    assert kc4["status"] == "FAIL"
+    assert kc4["detail"]["pearson_status"] == "OK"
+    assert kc4["detail"]["pearson"] < 0.0
+    assert r.status == "FAIL:KC-4"

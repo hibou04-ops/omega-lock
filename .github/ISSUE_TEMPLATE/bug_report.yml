@@ -1,0 +1,113 @@
+name: Bug report
+description: Report a reproducible omega-lock bug without invoking release actions.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for reproducible local behavior. Do not include secrets,
+        private URLs, provider keys, or live API credentials.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and expected behavior.
+    validations:
+      required: true
+  - type: dropdown
+    id: affected_invariant
+    attributes:
+      label: Affected audit invariant
+      description: Pick the closest invariant. Use unknown if unsure.
+      options:
+        - unknown
+        - none / docs-only
+        - hard constraint semantics
+        - walk-forward / holdout gate behavior
+        - append-only audit trail
+        - schema validation
+        - hash-chain / tamper detection
+        - feasible-best vs absolute-best selection
+        - claim ledger / public documentation
+        - packaging / repository consistency
+    validations:
+      required: true
+  - type: dropdown
+    id: hard_constraints
+    attributes:
+      label: Are hard constraints affected?
+      options:
+        - unknown
+        - no
+        - yes
+    validations:
+      required: true
+  - type: dropdown
+    id: walk_forward
+    attributes:
+      label: Does walk-forward or holdout gate behavior change?
+      options:
+        - unknown
+        - no
+        - yes
+    validations:
+      required: true
+  - type: dropdown
+    id: schema_artifact_hash
+    attributes:
+      label: Does schema, artifact, or hash-chain behavior change?
+      options:
+        - unknown
+        - no
+        - yes
+    validations:
+      required: true
+  - type: dropdown
+    id: public_claims
+    attributes:
+      label: Do README/public claims need claim ledger updates?
+      options:
+        - unknown
+        - no
+        - yes
+    validations:
+      required: true
+  - type: dropdown
+    id: live_api
+    attributes:
+      label: Is live provider/API behavior involved?
+      description: Default CI must stay offline.
+      options:
+        - no
+        - yes, but not for default CI
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Include deterministic commands and minimal input data when possible.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Exact verification commands run
+      description: Include PASS, FAIL, WARN, TOOLING_MISSING, or ENVIRONMENT_BLOCKED.
+      placeholder: |
+        python scripts/check_repo_consistency.py --check -> PASS
+        python -m pytest -q -> TOOLING_MISSING: pytest unavailable
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Relevant logs or artifacts
+      description: Paste short excerpts only. Redact secrets and private paths.
+    validations:
+      required: false

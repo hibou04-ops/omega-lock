@@ -1,0 +1,108 @@
+{
+  "case_id": "no_feasible_candidates",
+  "description": "Every candidate violates the hard constraint; best_feasible is absent.",
+  "extra": {
+    "release_status": "FAIL:CONSTRAINTS"
+  },
+  "golden_schema_version": 1,
+  "offline": true,
+  "semantic": {
+    "audit_schema_version": "omega-lock.audit-report.v2",
+    "best_any": {
+      "call_index": 2,
+      "constraints_failed": [
+        "never_ok"
+      ],
+      "fitness": 3.0,
+      "params": {
+        "x": 2.0
+      }
+    },
+    "best_feasible": null,
+    "constraints": [
+      {
+        "description": "fixture constraint that every run violates",
+        "name": "never_ok"
+      }
+    ],
+    "method": "golden:no_feasible_candidates",
+    "omega_lock_version": "0.2.5",
+    "runs": [
+      {
+        "call_index": 0,
+        "constraints_failed": [
+          "never_ok"
+        ],
+        "constraints_passed": [],
+        "fitness": 1.0,
+        "metadata": {
+          "_constraints_failed": [
+            "never_ok"
+          ],
+          "_constraints_passed": [],
+          "case_call": 0
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 0.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      },
+      {
+        "call_index": 1,
+        "constraints_failed": [
+          "never_ok"
+        ],
+        "constraints_passed": [],
+        "fitness": 2.0,
+        "metadata": {
+          "_constraints_failed": [
+            "never_ok"
+          ],
+          "_constraints_passed": [],
+          "case_call": 1
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 1.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      },
+      {
+        "call_index": 2,
+        "constraints_failed": [
+          "never_ok"
+        ],
+        "constraints_passed": [],
+        "fitness": 3.0,
+        "metadata": {
+          "_constraints_failed": [
+            "never_ok"
+          ],
+          "_constraints_passed": [],
+          "case_call": 2
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 2.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      }
+    ],
+    "seed": 101,
+    "summary": {
+      "constraint_pass_counts": {
+        "never_ok": 0
+      },
+      "feasibility_rate": 0.0,
+      "n_feasible": 0,
+      "n_total": 3
+    }
+  }
+}

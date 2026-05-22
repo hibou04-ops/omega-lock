@@ -1,0 +1,78 @@
+{
+  "case_id": "walk_forward_gate_pass",
+  "description": "Walk-forward preserves the train ranking and KC-4 passes.",
+  "golden_schema_version": 1,
+  "offline": true,
+  "semantic": {
+    "grid_best": {
+      "fitness": 11.0,
+      "idx": 8,
+      "n_trials": 100,
+      "unlocked": {
+        "x": 1.0,
+        "y": 1.0
+      }
+    },
+    "hard_failures": [],
+    "kc_reports": [
+      {
+        "detail": {
+          "bot_k_mean": 1.0,
+          "gini": 0.409090909091,
+          "gini_ok": true,
+          "k": 1,
+          "min_nonzero_stress_count": null,
+          "nonzero_ok": true,
+          "nonzero_stress_count": 2,
+          "ratio": 10.0,
+          "ratio_ok": true,
+          "top_k_mean": 10.0
+        },
+        "name": "KC-2",
+        "status": "PASS"
+      },
+      {
+        "detail": {
+          "n_points": 4,
+          "pearson": 1.0,
+          "pearson_computable": true,
+          "pearson_ok": true,
+          "pearson_status": "OK",
+          "trade_ratio": 1.0,
+          "trade_ratio_ok": true
+        },
+        "name": "KC-4",
+        "status": "PASS"
+      },
+      {
+        "detail": {
+          "budget_s": 259200
+        },
+        "name": "KC-1",
+        "status": "PASS"
+      },
+      {
+        "detail": {
+          "counts": {
+            "baseline": 100,
+            "test_best": 100,
+            "train_best": 100
+          },
+          "failures": {},
+          "floor": 1
+        },
+        "name": "KC-3",
+        "status": "PASS"
+      }
+    ],
+    "status": "PASS",
+    "walk_forward": {
+      "pearson": 1.0,
+      "pearson_computable": true,
+      "pearson_status": "OK",
+      "test_best_trades": 100,
+      "top_n": 4,
+      "trade_ratio_scaled": 1.0
+    }
+  }
+}

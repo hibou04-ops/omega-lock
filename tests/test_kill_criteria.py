@@ -56,11 +56,48 @@ def test_kc2_low_ratio_fails():
     assert "ratio" in r.detail
 
 
-# ── KC-3 ──
+# KC-2 advisory boundary
+
+def test_kc2_single_nonzero_stress_visible_but_advisory_by_default():
+    r = check_kc2(
+        [10.0, 0.0, 0.0, 0.0],
+        KCThresholds(gini_min=0.0, top_bot_ratio_min=1.0),
+    )
+
+    assert r.status == "PASS"
+    assert r.detail["nonzero_stress_count"] == 1
+    assert r.detail["min_nonzero_stress_count"] is None
+    assert r.detail["nonzero_ok"] is True
+
+
+def test_kc2_nonzero_stress_floor_is_blocking_when_configured():
+    r = check_kc2(
+        [10.0, 0.0, 0.0, 0.0],
+        KCThresholds(
+            gini_min=0.0,
+            top_bot_ratio_min=1.0,
+            min_nonzero_stress_count=2,
+        ),
+    )
+
+    assert r.status == "FAIL"
+    assert r.detail["nonzero_stress_count"] == 1
+    assert r.detail["nonzero_ok"] is False
+    assert "nonzero_stress_count" in r.message
+
+
+# KC-3
 
 def test_kc3_pass_all_counts_above_floor():
     r = check_kc3({"baseline": 200, "best": 150}, KCThresholds(trade_count_min=50))
     assert r.status == "PASS"
+
+
+def test_kc3_pass_at_exact_trade_floor():
+    r = check_kc3({"baseline": 50, "best": 50}, KCThresholds(trade_count_min=50))
+
+    assert r.status == "PASS"
+    assert r.detail["failures"] == {}
 
 
 def test_kc3_fail_any_below_floor():
@@ -79,8 +116,28 @@ def test_kc3_empty_fails():
 def test_kc4_pass_on_good_correlation_and_trades():
     train = [1.0, 2.0, 3.0, 4.0, 5.0]
     test = [1.1, 1.9, 3.0, 4.1, 5.2]
-    r = check_kc4(train, test, trade_ratio=0.8, thresholds=KCThresholds(pearson_min=0.3, trade_ratio_min=0.5))
+    r = check_kc4(
+        train,
+        test,
+        trade_ratio=0.8,
+        thresholds=KCThresholds(pearson_min=0.3, trade_ratio_min=0.5),
+    )
     assert r.status == "PASS"
+
+
+def test_kc4_pass_at_exact_trade_ratio_boundary():
+    train = [1.0, 2.0, 3.0, 4.0]
+    test = [1.0, 2.0, 3.0, 4.0]
+    r = check_kc4(
+        train,
+        test,
+        trade_ratio=0.5,
+        thresholds=KCThresholds(pearson_min=0.99, trade_ratio_min=0.5),
+    )
+
+    assert r.status == "PASS"
+    assert r.detail["pearson_ok"] is True
+    assert r.detail["trade_ratio_ok"] is True
 
 
 def test_kc4_fail_on_uncorrelated():
@@ -93,6 +150,11 @@ def test_kc4_fail_on_uncorrelated():
 def test_kc4_fail_on_low_trade_ratio():
     train = [1.0, 2.0, 3.0, 4.0, 5.0]
     test = [1.1, 2.1, 3.1, 4.1, 5.1]  # perfect corr
-    r = check_kc4(train, test, trade_ratio=0.3, thresholds=KCThresholds(pearson_min=0.3, trade_ratio_min=0.5))
+    r = check_kc4(
+        train,
+        test,
+        trade_ratio=0.3,
+        thresholds=KCThresholds(pearson_min=0.3, trade_ratio_min=0.5),
+    )
     assert r.status == "FAIL"
     assert not r.detail["trade_ratio_ok"]

@@ -1,0 +1,116 @@
+{
+  "case_id": "feasible_best_differs_from_absolute_best",
+  "description": "The raw best score violates constraints, so best_feasible differs.",
+  "extra": {
+    "best_any_call_index": 1,
+    "best_feasible_call_index": 2
+  },
+  "golden_schema_version": 1,
+  "offline": true,
+  "semantic": {
+    "audit_schema_version": "omega-lock.audit-report.v2",
+    "best_any": {
+      "call_index": 1,
+      "constraints_failed": [
+        "x_lte_one"
+      ],
+      "fitness": 10.0,
+      "params": {
+        "x": 2.0
+      }
+    },
+    "best_feasible": {
+      "call_index": 2,
+      "constraints_failed": [],
+      "fitness": 4.0,
+      "params": {
+        "x": 1.0
+      }
+    },
+    "constraints": [
+      {
+        "description": "x must be <= 1",
+        "name": "x_lte_one"
+      }
+    ],
+    "method": "golden:feasible_best_differs_from_absolute_best",
+    "omega_lock_version": "0.2.5",
+    "runs": [
+      {
+        "call_index": 0,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_lte_one"
+        ],
+        "fitness": 1.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_lte_one"
+          ],
+          "case_call": 0
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 0.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      },
+      {
+        "call_index": 1,
+        "constraints_failed": [
+          "x_lte_one"
+        ],
+        "constraints_passed": [],
+        "fitness": 10.0,
+        "metadata": {
+          "_constraints_failed": [
+            "x_lte_one"
+          ],
+          "_constraints_passed": [],
+          "case_call": 1
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 2.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      },
+      {
+        "call_index": 2,
+        "constraints_failed": [],
+        "constraints_passed": [
+          "x_lte_one"
+        ],
+        "fitness": 4.0,
+        "metadata": {
+          "_constraints_failed": [],
+          "_constraints_passed": [
+            "x_lte_one"
+          ],
+          "case_call": 2
+        },
+        "n_trials": 100,
+        "params": {
+          "x": 1.0
+        },
+        "phase": "grid",
+        "round_index": 0,
+        "target_role": "train"
+      }
+    ],
+    "seed": 101,
+    "summary": {
+      "constraint_pass_counts": {
+        "x_lte_one": 2
+      },
+      "feasibility_rate": 0.666666666667,
+      "n_feasible": 2,
+      "n_total": 3
+    }
+  }
+}
