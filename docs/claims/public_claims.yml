@@ -157,6 +157,19 @@
       ],
       "proof": [],
       "note": "Conservative wording boundary; no download numbers or vanity metrics are asserted."
+    },
+    {
+      "id": "comparative_positioning",
+      "claim": "README.md includes a qualitative \"How is this different?\" comparison table and an audit-gate-first position statement, without asserting superiority, adoption, or benchmark rank.",
+      "classification": "qualitative_marker",
+      "status": "qualitative",
+      "readme_refs": ["README.md:107", "README.md:123"],
+      "readme_markers": [
+        "How is this different?",
+        "audit-gate-first, not optimizer-replacement-first"
+      ],
+      "proof": [],
+      "note": "Qualitative role-differentiation and positioning marker; not promoted to a quantitative or superiority claim."
     }
   ]
 }

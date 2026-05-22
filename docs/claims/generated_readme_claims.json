@@ -1,5 +1,5 @@
 {
-  "claim_count": 12,
+  "claim_count": 13,
   "claims": [
     {
       "claim": "README.md says each probed candidate is appended to a reviewable JSON audit trail with phase, role, round, and call index context.",
@@ -94,6 +94,22 @@
         "README.md:148"
       ],
       "status": "validated"
+    },
+    {
+      "claim": "README.md includes a qualitative \"How is this different?\" comparison table and an audit-gate-first position statement, without asserting superiority, adoption, or benchmark rank.",
+      "classification": "qualitative_marker",
+      "id": "comparative_positioning",
+      "note": "Qualitative role-differentiation and positioning marker; not promoted to a quantitative or superiority claim.",
+      "proof": [],
+      "readme_markers": [
+        "How is this different?",
+        "audit-gate-first, not optimizer-replacement-first"
+      ],
+      "readme_refs": [
+        "README.md:107",
+        "README.md:123"
+      ],
+      "status": "qualitative"
     },
     {
       "claim": "README.md says the bundled demos are deterministic and require no network or API keys.",
@@ -365,7 +381,7 @@
   "classification_counts": {
     "deterministic_artifact": 2,
     "generated_doc": 1,
-    "qualitative_marker": 2,
+    "qualitative_marker": 3,
     "reproducible_command": 1,
     "source_of_truth": 6
   },
@@ -373,7 +389,7 @@
   "schema_version": 1,
   "source_ledger": "docs/claims/public_claims.yml",
   "status_counts": {
-    "qualitative": 2,
+    "qualitative": 3,
     "todo": 0,
     "validated": 10
   }

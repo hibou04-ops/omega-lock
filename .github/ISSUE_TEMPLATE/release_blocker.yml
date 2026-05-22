@@ -12,7 +12,7 @@ body:
     id: intended_version
     attributes:
       label: Intended version
-      placeholder: "0.2.6"
+      placeholder: "0.2.7"
     validations:
       required: true
   - type: dropdown
@@ -98,7 +98,7 @@ body:
       label: Evidence and exact verification commands run
       description: Include statuses. Missing tools are TOOLING_MISSING; blocked network/registry checks are ENVIRONMENT_BLOCKED.
       placeholder: |
-        python scripts/release_audit.py --intended-version 0.2.6 --offline --json -> FAIL
+        python scripts/release_audit.py --intended-version 0.2.7 --offline --json -> FAIL
         python -m twine check dist/*.whl dist/*.tar.gz -> TOOLING_MISSING: twine unavailable
     validations:
       required: true
