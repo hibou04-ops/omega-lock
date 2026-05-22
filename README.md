@@ -2,10 +2,17 @@
 
 > Audit tuned candidates before they ship: walk-forward validation, declarative hard constraints, feasible-best selection, and an append-only JSON trail.
 
-[![Package version](https://img.shields.io/badge/version-0.2.5-orange.svg)](pyproject.toml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![Version 0.2.6](https://img.shields.io/badge/version-0.2.6-orange.svg)](pyproject.toml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
+[![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
+[![Methodology audit gate](https://img.shields.io/badge/methodology-audit--gate-6f42c1.svg)](docs/TRUST_MODEL.md)
+[![Trust first](https://img.shields.io/badge/trust-first-0f766e.svg)](docs/TRUST_MODEL.md)
+[![Measurement grade audit](https://img.shields.io/badge/measurement--grade-audit-555.svg)](docs/TOOLKIT_POSITIONING.md)
 
-Current local package version: `0.2.5`.
+[한국어 README](README_KR.md) · [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
+
+Current local package version: `0.2.6`.
 
 Registry status is not asserted here. In this environment, PyPI/GitHub release
 verification is `ENVIRONMENT_BLOCKED`; do not treat a local version string as
@@ -13,9 +20,9 @@ proof that the same version is published.
 
 ## Badge and download analytics boundaries
 
-Static badges in this README identify local metadata surfaces such as package
-version and license. They do not prove release readiness, correctness,
-trustworthiness, adoption, or package quality.
+Static badges in this README identify local metadata surfaces, supported Python
+version, local quality gates, and methodology positioning. They do not prove
+release readiness, correctness, trustworthiness, adoption, or package quality.
 
 Downloads or stars may indicate visibility, not correctness, trustworthiness, or
 release readiness. Stars/downloads must not be used as audit evidence or release
@@ -50,7 +57,7 @@ after candidate generation and asks whether a candidate survives declared gates:
 - It does not currently ship an installed console CLI. In particular,
   Omega-Lock emits JSON artifacts; it does not currently ship a console
   `omega-lock diff` command.
-- It does not assert PyPI publication status for `0.2.5`; verify registries
+- It does not assert PyPI publication status for `0.2.6`; verify registries
   separately before treating a version as published.
 
 ## Why feasible-best matters
@@ -106,11 +113,11 @@ cd omega-lock
 pip install -e ".[dev]"
 ```
 
-From PyPI, only if version `0.2.5` is published in the index you use:
+From PyPI, only if version `0.2.6` is published in the index you use:
 
 ```bash
-pip install omega-lock==0.2.5
-pip install "omega-lock[p2]==0.2.5"
+pip install omega-lock==0.2.6
+pip install "omega-lock[p2]==0.2.6"
 ```
 
 Python import:

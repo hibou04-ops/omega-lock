@@ -99,10 +99,14 @@ def test_twine_command_includes_local_dist_artifacts(tmp_path: Path):
     dist.mkdir()
     wheel = dist / "omega_lock-1.2.3-py3-none-any.whl"
     sdist = dist / "omega_lock-1.2.3.tar.gz"
+    stale_wheel = dist / "omega_lock-1.2.2-py3-none-any.whl"
+    stale_sdist = dist / "omega_lock-1.2.2.tar.gz"
     draft = dist / "release_draft_v1.2.3.md"
     zip_file = dist / "not-a-distribution.zip"
     wheel.write_text("", encoding="utf-8")
     sdist.write_text("", encoding="utf-8")
+    stale_wheel.write_text("", encoding="utf-8")
+    stale_sdist.write_text("", encoding="utf-8")
     draft.write_text("", encoding="utf-8")
     zip_file.write_text("", encoding="utf-8")
 
@@ -120,6 +124,8 @@ def test_twine_command_includes_local_dist_artifacts(tmp_path: Path):
     assert command[:4] == ("python", "-m", "twine", "check")
     assert str(wheel) in command
     assert str(sdist) in command
+    assert str(stale_wheel) not in command
+    assert str(stale_sdist) not in command
     assert str(draft) not in command
     assert str(zip_file) not in command
 

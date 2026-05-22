@@ -2,10 +2,17 @@
 
 > 배포 전 튜닝 후보를 검증합니다: walk-forward validation, 선언형 hard constraints, feasible-best 선택, append-only JSON 감사 추적.
 
-[![Package version](https://img.shields.io/badge/version-0.2.5-orange.svg)](pyproject.toml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![Version 0.2.6](https://img.shields.io/badge/version-0.2.6-orange.svg)](pyproject.toml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
+[![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
+[![Methodology audit gate](https://img.shields.io/badge/methodology-audit--gate-6f42c1.svg)](docs/TRUST_MODEL.md)
+[![Trust first](https://img.shields.io/badge/trust-first-0f766e.svg)](docs/TRUST_MODEL.md)
+[![Measurement grade audit](https://img.shields.io/badge/measurement--grade-audit-555.svg)](docs/TOOLKIT_POSITIONING.md)
 
-현재 로컬 패키지 버전: `0.2.5`.
+[Full README](README.md) · [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
+
+현재 로컬 패키지 버전: `0.2.6`.
 
 이 문서는 PyPI 또는 GitHub Release 게시 여부를 주장하지 않습니다. 현재 환경에서는
 원격 registry 검증이 `ENVIRONMENT_BLOCKED`이므로, 로컬 버전 문자열을 published
@@ -39,7 +46,7 @@ optimizer가 되려는 도구가 아니라, 이미 만들어진 후보가 사전
 - production runtime wrapper, dashboard, web app이 아닙니다.
 - 현재 설치되는 console CLI는 없습니다. 특히 Omega-Lock은 JSON artifact를
   출력하지만, 설치된 `omega-lock diff` 명령은 제공하지 않습니다.
-- `0.2.5`가 PyPI에 게시되었다고 주장하지 않습니다. registry 상태는 별도로
+- `0.2.6`가 PyPI에 게시되었다고 주장하지 않습니다. registry 상태는 별도로
   검증해야 합니다.
 
 ## 왜 feasible-best가 중요한가
@@ -93,11 +100,11 @@ cd omega-lock
 pip install -e ".[dev]"
 ```
 
-사용하는 package index에 `0.2.5`가 게시되어 있는 경우에만 PyPI 설치:
+사용하는 package index에 `0.2.6`가 게시되어 있는 경우에만 PyPI 설치:
 
 ```bash
-pip install omega-lock==0.2.5
-pip install "omega-lock[p2]==0.2.5"
+pip install omega-lock==0.2.6
+pip install "omega-lock[p2]==0.2.6"
 ```
 
 Python import:

@@ -41,6 +41,8 @@ release. The release note should name the concrete source of truth for any
 claim that goes beyond metadata or documentation synchronization.
 
 - current install command, documentation badges, and citation synchronized
+- for 0.2.6: post-release verifier PyPI JSON timeout handling fixed while
+  preserving the injected opener test interface
 - no runtime behavior changes beyond version metadata, unless a tested code
   change is explicitly included
 

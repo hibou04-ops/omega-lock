@@ -331,15 +331,23 @@ def check_dist_artifacts(root: Path, intended_version: str) -> AuditResult:
         if match.group(1) != intended_version:
             stale.append(filename)
 
+    missing_expected = sorted(expected - set(distribution_files))
+    if stale and not missing_expected:
+        return AuditResult(
+            "dist-artifacts",
+            "WARN",
+            "dist/ contains the current wheel/sdist pair plus preserved artifacts for another version; stale artifacts are not release approval.",
+            tuple([f"stale: {name}" for name in stale] + [f"present: {name}" for name in sorted(expected)]),
+        )
+
     if stale:
         return AuditResult(
             "dist-artifacts",
             "FAIL",
-            "dist/ contains omega-lock artifacts for a stale version.",
-            tuple(stale),
+            "dist/ contains omega-lock artifacts for a stale version and the current wheel/sdist pair is incomplete.",
+            tuple([f"stale: {name}" for name in stale] + [f"missing: {name}" for name in missing_expected]),
         )
 
-    missing_expected = sorted(expected - set(distribution_files))
     if missing_expected:
         return AuditResult(
             "dist-artifacts",
