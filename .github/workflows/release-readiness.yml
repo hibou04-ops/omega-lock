@@ -6,7 +6,7 @@ on:
       intended-version:
         description: Intended release version in X.Y.Z form
         required: true
-        default: "0.2.7"
+        default: "0.3.0"
 
 permissions:
   contents: read

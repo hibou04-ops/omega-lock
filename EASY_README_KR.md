@@ -1,8 +1,8 @@
 # Omega-Lock 쉬운 설명
 
-현재 로컬 패키지 버전: `0.2.7`.
+현재 로컬 패키지 버전: `0.3.0`.
 
-[![Version 0.2.7](https://img.shields.io/badge/version-0.2.7-orange.svg)](pyproject.toml)
+[![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -29,6 +29,7 @@ trail을 통과하는지 확인합니다.
 - `best_feasible`(constraint 만족) vs `best_any`(최고 raw 점수)
 - test target이 설정된 경우 walk-forward / holdout 전이
 - append-only JSON audit trail, 선택적 SHA-256 hash chain 증거
+- `KCThresholds.pure_objective()`로 비-action 목적(수학, ML, 시뮬레이션) 지원
 
 ## 무엇을 증명하지 않나
 
@@ -73,11 +74,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | 설치되는 console executable | 현재 없음 |
 
-사용하는 package index에 `0.2.7`이 게시되어 있는 경우에만 PyPI로 설치하세요.
+사용하는 package index에 `0.3.0`이 게시되어 있는 경우에만 PyPI로 설치하세요.
 
 ```bash
-pip install omega-lock==0.2.7
-pip install "omega-lock[p2]==0.2.7"
+pip install omega-lock==0.3.0
+pip install "omega-lock[p2]==0.3.0"
 ```
 
 ## 최소 사용 예시

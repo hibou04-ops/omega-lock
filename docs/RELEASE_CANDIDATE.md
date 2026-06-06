@@ -7,7 +7,7 @@ tag, release, publish instruction, or approval.
 ```text
 release_candidate_marker: RC_MARKER_UNSET
 release_audit_after_commit: RC_AUDIT_UNSET
-release_audit_command: python scripts/release_audit.py --intended-version 0.2.7 --offline --json
+release_audit_command: python scripts/release_audit.py --intended-version 0.3.0 --offline --json
 ```
 
 ## What The Marker Means

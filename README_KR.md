@@ -7,7 +7,7 @@ Omega-Lock은 **후보 생성 이후**에 동작합니다. search·tuning·calib
 후보를 제안하면, Omega-Lock은 그 후보가 배포되기 전에 사전에 선언한 evidence
 gate를 통과하는지 판단합니다.
 
-[![Version 0.2.7](https://img.shields.io/badge/version-0.2.7-orange.svg)](pyproject.toml)
+[![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -18,7 +18,7 @@ gate를 통과하는지 판단합니다.
 **README 종류:** [Full README](README.md) · [한국어 README](README_KR.md) ·
 [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
-현재 로컬 패키지 버전: `0.2.7`. 이 문서는 PyPI 또는 GitHub Release 게시 여부를
+현재 로컬 패키지 버전: `0.3.0`. 이 문서는 PyPI 또는 GitHub Release 게시 여부를
 주장하지 않습니다. 로컬 버전 메타데이터는 registry 게시의 증거가 아니며,
 registry 상태는 별도의 post-release 검증을 거쳐야 합니다.
 
@@ -30,6 +30,7 @@ registry 상태는 별도의 post-release 검증을 거쳐야 합니다.
 - train/test 또는 holdout 전이에 walk-forward gate가 필요할 때
 - 검토·CI를 위한 append-only JSON 감사 추적이 필요할 때
 - 결정적이고 오프라인인 release 위생이 중요할 때
+- 비-action 목적(수학, ML, 시뮬레이션)을 캘리브레이션할 때 — `KCThresholds.pure_objective()` 참고
 
 ## Trust loop / 신뢰 루프
 
@@ -45,11 +46,11 @@ registry 상태는 별도의 post-release 검증을 거쳐야 합니다.
 ## 설치
 
 ```bash
-pip install omega-lock==0.2.7
-pip install "omega-lock[p2]==0.2.7"
+pip install omega-lock==0.3.0
+pip install "omega-lock[p2]==0.3.0"
 ```
 
-PyPI 명령은 사용하는 package index에 `0.2.7`이 보일 때만 사용하세요. 로컬 버전
+PyPI 명령은 사용하는 package index에 `0.3.0`이 보일 때만 사용하세요. 로컬 버전
 메타데이터는 registry 게시의 증거가 아닙니다.
 
 소스에서 설치:
@@ -142,6 +143,9 @@ Omega-Lock은 튜닝된 calibration 후보를 위한 audit-first framework입니
 
 - **Walk-forward gate (KC-4)**: test target 데이터에서 walk-forward 재평가를
   수행하고 Pearson 및 trade-ratio 기준을 확인합니다.
+- **Pure-objective 프리셋 (0.3.0)**: `KCThresholds.pure_objective()`는 action-count
+  게이트(KC-3, KC-4의 trade-ratio 하위 게이트)를 비활성화하고 도메인-중립
+  게이트는 유지하므로, 비-action 목적이 action-count 하한에 강제로 걸리지 않습니다.
 - **선언형 hard constraints**: 모든 후보에 대해 constraint를 평가하고
   기록합니다. `constraint_policy="prefer_feasible"`은 선언된 constraint를 모두
   만족하는 후보를 우선 선택합니다.

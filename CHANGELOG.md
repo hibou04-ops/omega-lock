@@ -3,6 +3,23 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## 0.3.0
+
+- Add `KCThresholds.pure_objective()` preset: disables the action-count gates
+  (KC-3 and the KC-4 trade-ratio sub-gate) for non-action objectives while
+  keeping the domain-neutral gates (time box, stress differentiation,
+  walk-forward correlation).
+- Domain-neutral public field names with backward-compatible aliases:
+  `EvalResult.sample_count` (alias `n_trials`), `ParamSpec.stress_suppressed`
+  (alias `ofi_biased`), `StressResult.stress_suppressed` (`to_dict` dual-emits
+  both keys), config `exclude_suppressed_in_unlock` (mirror
+  `exclude_ofi_in_unlock`), and result `top_k_excl_suppressed` (mirror
+  `top_k_ex_ofi`). No breaking changes.
+- Documentation and example wording cleanup; README family + version surfaces
+  synchronized to `0.3.0`.
+- Tamper-evident audit report schema and golden fixtures unchanged
+  (SHA-256 hash chain preserved).
+
 ## 0.2.7
 
 - Local package version surfaces synchronized to `0.2.7`.
