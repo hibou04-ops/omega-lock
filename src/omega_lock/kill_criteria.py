@@ -17,7 +17,7 @@ from typing import Literal
 class KCThresholds:
     """Tunable kill-criteria thresholds.
 
-    Defaults match the private calibration specification (§3; public alias: `internal_calibration_lab/p1_core/SPEC.md`). Looser thresholds
+    Defaults are the reference P1 thresholds. Looser thresholds
     (e.g. for toy examples) can be passed to P1Config.
     """
     time_box_seconds: float = 3 * 24 * 3600      # KC-1: 3 days

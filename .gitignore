@@ -7,9 +7,9 @@
 # Not meant to ship with the public repo.
 .gstack/
 
-# archive/ contains references to internal calibration research (v1 CoreSignal
-# best_params, recorded telemetry specifics, and data-collection details).
-# Kept locally as methodology provenance but NOT published with the repo.
+# archive/ holds local methodology provenance (prior research notes,
+# baseline parameter sets, dataset-specific details). Kept locally but
+# NOT published with the repo.
 archive/
 
 # Runtime-generated calibration outputs — regenerable, large, and may leak

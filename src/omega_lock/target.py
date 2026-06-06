@@ -27,8 +27,9 @@ class ParamSpec:
     stress measurement. Must lie within [low, high] for numeric types.
     Optional environment-bias flag: mark params whose stress is known
     to be artificially suppressed by the evaluation environment
-    (e.g. CoreSignal's state-drift engine with a zero-mocked input stream). The
-    orchestrator uses this to annotate results; it does not filter.
+    (e.g. a metric that saturates, or an input stream that is mocked
+    or low-variance in the test harness). The orchestrator uses this
+    to annotate results; it does not filter.
     """
     name: str
     dtype: ParamDType
