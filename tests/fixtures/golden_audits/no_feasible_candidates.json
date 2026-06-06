@@ -26,7 +26,7 @@
       }
     ],
     "method": "golden:no_feasible_candidates",
-    "omega_lock_version": "0.2.7",
+    "omega_lock_version": "0.3.0",
     "runs": [
       {
         "call_index": 0,

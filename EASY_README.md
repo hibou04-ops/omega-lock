@@ -1,8 +1,8 @@
 # Omega-Lock Easy Start
 
-Current local package version: `0.2.7`.
+Current local package version: `0.3.0`.
 
-[![Version 0.2.7](https://img.shields.io/badge/version-0.2.7-orange.svg)](pyproject.toml)
+[![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -29,6 +29,7 @@ declared hard constraints, and a reviewable append-only audit trail.
 - `best_feasible` (constraint-satisfying) vs `best_any` (top raw score)
 - walk-forward / holdout transfer, when a test target is configured
 - an append-only JSON audit trail, with optional SHA-256 hash-chain evidence
+- non-action objectives (math, ML, simulation) via `KCThresholds.pure_objective()`
 
 ## What it does not prove
 
@@ -73,11 +74,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | Installed console executable | none currently |
 
-Use PyPI only if version `0.2.7` is published in your package index:
+Use PyPI only if version `0.3.0` is published in your package index:
 
 ```bash
-pip install omega-lock==0.2.7
-pip install "omega-lock[p2]==0.2.7"
+pip install omega-lock==0.3.0
+pip install "omega-lock[p2]==0.3.0"
 ```
 
 ## Minimal use

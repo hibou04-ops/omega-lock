@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist for every omega-lock release. The current target is `0.2.7`.
+Use this checklist for every omega-lock release. The current target is `0.3.0`.
 
 ## Before Building
 
@@ -42,17 +42,19 @@ Get-ChildItem dist
 python -m twine check dist/*.whl dist/*.tar.gz
 ```
 
-## 0.2.7 Release Note
+## 0.3.0 Release Note
 
-- install command, documentation badges, and the README family synchronized to
-  `0.2.7`
-- README family top-section refactor: "Use it when", "Trust loop",
-  verification/evidence links, and a "How is this different?" comparison near
-  the top
-- `docs/claims/generated_readme_claims.*` and the golden audit fixtures
-  regenerated so embedded version metadata matches `0.2.7`
-- no runtime behavior changes beyond version metadata, unless a tested code
-  change is explicitly included
+- new `KCThresholds.pure_objective()` preset: disables the action-count gates
+  (KC-3 and the KC-4 trade-ratio sub-gate) for non-action objectives while
+  keeping the domain-neutral gates
+- domain-neutral public field names with backward-compatible aliases
+  (`EvalResult.sample_count`, `ParamSpec.stress_suppressed`,
+  `StressResult.stress_suppressed`, config `exclude_suppressed_in_unlock`,
+  result `top_k_excl_suppressed`); old names retained as deprecated aliases
+- documentation/example wording cleanup; README family + version surfaces
+  synchronized to `0.3.0`
+- tamper-evident audit report schema and golden fixtures unchanged
+  (hash chain preserved); all changes are backward compatible
 
 ## Historical Release Notes
 
@@ -67,10 +69,10 @@ python -m twine check dist/*.whl dist/*.tar.gz
 
 ## Expected Artifacts
 
-For 0.2.7, the expected files are:
+For 0.3.0, the expected files are:
 
-- `omega_lock-0.2.7-py3-none-any.whl`
-- `omega_lock-0.2.7.tar.gz`
+- `omega_lock-0.3.0-py3-none-any.whl`
+- `omega_lock-0.3.0.tar.gz`
 
 If an isolated PEP 517 build cannot download build dependencies in a restricted
 environment, `python -m build --no-isolation` is acceptable for local sandbox
@@ -87,13 +89,13 @@ Review `git status` first, then:
 
 ```bash
 git add -A
-git commit -m "Prepare release 0.2.7"
-git tag v0.2.7
+git commit -m "Prepare release 0.3.0"
+git tag v0.3.0
 git push origin main
-git push origin v0.2.7
+git push origin v0.3.0
 ```
 
-Create GitHub Release `v0.2.7` to trigger `.github/workflows/publish.yml`, or
+Create GitHub Release `v0.3.0` to trigger `.github/workflows/publish.yml`, or
 publish manually:
 
 ```bash
@@ -108,16 +110,16 @@ all agree on the same version.
 After PyPI publication is expected to exist:
 
 ```bash
-python scripts/post_release_verify.py --version 0.2.7 --distribution omega-lock
+python scripts/post_release_verify.py --version 0.3.0 --distribution omega-lock
 python -m pip index versions omega-lock
-python -m pip install --no-cache-dir --upgrade omega-lock==0.2.7
+python -m pip install --no-cache-dir --upgrade omega-lock==0.3.0
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
 
 For cache-sensitive releases, verify the exact wheel URL exposed by PyPI JSON:
 
 ```bash
-python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.2.7/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
+python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.0/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
 python -m pip install --no-cache-dir --force-reinstall "<wheel-url-from-pypi-json>"
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```

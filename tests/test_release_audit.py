@@ -115,8 +115,8 @@ def _by_name(results: list[object]) -> dict[str, object]:
 def test_release_audit_current_repo_offline_json_is_stable():
     root = Path(__file__).resolve().parents[1]
 
-    results = AUDIT.run_release_audit(root, intended_version="0.2.7", offline=True)
-    payload = AUDIT.to_payload(results, root=root, intended_version="0.2.7", offline=True)
+    results = AUDIT.run_release_audit(root, intended_version="0.3.0", offline=True)
+    payload = AUDIT.to_payload(results, root=root, intended_version="0.3.0", offline=True)
     rendered_once = AUDIT.render_json(payload)
     rendered_twice = AUDIT.render_json(payload)
 
@@ -236,8 +236,8 @@ def test_release_audit_ignores_release_draft_markdown_in_dist(tmp_path: Path):
 
 
 def test_release_audit_offline_network_checks_are_warn_not_pass():
-    pypi = AUDIT.check_pypi_status("0.2.7", offline=True)
-    github = AUDIT.check_github_status("0.2.7", offline=True)
+    pypi = AUDIT.check_pypi_status("0.3.0", offline=True)
+    github = AUDIT.check_github_status("0.3.0", offline=True)
 
     assert pypi.status == "WARN"
     assert github.status == "WARN"

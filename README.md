@@ -7,7 +7,7 @@ Omega-Lock runs **after candidate generation**. A search, tuning, or calibration
 method proposes a candidate; Omega-Lock decides whether that candidate survives
 the declared evidence gates before it is allowed to ship.
 
-[![Version 0.2.7](https://img.shields.io/badge/version-0.2.7-orange.svg)](pyproject.toml)
+[![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -18,7 +18,7 @@ the declared evidence gates before it is allowed to ship.
 **README family:** [Full README](README.md) · [한국어 README](README_KR.md) ·
 [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
-Current local package version: `0.2.7`. This README does not assert PyPI or
+Current local package version: `0.3.0`. This README does not assert PyPI or
 GitHub release status. Local version metadata is not proof of registry
 publication; registry status requires explicit post-release verification.
 
@@ -30,6 +30,7 @@ publication; registry status requires explicit post-release verification.
 - when train/test or holdout transfer needs a walk-forward gate
 - when an append-only JSON audit trail is needed for review or CI
 - when deterministic, offline release hygiene matters
+- when calibrating non-action objectives (math, ML, simulation) — see `KCThresholds.pure_objective()`
 
 ## Trust loop
 
@@ -45,11 +46,11 @@ publication; registry status requires explicit post-release verification.
 ## Install
 
 ```bash
-pip install omega-lock==0.2.7
-pip install "omega-lock[p2]==0.2.7"
+pip install omega-lock==0.3.0
+pip install "omega-lock[p2]==0.3.0"
 ```
 
-Use the PyPI command only after `0.2.7` is visible in the package index you use.
+Use the PyPI command only after `0.3.0` is visible in the package index you use.
 Local version metadata is not proof of registry publication.
 
 From source:
@@ -142,6 +143,10 @@ after candidate generation and asks whether a candidate survives declared gates:
 
 - **Walk-forward gate (KC-4)**: walk-forward re-evaluation on test target data,
   using Pearson and trade-ratio checks.
+- **Pure-objective preset (0.3.0)**: `KCThresholds.pure_objective()` disables the
+  action-count gates (KC-3 and the KC-4 trade-ratio sub-gate) and keeps the
+  domain-neutral gates, so non-action objectives are not forced through
+  action-count floors.
 - **Declarative hard constraints**: constraints are evaluated and recorded on
   every candidate; `constraint_policy="prefer_feasible"` makes selection prefer
   candidates that satisfy all declared constraints.
