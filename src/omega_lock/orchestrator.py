@@ -74,7 +74,8 @@ class P1Config:
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
     walk_forward_top_n: int = 10
     trade_ratio_scale: float = 1.0
-    exclude_ofi_in_unlock: bool = False
+    exclude_suppressed_in_unlock: bool = False
+    exclude_ofi_in_unlock: bool = False  # deprecated mirror of exclude_suppressed_in_unlock
     stress_verbose: bool = True
     grid_verbose: bool = True
     # Zooming grid: if > 1, run ZoomingGridSearch with `zoom_rounds` passes
@@ -130,6 +131,10 @@ class P1Config:
         # Reviewer P1: invalid configs should fail at construction time, not
         # halfway through a run. The audit framework's whole point is that
         # mistakes are surfaced before they corrupt an artifact.
+        # exclude_ofi_in_unlock is a deprecated mirror of exclude_suppressed_in_unlock.
+        if self.exclude_ofi_in_unlock and not self.exclude_suppressed_in_unlock:
+            self.exclude_suppressed_in_unlock = True
+        self.exclude_ofi_in_unlock = self.exclude_suppressed_in_unlock
         if self.unlock_k < 1:
             raise ValueError(f"unlock_k must be >= 1, got {self.unlock_k}")
         if self.grid_points_per_axis < 2:
@@ -174,7 +179,8 @@ class P1Result:
     baseline_result: dict[str, Any]          # EvalResult as dict
     stress_results: list[dict[str, Any]]
     top_k: list[str]
-    top_k_ex_ofi: list[str]
+    top_k_ex_ofi: list[str]                   # deprecated mirror of top_k_excl_suppressed
+    top_k_excl_suppressed: list[str]
 
     grid_results: list[dict[str, Any]]       # list of GridPoint summaries
     grid_best: dict[str, Any] | None = None
@@ -225,6 +231,7 @@ def _p1_legacy_config(cfg: P1Config) -> dict[str, Any]:
         "grid_points_per_axis": cfg.grid_points_per_axis,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "kc_thresholds": asdict(cfg.kc_thresholds),
     }
@@ -239,6 +246,7 @@ def _p1_search_settings(cfg: P1Config) -> dict[str, Any]:
         "zoom_factor": cfg.zoom_factor,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "run_sc2_baseline": cfg.run_sc2_baseline,
         "sc2_random_seed": cfg.sc2_random_seed,
@@ -266,6 +274,7 @@ def _iterative_search_settings(cfg: IterativeConfig) -> dict[str, Any]:
         "zoom_factor": cfg.zoom_factor,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "run_sc2_baseline": cfg.run_sc2_baseline,
         "sc2_random_seed": cfg.sc2_random_seed,
@@ -398,8 +407,8 @@ def run_p1(
         )
 
     # 3. Unlock top-K
-    top_k = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_ofi=cfg.exclude_ofi_in_unlock)
-    top_k_ex_ofi = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_ofi=True)
+    top_k = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_suppressed=cfg.exclude_suppressed_in_unlock)
+    top_k_ex_ofi = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_suppressed=True)
 
     # 4. Grid search on train (plain or zooming)
     _set_phase(train_target, "grid")
@@ -619,6 +628,7 @@ def _finalize(
         stress_results=[s.to_dict() for s in stress],
         top_k=top_k,
         top_k_ex_ofi=top_k_ex_ofi,
+        top_k_excl_suppressed=top_k_ex_ofi,
         grid_results=[gp.to_summary() for gp in grid],
         grid_best=grid_best.to_summary() if grid_best else None,
         walk_forward=wf.to_dict() if wf else None,
@@ -673,7 +683,8 @@ class IterativeConfig:
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
     stop_on_kc_fail: bool = True
     min_improvement: float = 0.0      # round fitness must beat prev by this much
-    exclude_ofi_in_unlock: bool = False
+    exclude_suppressed_in_unlock: bool = False
+    exclude_ofi_in_unlock: bool = False  # deprecated mirror of exclude_suppressed_in_unlock
     stress_verbose: bool = False
     grid_verbose: bool = False
     # Per-round zooming (fractal-vise refinement inside each outer round)
@@ -684,6 +695,10 @@ class IterativeConfig:
     sc2_random_seed: int = 42
 
     def __post_init__(self) -> None:
+        # exclude_ofi_in_unlock is a deprecated mirror of exclude_suppressed_in_unlock.
+        if self.exclude_ofi_in_unlock and not self.exclude_suppressed_in_unlock:
+            self.exclude_suppressed_in_unlock = True
+        self.exclude_ofi_in_unlock = self.exclude_suppressed_in_unlock
         if self.rounds < 1:
             raise ValueError(f"rounds must be >= 1, got {self.rounds}")
         if self.per_round_unlock_k < 1:
@@ -831,7 +846,7 @@ def run_p1_iterative(
             walk_forward_top_n=cfg.walk_forward_top_n,
             trade_ratio_scale=cfg.trade_ratio_scale,
             kc_thresholds=cfg.kc_thresholds,
-            exclude_ofi_in_unlock=cfg.exclude_ofi_in_unlock,
+            exclude_suppressed_in_unlock=cfg.exclude_suppressed_in_unlock,
             stress_verbose=cfg.stress_verbose,
             grid_verbose=cfg.grid_verbose,
             zoom_rounds=cfg.zoom_rounds,
