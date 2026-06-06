@@ -154,13 +154,13 @@ class WalkForward:
             test_results.append(r)
             train_fs.append(gp.result.fitness)
             test_fs.append(r.fitness)
-            test_trials.append(r.n_trials)
+            test_trials.append(r.sample_count)
 
         best_on_train = top[0]
         test_best = test_results[0]  # SAME evaluation as test_fs[0] / test_trials[0]
-        train_trades_mean = sum(gp.result.n_trials for gp in top) / len(top)
+        train_trades_mean = sum(gp.result.sample_count for gp in top) / len(top)
         trade_ratio = (
-            test_best.n_trials / (train_trades_mean * self.trade_ratio_scale)
+            test_best.sample_count / (train_trades_mean * self.trade_ratio_scale)
             if (train_trades_mean > 0 and self.trade_ratio_scale > 0)
             else 0.0
         )
@@ -178,7 +178,7 @@ class WalkForward:
             pearson_status=pearson_outcome.status,
             pearson_computable=pearson_outcome.computable,
             train_best_trades_mean=train_trades_mean,
-            test_best_trades=test_best.n_trials,
+            test_best_trades=test_best.sample_count,
             test_best_fitness=test_best.fitness,
             test_best_params=dict(best_on_train.params),
             trade_ratio_scaled=trade_ratio,

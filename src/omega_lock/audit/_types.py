@@ -53,7 +53,7 @@ class AuditedRun:
     Fields:
         params: the full param dict passed to evaluate()
         fitness: r.fitness
-        n_trials: r.n_trials
+        n_trials: r.sample_count  (wire key kept as "n_trials")
         metadata: dict(r.metadata), best-effort JSON-safe
         timestamp_iso: UTC ISO-8601
         constraints_passed / failed: names of constraints evaluated
