@@ -37,7 +37,7 @@ class GridPoint:
             "idx": self.idx,
             "unlocked": dict(self.unlocked),
             "fitness": self.result.fitness,
-            "n_trials": self.result.n_trials,
+            "n_trials": self.result.sample_count,
             "wall_s": self.wall_seconds,
         }
 
@@ -141,7 +141,7 @@ class GridSearch:
                 print(
                     f"  [{i+1:4d}/{len(combos)}] elapsed={elapsed:.0f}s, "
                     f"best_fitness={best_so_far.result.fitness:.3f} "
-                    f"(n_trials={best_so_far.result.n_trials})"
+                    f"(n_trials={best_so_far.result.sample_count})"
                 )
         return out
 

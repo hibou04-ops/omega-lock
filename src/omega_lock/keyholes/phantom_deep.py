@@ -138,7 +138,7 @@ class PhantomKeyholeDeep:
             ParamSpec(name="decoy_gain",   dtype="float", low=0.0,  high=5.0,   neutral=2.5),
             ParamSpec(name="decoy_drift",  dtype="float", low=-5.0, high=5.0,   neutral=0.0),
             ParamSpec(name="decoy_ratio",  dtype="float", low=0.0,  high=1.0,   neutral=0.5),
-            ParamSpec(name="decoy_ofi",    dtype="float", low=0.1,  high=0.9,   neutral=0.5, ofi_biased=True),
+            ParamSpec(name="decoy_ofi",    dtype="float", low=0.1,  high=0.9,   neutral=0.5, stress_suppressed=True),
             ParamSpec(name="decoy_temp",   dtype="float", low=0.0,  high=10.0,  neutral=5.0),
             ParamSpec(name="decoy_rate",   dtype="float", low=0.0,  high=1.0,   neutral=0.5),
 
@@ -169,9 +169,9 @@ class PhantomKeyholeDeep:
 
         # --- Validate windows ---
         if window < 1 or window >= n:
-            return EvalResult(fitness=-999.0, n_trials=0, metadata={"error": "bad_window"})
+            return EvalResult(fitness=-999.0, sample_count=0, metadata={"error": "bad_window"})
         if horizon < 1 or horizon >= n:
-            return EvalResult(fitness=-999.0, n_trials=0, metadata={"error": "bad_horizon"})
+            return EvalResult(fitness=-999.0, sample_count=0, metadata={"error": "bad_horizon"})
 
         # --- Channel A: rolling mean over `window`, fire by trend/reversion + alpha ---
         cs_a = np.concatenate(([0.0], np.cumsum(obs_a, dtype=float)))
@@ -227,7 +227,7 @@ class PhantomKeyholeDeep:
         fitness = reward_a + reward_b + decoy_coupling
         return EvalResult(
             fitness=fitness,
-            n_trials=n_trials_a + n_trials_b,
+            sample_count=n_trials_a + n_trials_b,
             metadata={
                 "reward_a": reward_a,
                 "reward_b": reward_b,

@@ -183,7 +183,7 @@ def _json_fallback(o: Any) -> Any:
 def _eval_to_dict(r: EvalResult) -> dict[str, Any]:
     return {
         "fitness": r.fitness,
-        "n_trials": r.n_trials,
+        "n_trials": r.sample_count,
         "metadata": dict(r.metadata),
     }
 
@@ -328,9 +328,9 @@ def run_p2_tpe(
     # 6. KC-1 (time box) + KC-3 (trade counts)
     elapsed = time.time() - t_start
     kc1 = check_kc1(elapsed, cfg.kc_thresholds)
-    trade_counts: dict[str, int] = {"baseline": baseline.n_trials}
+    trade_counts: dict[str, int] = {"baseline": baseline.sample_count}
     if tpe_best_gp is not None:
-        trade_counts["train_best"] = tpe_best_gp.result.n_trials
+        trade_counts["train_best"] = tpe_best_gp.result.sample_count
     if wf_result is not None:
         trade_counts["test_best"] = wf_result.test_best_trades
     kc3 = check_kc3(trade_counts, cfg.kc_thresholds)
@@ -410,7 +410,7 @@ def _run_tpe(
             "trial_idx": idx,
             "params_unlocked": dict(unlocked_vals),
             "fitness": r.fitness,
-            "n_trials": r.n_trials,
+            "n_trials": r.sample_count,
             "wall_s": wall,
         })
         if cfg.trial_verbose:
