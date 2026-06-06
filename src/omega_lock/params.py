@@ -2,8 +2,8 @@
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """Parameter container + clip/perturbation helpers.
 
-Generic successor to research/omega_lock_p1/params.py. The 21 HeartCore-specific
-defaults are gone; parameters are now driven entirely by a target's param_space().
+Parameters are driven entirely by a target's param_space(); this module
+holds no domain-specific defaults.
 """
 from __future__ import annotations
 

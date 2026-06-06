@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """Omega-Lock — sensitivity-driven coordinate descent calibration framework.
 
-Methodology (from research/omega_lock_p1/):
+Methodology:
     1. Measure perturbation sensitivity (stress) of each parameter
     2. Select top-K stress params (unlock set), fix the rest (lock)
     3. Grid search on K-dim subspace

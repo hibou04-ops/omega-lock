@@ -7,7 +7,7 @@ Shows the two idiomatic patterns:
        model, a simulation engine, a database connection).
 
 This is the template for integrating Omega-Lock with real systems — e.g.,
-the HeartCore strategy adapter that inspired the framework.
+wrapping a strategy engine, a trained model, or a scoring service.
 
 Run:
     python examples/adapter_example.py
