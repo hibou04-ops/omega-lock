@@ -206,8 +206,12 @@ def check_kc4(
     corr = pr.value if pr.value is not None else 0.0
     corr_ok = pr.computable and corr >= thresholds.pearson_min
     # KC-4b action-ratio sub-gate; None (pure-objective mode) skips it.
-    ratio_skipped = thresholds.trade_ratio_min is None
-    ratio_ok = True if ratio_skipped else trade_ratio >= thresholds.trade_ratio_min
+    # Direct is-None guard (not a bool var) so the type checker narrows
+    # trade_ratio_min to float in the comparison branch.
+    if thresholds.trade_ratio_min is None:
+        ratio_skipped, ratio_ok = True, True
+    else:
+        ratio_skipped, ratio_ok = False, trade_ratio >= thresholds.trade_ratio_min
     passed = corr_ok and ratio_ok
     detail = {
         "pearson": corr,
