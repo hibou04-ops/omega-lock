@@ -91,9 +91,9 @@ def measure_stress(
                 epsilon=1.0,
                 raw_stress=abs(r.fitness - baseline_fitness),
                 is_boolean=True,
-                ofi_biased=spec.ofi_biased,
-                plus_n_trials=r.n_trials,
-                minus_n_trials=baseline_result.n_trials,
+                ofi_biased=spec.stress_suppressed,
+                plus_n_trials=r.sample_count,
+                minus_n_trials=baseline_result.sample_count,
             )
         else:
             eps = opts.epsilons.get(name, default_epsilon(spec))
@@ -138,11 +138,11 @@ def measure_stress(
                 epsilon=float(eps),
                 raw_stress=raw,
                 is_boolean=False,
-                ofi_biased=spec.ofi_biased,
+                ofi_biased=spec.stress_suppressed,
                 clipped_plus=(plus_val != raw_plus_val),
                 clipped_minus=(minus_val != raw_minus_val),
-                plus_n_trials=r_plus.n_trials,
-                minus_n_trials=r_minus.n_trials,
+                plus_n_trials=r_plus.sample_count,
+                minus_n_trials=r_minus.sample_count,
             )
 
         results.append(res)
