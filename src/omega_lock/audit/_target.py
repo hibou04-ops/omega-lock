@@ -132,7 +132,7 @@ class AuditingTarget:
         run = AuditedRun(
             params=dict(params),
             fitness=float(r.fitness),
-            n_trials=int(r.n_trials),
+            n_trials=int(r.sample_count),
             metadata=metadata,
             timestamp_iso=datetime.now(timezone.utc).isoformat(),
             constraints_passed=tuple(passed),

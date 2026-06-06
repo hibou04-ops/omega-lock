@@ -130,7 +130,7 @@ class RandomSearch:
                 print(
                     f"  [{i+1:4d}/{self.n_samples}] elapsed={elapsed:.0f}s, "
                     f"best_fitness={best_so_far.result.fitness:.3f} "
-                    f"(n_trials={best_so_far.result.n_trials})"
+                    f"(n_trials={best_so_far.result.sample_count})"
                 )
         return out
 

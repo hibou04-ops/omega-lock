@@ -17,7 +17,7 @@ from typing import Literal
 class KCThresholds:
     """Tunable kill-criteria thresholds.
 
-    Defaults match research/omega_lock_p1/SPEC.md §3. Looser thresholds
+    Defaults are the reference P1 thresholds. Looser thresholds
     (e.g. for toy examples) can be passed to P1Config.
     """
     time_box_seconds: float = 3 * 24 * 3600      # KC-1: 3 days

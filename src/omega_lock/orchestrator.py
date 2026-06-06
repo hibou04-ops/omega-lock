@@ -74,7 +74,8 @@ class P1Config:
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
     walk_forward_top_n: int = 10
     trade_ratio_scale: float = 1.0
-    exclude_ofi_in_unlock: bool = False
+    exclude_suppressed_in_unlock: bool = False
+    exclude_ofi_in_unlock: bool = False  # deprecated mirror of exclude_suppressed_in_unlock
     stress_verbose: bool = True
     grid_verbose: bool = True
     # Zooming grid: if > 1, run ZoomingGridSearch with `zoom_rounds` passes
@@ -124,12 +125,16 @@ class P1Config:
     # is the only signal that wasn't reused for selection.
     holdout_mode: str = "evidence_only"
     holdout_min_fitness: float | None = None  # absolute floor; None disables
-    holdout_min_trade_ratio: float | None = None  # ratio against train_best.n_trials
+    holdout_min_trade_ratio: float | None = None  # ratio against train_best.sample_count
 
     def __post_init__(self) -> None:
         # Reviewer P1: invalid configs should fail at construction time, not
         # halfway through a run. The audit framework's whole point is that
         # mistakes are surfaced before they corrupt an artifact.
+        # exclude_ofi_in_unlock is a deprecated mirror of exclude_suppressed_in_unlock.
+        if self.exclude_ofi_in_unlock and not self.exclude_suppressed_in_unlock:
+            self.exclude_suppressed_in_unlock = True
+        self.exclude_ofi_in_unlock = self.exclude_suppressed_in_unlock
         if self.unlock_k < 1:
             raise ValueError(f"unlock_k must be >= 1, got {self.unlock_k}")
         if self.grid_points_per_axis < 2:
@@ -174,7 +179,8 @@ class P1Result:
     baseline_result: dict[str, Any]          # EvalResult as dict
     stress_results: list[dict[str, Any]]
     top_k: list[str]
-    top_k_ex_ofi: list[str]
+    top_k_ex_ofi: list[str]                   # deprecated mirror of top_k_excl_suppressed
+    top_k_excl_suppressed: list[str]
 
     grid_results: list[dict[str, Any]]       # list of GridPoint summaries
     grid_best: dict[str, Any] | None = None
@@ -214,7 +220,7 @@ def _json_fallback(o: Any) -> Any:
 def _eval_to_dict(r: EvalResult) -> dict[str, Any]:
     return {
         "fitness": r.fitness,
-        "n_trials": r.n_trials,
+        "n_trials": r.sample_count,
         "metadata": dict(r.metadata),
     }
 
@@ -225,6 +231,7 @@ def _p1_legacy_config(cfg: P1Config) -> dict[str, Any]:
         "grid_points_per_axis": cfg.grid_points_per_axis,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "kc_thresholds": asdict(cfg.kc_thresholds),
     }
@@ -239,6 +246,7 @@ def _p1_search_settings(cfg: P1Config) -> dict[str, Any]:
         "zoom_factor": cfg.zoom_factor,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "run_sc2_baseline": cfg.run_sc2_baseline,
         "sc2_random_seed": cfg.sc2_random_seed,
@@ -266,6 +274,7 @@ def _iterative_search_settings(cfg: IterativeConfig) -> dict[str, Any]:
         "zoom_factor": cfg.zoom_factor,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "run_sc2_baseline": cfg.run_sc2_baseline,
         "sc2_random_seed": cfg.sc2_random_seed,
@@ -278,12 +287,12 @@ def _hybrid_to_dict(h: HybridResult) -> dict[str, Any]:
     d = {
         "params": dict(h.params),
         "search_fitness": h.search_result.fitness,
-        "search_n_trials": h.search_result.n_trials,
+        "search_n_trials": h.search_result.sample_count,
         "final_fitness": h.final_fitness,
     }
     if h.validation_result is not None:
         d["validation_fitness"] = h.validation_result.fitness
-        d["validation_n_trials"] = h.validation_result.n_trials
+        d["validation_n_trials"] = h.validation_result.sample_count
     return d
 
 
@@ -398,8 +407,8 @@ def run_p1(
         )
 
     # 3. Unlock top-K
-    top_k = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_ofi=cfg.exclude_ofi_in_unlock)
-    top_k_ex_ofi = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_ofi=True)
+    top_k = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_suppressed=cfg.exclude_suppressed_in_unlock)
+    top_k_ex_ofi = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_suppressed=True)
 
     # 4. Grid search on train (plain or zooming)
     _set_phase(train_target, "grid")
@@ -497,7 +506,7 @@ def run_p1(
     # 8. KC-1 (time box) + KC-3 (trade counts)
     elapsed = time.time() - t_start
     kc1 = check_kc1(elapsed, cfg.kc_thresholds)
-    trade_counts = {"baseline": baseline.n_trials, "train_best": grid_best.result.n_trials}
+    trade_counts = {"baseline": baseline.sample_count, "train_best": grid_best.result.sample_count}
     if wf_result is not None:
         trade_counts["test_best"] = wf_result.test_best_trades
     kc3 = check_kc3(trade_counts, cfg.kc_thresholds)
@@ -522,12 +531,12 @@ def run_p1(
         train_fit = grid_best.result.fitness
         test_fit = wf_result.test_fitnesses[0] if wf_result and wf_result.test_fitnesses else None
         trade_ratio_vs_train = (
-            ho.n_trials / grid_best.result.n_trials
-            if grid_best.result.n_trials > 0 else None
+            ho.sample_count / grid_best.result.sample_count
+            if grid_best.result.sample_count > 0 else None
         )
         holdout_dict = {
             "fitness": ho.fitness,
-            "n_trials": ho.n_trials,
+            "n_trials": ho.sample_count,
             "params": dict(grid_best.params),
             "fitness_vs_train": (ho.fitness - train_fit),
             "fitness_vs_test": (ho.fitness - test_fit) if test_fit is not None else None,
@@ -619,6 +628,7 @@ def _finalize(
         stress_results=[s.to_dict() for s in stress],
         top_k=top_k,
         top_k_ex_ofi=top_k_ex_ofi,
+        top_k_excl_suppressed=top_k_ex_ofi,
         grid_results=[gp.to_summary() for gp in grid],
         grid_best=grid_best.to_summary() if grid_best else None,
         walk_forward=wf.to_dict() if wf else None,
@@ -673,7 +683,8 @@ class IterativeConfig:
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
     stop_on_kc_fail: bool = True
     min_improvement: float = 0.0      # round fitness must beat prev by this much
-    exclude_ofi_in_unlock: bool = False
+    exclude_suppressed_in_unlock: bool = False
+    exclude_ofi_in_unlock: bool = False  # deprecated mirror of exclude_suppressed_in_unlock
     stress_verbose: bool = False
     grid_verbose: bool = False
     # Per-round zooming (fractal-vise refinement inside each outer round)
@@ -684,6 +695,10 @@ class IterativeConfig:
     sc2_random_seed: int = 42
 
     def __post_init__(self) -> None:
+        # exclude_ofi_in_unlock is a deprecated mirror of exclude_suppressed_in_unlock.
+        if self.exclude_ofi_in_unlock and not self.exclude_suppressed_in_unlock:
+            self.exclude_suppressed_in_unlock = True
+        self.exclude_ofi_in_unlock = self.exclude_suppressed_in_unlock
         if self.rounds < 1:
             raise ValueError(f"rounds must be >= 1, got {self.rounds}")
         if self.per_round_unlock_k < 1:
@@ -831,7 +846,7 @@ def run_p1_iterative(
             walk_forward_top_n=cfg.walk_forward_top_n,
             trade_ratio_scale=cfg.trade_ratio_scale,
             kc_thresholds=cfg.kc_thresholds,
-            exclude_ofi_in_unlock=cfg.exclude_ofi_in_unlock,
+            exclude_suppressed_in_unlock=cfg.exclude_suppressed_in_unlock,
             stress_verbose=cfg.stress_verbose,
             grid_verbose=cfg.grid_verbose,
             zoom_rounds=cfg.zoom_rounds,
@@ -890,7 +905,7 @@ def run_p1_iterative(
         )
         holdout_dict = {
             "fitness": ho.fitness,
-            "n_trials": ho.n_trials,
+            "n_trials": ho.sample_count,
             "params": dict(base),
             "fitness_vs_last_round_train": (
                 ho.fitness - train_ref if train_ref is not None else None

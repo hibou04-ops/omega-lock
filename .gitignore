@@ -7,9 +7,9 @@
 # Not meant to ship with the public repo.
 .gstack/
 
-# archive/ contains references to Omega_TB_1 internal research (v1 HeartCore
-# best_params, BTCUSDT real-data specifics, Binance Vision fetch details).
-# Kept locally as methodology provenance but NOT published with the repo.
+# archive/ holds local methodology provenance (prior research notes,
+# baseline parameter sets, dataset-specific details). Kept locally but
+# NOT published with the repo.
 archive/
 
 # Runtime-generated calibration outputs — regenerable, large, and may leak

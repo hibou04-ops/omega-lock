@@ -23,7 +23,7 @@ Example:
     )
     result = run_p1(train_target=target, ...)
 
-External integration pattern (what the original HeartCore adapter would do):
+External integration pattern (typical for wrapping a real system):
     Write a thin wrapper class that:
       1. Holds a reference to your external system (e.g. a strategy engine,
          a scoring service, a trained model).
@@ -86,6 +86,6 @@ class CallableAdapter:
         metadata = dict(self.metadata_fn(params)) if self.metadata_fn else {}
         return EvalResult(
             fitness=fitness,
-            n_trials=n_trials,
+            sample_count=n_trials,
             metadata=metadata,
         )

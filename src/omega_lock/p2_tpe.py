@@ -115,7 +115,8 @@ class P2Config:
     walk_forward_top_n: int = 10
     trade_ratio_scale: float = 1.0
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
-    exclude_ofi_in_unlock: bool = False
+    exclude_suppressed_in_unlock: bool = False
+    exclude_ofi_in_unlock: bool = False  # deprecated mirror of exclude_suppressed_in_unlock
     stress_verbose: bool = False
     trial_verbose: bool = False
     # Multivariate TPE models correlations between unlocked params; much
@@ -126,6 +127,10 @@ class P2Config:
         # Reviewer P1: an audit framework must never report PASS on a run
         # that didn't actually search anything. n_trials=0 is the obvious
         # silent-success path — block it at construction.
+        # exclude_ofi_in_unlock is a deprecated mirror of exclude_suppressed_in_unlock.
+        if self.exclude_ofi_in_unlock and not self.exclude_suppressed_in_unlock:
+            self.exclude_suppressed_in_unlock = True
+        self.exclude_ofi_in_unlock = self.exclude_suppressed_in_unlock
         if self.n_trials < 1:
             raise ValueError(
                 "n_trials must be >= 1 (otherwise nothing is searched and "
@@ -153,7 +158,8 @@ class P2Result:
     baseline_result: dict[str, Any]                    # EvalResult as dict
     stress_results: list[dict[str, Any]]
     top_k: list[str]
-    top_k_ex_ofi: list[str]
+    top_k_ex_ofi: list[str]                            # deprecated mirror of top_k_excl_suppressed
+    top_k_excl_suppressed: list[str]
 
     trials: list[dict[str, Any]]                       # per-trial summaries
     tpe_best: dict[str, Any] | None = None             # {unlocked, fitness, n_trials}
@@ -183,7 +189,7 @@ def _json_fallback(o: Any) -> Any:
 def _eval_to_dict(r: EvalResult) -> dict[str, Any]:
     return {
         "fitness": r.fitness,
-        "n_trials": r.n_trials,
+        "n_trials": r.sample_count,
         "metadata": dict(r.metadata),
     }
 
@@ -195,6 +201,7 @@ def _p2_legacy_config(cfg: P2Config) -> dict[str, Any]:
         "seed": cfg.seed,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "multivariate": cfg.multivariate,
         "kc_thresholds": asdict(cfg.kc_thresholds),
@@ -209,6 +216,7 @@ def _p2_search_settings(cfg: P2Config) -> dict[str, Any]:
         "seed": cfg.seed,
         "walk_forward_top_n": cfg.walk_forward_top_n,
         "trade_ratio_scale": cfg.trade_ratio_scale,
+        "exclude_suppressed_in_unlock": cfg.exclude_suppressed_in_unlock,
         "exclude_ofi_in_unlock": cfg.exclude_ofi_in_unlock,
         "multivariate": cfg.multivariate,
     }
@@ -294,8 +302,8 @@ def run_p2_tpe(
         )
 
     # 3. Unlock top-K
-    top_k = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_ofi=cfg.exclude_ofi_in_unlock)
-    top_k_ex_ofi = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_ofi=True)
+    top_k = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_suppressed=cfg.exclude_suppressed_in_unlock)
+    top_k_ex_ofi = select_unlock_top_k(stress, k=cfg.unlock_k, exclude_suppressed=True)
 
     # 4. TPE search over unlocked subspace
     trial_records, trial_grid_points = _run_tpe(
@@ -328,9 +336,9 @@ def run_p2_tpe(
     # 6. KC-1 (time box) + KC-3 (trade counts)
     elapsed = time.time() - t_start
     kc1 = check_kc1(elapsed, cfg.kc_thresholds)
-    trade_counts: dict[str, int] = {"baseline": baseline.n_trials}
+    trade_counts: dict[str, int] = {"baseline": baseline.sample_count}
     if tpe_best_gp is not None:
-        trade_counts["train_best"] = tpe_best_gp.result.n_trials
+        trade_counts["train_best"] = tpe_best_gp.result.sample_count
     if wf_result is not None:
         trade_counts["test_best"] = wf_result.test_best_trades
     kc3 = check_kc3(trade_counts, cfg.kc_thresholds)
@@ -410,7 +418,7 @@ def _run_tpe(
             "trial_idx": idx,
             "params_unlocked": dict(unlocked_vals),
             "fitness": r.fitness,
-            "n_trials": r.n_trials,
+            "n_trials": r.sample_count,
             "wall_s": wall,
         })
         if cfg.trial_verbose:
@@ -457,6 +465,7 @@ def _finalize(
         stress_results=[s.to_dict() for s in stress],
         top_k=top_k,
         top_k_ex_ofi=top_k_ex_ofi,
+        top_k_excl_suppressed=top_k_ex_ofi,
         trials=trial_records,
         tpe_best=tpe_best,
         walk_forward=wf.to_dict() if wf else None,

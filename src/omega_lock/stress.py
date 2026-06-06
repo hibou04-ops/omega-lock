@@ -19,7 +19,7 @@ from omega_lock.params import clip, default_epsilon
 from omega_lock.target import CalibrableTarget, EvalResult
 
 
-@dataclass
+@dataclass(init=False)
 class StressResult:
     name: str
     baseline_fitness: float
@@ -29,14 +29,57 @@ class StressResult:
     raw_stress: float
     normalized_stress: float = 0.0
     is_boolean: bool = False
-    ofi_biased: bool = False
+    stress_suppressed: bool = False
     clipped_plus: bool = False
     clipped_minus: bool = False
     plus_n_trials: int = 0
     minus_n_trials: int = 0
 
+    def __init__(
+        self,
+        name: str,
+        baseline_fitness: float,
+        plus_fitness: float,
+        minus_fitness: float,
+        epsilon: float,
+        raw_stress: float,
+        normalized_stress: float = 0.0,
+        is_boolean: bool = False,
+        stress_suppressed: bool = False,
+        clipped_plus: bool = False,
+        clipped_minus: bool = False,
+        plus_n_trials: int = 0,
+        minus_n_trials: int = 0,
+        *,
+        ofi_biased: bool = False,
+    ) -> None:
+        # `ofi_biased` is a deprecated keyword alias for `stress_suppressed`
+        # (OR-merge; both are equal-valued bools, so there is no conflict).
+        self.name = name
+        self.baseline_fitness = baseline_fitness
+        self.plus_fitness = plus_fitness
+        self.minus_fitness = minus_fitness
+        self.epsilon = epsilon
+        self.raw_stress = raw_stress
+        self.normalized_stress = normalized_stress
+        self.is_boolean = is_boolean
+        self.stress_suppressed = bool(stress_suppressed or ofi_biased)
+        self.clipped_plus = clipped_plus
+        self.clipped_minus = clipped_minus
+        self.plus_n_trials = plus_n_trials
+        self.minus_n_trials = minus_n_trials
+
+    @property
+    def ofi_biased(self) -> bool:
+        """Deprecated read alias for `stress_suppressed`."""
+        return self.stress_suppressed
+
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        # Dual-key: emit canonical `stress_suppressed` AND deprecated
+        # `ofi_biased` (equal value) so 0.2.x readers of either key keep working.
+        d = asdict(self)
+        d["ofi_biased"] = self.stress_suppressed
+        return d
 
 
 @dataclass
@@ -91,9 +134,9 @@ def measure_stress(
                 epsilon=1.0,
                 raw_stress=abs(r.fitness - baseline_fitness),
                 is_boolean=True,
-                ofi_biased=spec.ofi_biased,
-                plus_n_trials=r.n_trials,
-                minus_n_trials=baseline_result.n_trials,
+                stress_suppressed=spec.stress_suppressed,
+                plus_n_trials=r.sample_count,
+                minus_n_trials=baseline_result.sample_count,
             )
         else:
             eps = opts.epsilons.get(name, default_epsilon(spec))
@@ -138,17 +181,17 @@ def measure_stress(
                 epsilon=float(eps),
                 raw_stress=raw,
                 is_boolean=False,
-                ofi_biased=spec.ofi_biased,
+                stress_suppressed=spec.stress_suppressed,
                 clipped_plus=(plus_val != raw_plus_val),
                 clipped_minus=(minus_val != raw_minus_val),
-                plus_n_trials=r_plus.n_trials,
-                minus_n_trials=r_minus.n_trials,
+                plus_n_trials=r_plus.sample_count,
+                minus_n_trials=r_minus.sample_count,
             )
 
         results.append(res)
         dur = time.time() - t0
         if opts.verbose:
-            flag = " OFI" if res.ofi_biased else ""
+            flag = " SUPPRESSED" if res.stress_suppressed else ""
             print(
                 f"  [{idx+1:3d}/{len(names_to_measure)}] {res.name:30s} "
                 f"stress={res.raw_stress:.4f}{flag} ({dur:.1f}s)"
@@ -190,15 +233,34 @@ def gini_coefficient(values: list[float]) -> float:
 def select_unlock_top_k(
     results: list[StressResult],
     k: int = 3,
-    exclude_ofi: bool = False,
+    exclude_suppressed: bool | None = None,
+    *,
+    exclude_ofi: bool | None = None,
 ) -> list[str]:
     """Top-k parameters by raw_stress.
 
     Args:
         results: StressResult list
         k: how many to pick (default 3, matches P1 SPEC)
-        exclude_ofi: drop ofi_biased params before ranking (for ablation)
+        exclude_suppressed: drop stress-suppressed params before ranking
+            (for ablation). Stress-suppressed params are those whose spec
+            marks their sensitivity as artificially damped by the eval
+            environment.
+        exclude_ofi: deprecated keyword alias for ``exclude_suppressed``,
+            kept for 0.2.x back-compat. Prefer ``exclude_suppressed``.
+
+    The canonical kwarg wins when both are passed (unlike a simple OR-merge,
+    which would let a deprecated True override a canonical False). Either being
+    omitted (``None``) falls through to the other; both omitted defaults to
+    ``False``. ``exclude_suppressed`` occupies the same 3rd-positional slot the
+    old ``exclude_ofi`` held, so existing positional callers keep their meaning.
     """
-    candidates = [r for r in results if (not exclude_ofi or not r.ofi_biased)]
+    if exclude_suppressed is not None:
+        exclude = exclude_suppressed
+    elif exclude_ofi is not None:
+        exclude = exclude_ofi
+    else:
+        exclude = False
+    candidates = [r for r in results if (not exclude or not r.stress_suppressed)]
     ranked = sorted(candidates, key=lambda r: r.raw_stress, reverse=True)
     return [r.name for r in ranked[:k]]

@@ -33,7 +33,7 @@ Strategy (parametric):
     reward += label[t] per fire
 
 Neutral placement is deliberately "wrong" on all three effective axes so
-the baseline is poor (n_trials ≥ 50 but reward strongly negative) and the
+the baseline is poor (sample_count ≥ 50 but reward strongly negative) and the
 grid can clearly improve — which is what Omega-Lock is meant to do.
 """
 from __future__ import annotations
@@ -97,7 +97,7 @@ class PhantomKeyhole:
             ParamSpec(name="decoy_offset", dtype="float", low=0.0,  high=10.0,  neutral=5.0),
             ParamSpec(name="decoy_bias",   dtype="float", low=-1.0, high=1.0,   neutral=0.0),
             ParamSpec(name="decoy_mag",    dtype="float", low=0.0,  high=100.0, neutral=50.0),
-            ParamSpec(name="decoy_ofi",    dtype="float", low=0.1,  high=0.9,   neutral=0.5, ofi_biased=True),
+            ParamSpec(name="decoy_ofi",    dtype="float", low=0.1,  high=0.9,   neutral=0.5, stress_suppressed=True),
             ParamSpec(name="decoy_mult",   dtype="int",   low=1,    high=100,   neutral=50),
             ParamSpec(name="decoy_exp",    dtype="int",   low=0,    high=10,    neutral=5),
             ParamSpec(name="decoy_mode",   dtype="int",   low=0,    high=3,     neutral=1),
@@ -115,7 +115,7 @@ class PhantomKeyhole:
 
         # val[t] = mean of obs over the preceding `window` bars (pure backward-looking).
         if window < 1 or window >= n:
-            return EvalResult(fitness=-999.0, n_trials=0, metadata={"error": "bad_window"})
+            return EvalResult(fitness=-999.0, sample_count=0, metadata={"error": "bad_window"})
         cs = np.concatenate(([0.0], np.cumsum(obs, dtype=float)))
         val = (cs[window:] - cs[:-window]) / float(window)   # len = n - window + 1
         # Align so val[t] uses obs[t-window : t], for t in [window, n).
@@ -146,7 +146,7 @@ class PhantomKeyhole:
         fitness = reward + decoy_coupling
         return EvalResult(
             fitness=fitness,
-            n_trials=n_trials,
+            sample_count=n_trials,
             metadata={
                 "reward_raw": reward,
                 "decoy_coupling": decoy_coupling,
