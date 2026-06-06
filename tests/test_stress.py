@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from omega_lock.stress import (
+    StressResult,
     gini_coefficient,
     measure_stress,
     select_unlock_top_k,
@@ -155,3 +156,92 @@ def test_ofi_exclusion():
 
     assert top_all == ["ofi_fast"]
     assert top_ex_ofi == ["fast"]
+
+
+def _suppressed_results():
+    """Build a 2-param stress profile where the high-stress param is suppressed."""
+
+    class SuppressedLinear:
+        def param_space(self):
+            return [
+                ParamSpec(name="fast", dtype="float", low=0.0, high=10.0, neutral=5.0),
+                ParamSpec(
+                    name="sup_fast", dtype="float", low=0.0, high=10.0,
+                    neutral=5.0, stress_suppressed=True,
+                ),
+            ]
+
+        def evaluate(self, params):
+            return EvalResult(
+                fitness=100.0 * params["sup_fast"] + 1.0 * params["fast"],
+                sample_count=1,
+            )
+
+    t = SuppressedLinear()
+    base = {"fast": 5.0, "sup_fast": 5.0}
+    return measure_stress(t, base, t.evaluate(base))
+
+
+def test_exclude_suppressed_canonical_kwarg():
+    """Canonical exclude_suppressed drops stress-suppressed params before ranking."""
+    results = _suppressed_results()
+    assert select_unlock_top_k(results, k=1, exclude_suppressed=False) == ["sup_fast"]
+    assert select_unlock_top_k(results, k=1, exclude_suppressed=True) == ["fast"]
+
+
+def test_exclude_suppressed_positional_back_compat():
+    """The canonical kwarg occupies the same 3rd-positional slot as the old one."""
+    results = _suppressed_results()
+    assert select_unlock_top_k(results, 1, True) == ["fast"]
+    assert select_unlock_top_k(results, 1, False) == ["sup_fast"]
+
+
+def test_exclude_ofi_deprecated_alias_still_works():
+    """0.2.x callers passing exclude_ofi keep working."""
+    results = _suppressed_results()
+    assert select_unlock_top_k(results, k=1, exclude_ofi=True) == ["fast"]
+    assert select_unlock_top_k(results, k=1, exclude_ofi=False) == ["sup_fast"]
+
+
+def test_canonical_kwarg_wins_over_deprecated():
+    """When both are passed, canonical wins (not a simple OR-merge)."""
+    results = _suppressed_results()
+    # canonical False + deprecated True -> canonical wins -> no exclusion
+    assert select_unlock_top_k(
+        results, k=1, exclude_suppressed=False, exclude_ofi=True
+    ) == ["sup_fast"]
+    # canonical True + deprecated False -> canonical wins -> exclude
+    assert select_unlock_top_k(
+        results, k=1, exclude_suppressed=True, exclude_ofi=False
+    ) == ["fast"]
+
+
+def test_stressresult_stress_suppressed_read_alias():
+    """StressResult exposes the canonical name as a read alias over the field."""
+    results = _suppressed_results()
+    by_name = {r.name: r for r in results}
+    assert by_name["sup_fast"].stress_suppressed is True
+    assert by_name["sup_fast"].ofi_biased is True
+    assert by_name["fast"].stress_suppressed is False
+
+
+def test_stressresult_to_dict_dual_key():
+    """B: to_dict() emits BOTH canonical stress_suppressed and deprecated
+    ofi_biased (equal value) for back-compat; asdict() has only the field."""
+    import dataclasses as dc
+
+    sup = {r.name: r for r in _suppressed_results()}["sup_fast"]
+    d = sup.to_dict()
+    assert d["stress_suppressed"] is True
+    assert d["ofi_biased"] is True
+    assert d["stress_suppressed"] == d["ofi_biased"]
+    ak = set(dc.asdict(sup))
+    assert "stress_suppressed" in ak and "ofi_biased" not in ak  # ofi_biased is a property
+
+
+def test_stressresult_dual_read_round_trip():
+    """StressResult(**to_dict()) reconstructs without conflict (both keys present)."""
+    sup = {r.name: r for r in _suppressed_results()}["sup_fast"]
+    rt = StressResult(**sup.to_dict())
+    assert rt.stress_suppressed is True
+    assert rt.name == sup.name and rt.raw_stress == sup.raw_stress
