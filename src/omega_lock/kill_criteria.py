@@ -10,7 +10,7 @@ thresholds post-hoc.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 
 @dataclass(frozen=True)
@@ -32,9 +32,23 @@ class KCThresholds:
     # multi-axis structure. Default None = advisory only (recorded in
     # KC-2 detail but doesn't gate).
     min_nonzero_stress_count: int | None = None
-    trade_count_min: int = 50                     # KC-3: per best-config trade floor
+    trade_count_min: int | None = 50              # KC-3: per best-config action floor (None -> SKIP)
     pearson_min: float = 0.3                      # KC-4a: walk-forward correlation
-    trade_ratio_min: float = 0.5                  # KC-4b: test-trade / train-trade
+    trade_ratio_min: float | None = 0.5           # KC-4b: test/train action ratio (None -> SKIP)
+
+    @classmethod
+    def pure_objective(cls, **overrides: Any) -> "KCThresholds":
+        """Preset for non-action objectives (pure math / ML / simulation targets).
+
+        Disables the action-count gates KC-3 and KC-4b by setting them to
+        None, which makes those checks report SKIP, while keeping the
+        domain-neutral gates: KC-1 (time box), KC-2 (stress differentiation),
+        and KC-4a (walk-forward correlation). Pass keyword overrides to tune
+        any field, e.g. ``KCThresholds.pure_objective(pearson_min=0.5)``.
+        """
+        base: dict[str, Any] = {"trade_count_min": None, "trade_ratio_min": None}
+        base.update(overrides)
+        return cls(**base)
 
 
 KCStatus = Literal["PASS", "FAIL", "SKIP", "ADVISORY"]
@@ -139,7 +153,16 @@ def check_kc3(
 
     `trade_counts` is a dict of labeled counts (e.g. {"baseline": 173,
     "train_best": 167, "test_best": 129}). All must meet floor.
+
+    When ``thresholds.trade_count_min`` is None (pure-objective mode) the
+    gate is disabled and reports SKIP.
     """
+    if thresholds.trade_count_min is None:
+        return KCReport(
+            name="KC-3", status="SKIP",
+            message="SKIP: action-count floor disabled (pure-objective mode)",
+            detail={"counts": dict(trade_counts), "floor": None},
+        )
     if not trade_counts:
         return KCReport(
             name="KC-3", status="FAIL",
@@ -182,7 +205,9 @@ def check_kc4(
     # can compare to the threshold.
     corr = pr.value if pr.value is not None else 0.0
     corr_ok = pr.computable and corr >= thresholds.pearson_min
-    ratio_ok = trade_ratio >= thresholds.trade_ratio_min
+    # KC-4b action-ratio sub-gate; None (pure-objective mode) skips it.
+    ratio_skipped = thresholds.trade_ratio_min is None
+    ratio_ok = True if ratio_skipped else trade_ratio >= thresholds.trade_ratio_min
     passed = corr_ok and ratio_ok
     detail = {
         "pearson": corr,
@@ -194,7 +219,8 @@ def check_kc4(
         "n_points": len(train_fitnesses),
     }
     if passed:
-        msg = f"PASS: pearson={corr:.3f}, trade_ratio={trade_ratio:.3f}"
+        ratio_txt = "skipped" if ratio_skipped else f"{trade_ratio:.3f}"
+        msg = f"PASS: pearson={corr:.3f}, trade_ratio={ratio_txt}"
     else:
         fails = []
         if not pr.computable:
