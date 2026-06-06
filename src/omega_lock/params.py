@@ -2,8 +2,8 @@
 # Copyright (c) 2026 Kyunghoon Gwak <hibouaile04@gmail.com>
 """Parameter container + clip/perturbation helpers.
 
-Generic successor to the private parameter module (public alias: `internal_calibration_lab/p1_core/params.py`). The 21 CoreSignal-specific
-defaults are gone; parameters are now driven entirely by a target's param_space().
+Parameters are driven entirely by a target's param_space(); this module
+holds no domain-specific defaults.
 """
 from __future__ import annotations
 
