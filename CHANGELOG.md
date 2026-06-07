@@ -3,6 +3,26 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## 0.3.1
+
+- Internal guard and documentation hardening only. No public API changes and
+  no runtime behavior changes; consumers that pin `omega-lock>=0.3.0` are
+  unaffected.
+- Hardened the omega family docking guard surface: the producer contract
+  manifest (`src/omega_lock/contract.py`), the family docking convention
+  (`DOCKING.md`), and a tier-aware offline presence-lint
+  (`scripts/check_docking_presence.py`, tested by
+  `tests/test_docking_presence.py`) that mechanically asserts each declared
+  cross-repo coupling carries its guard and tier-correct pin.
+- `DOCKING.md` updated: the presence-lint is now recorded as the implemented C4
+  "teeth" (previously deferred as an owner decision) and referenced from the C2
+  registry as the machine-checked enforcement of its rows.
+- README family + version surfaces synchronized to `0.3.1`.
+- Golden audit fixtures regenerated to carry the new `omega_lock_version`
+  string; the audit report schema and SHA-256 hash chain are unchanged. The
+  only fixture delta is the embedded `omega_lock_version` value — the version is
+  not part of the hashed payload, so every chain digest is byte-identical.
+
 ## 0.3.0
 
 - Add `KCThresholds.pure_objective()` preset: disables the action-count gates

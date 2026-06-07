@@ -1,8 +1,8 @@
 # Omega-Lock 쉬운 설명
 
-현재 로컬 패키지 버전: `0.3.0`.
+현재 로컬 패키지 버전: `0.3.1`.
 
-[![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-orange.svg)](pyproject.toml)
+[![Version 0.3.1](https://img.shields.io/badge/version-0.3.1-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -15,6 +15,13 @@
 Omega-Lock은 배포 전 튜닝 후보를 검증합니다. 후보 생성 이후에 동작하며, 후보가
 walk-forward validation, 선언된 hard constraints, 검토 가능한 append-only audit
 trail을 통과하는지 확인합니다.
+
+## 0.3.1에서 새로워진 점
+
+내부 hardening만 포함합니다 — 사용 방법은 달라지지 않습니다. cross-repo
+"docking" guard(contract manifest, `DOCKING.md`, 새 오프라인 presence-lint)를
+강화하고, golden audit fixture를 새 버전 문자열에 맞게 재생성합니다. 공개 API나
+runtime 동작 변경은 없습니다.
 
 ## 언제 쓰나
 
@@ -74,11 +81,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | 설치되는 console executable | 현재 없음 |
 
-사용하는 package index에 `0.3.0`이 게시되어 있는 경우에만 PyPI로 설치하세요.
+사용하는 package index에 `0.3.1`이 게시되어 있는 경우에만 PyPI로 설치하세요.
 
 ```bash
-pip install omega-lock==0.3.0
-pip install "omega-lock[p2]==0.3.0"
+pip install omega-lock==0.3.1
+pip install "omega-lock[p2]==0.3.1"
 ```
 
 ## 최소 사용 예시
