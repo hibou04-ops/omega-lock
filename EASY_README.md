@@ -1,8 +1,8 @@
 # Omega-Lock Easy Start
 
-Current local package version: `0.3.0`.
+Current local package version: `0.3.1`.
 
-[![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-orange.svg)](pyproject.toml)
+[![Version 0.3.1](https://img.shields.io/badge/version-0.3.1-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -15,6 +15,13 @@ Current local package version: `0.3.0`.
 Omega-Lock audits tuned candidates before they ship. It runs after candidate
 generation and checks whether a candidate survives walk-forward validation,
 declared hard constraints, and a reviewable append-only audit trail.
+
+## What's new in 0.3.1
+
+Internal hardening only — nothing changes in how you use Omega-Lock. It tightens
+the cross-repo "docking" guards (contract manifest, `DOCKING.md`, and a new
+offline presence-lint) and regenerates the golden audit fixtures to carry the
+new version string. No public API or runtime behavior changes.
 
 ## Use it when
 
@@ -74,11 +81,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | Installed console executable | none currently |
 
-Use PyPI only if version `0.3.0` is published in your package index:
+Use PyPI only if version `0.3.1` is published in your package index:
 
 ```bash
-pip install omega-lock==0.3.0
-pip install "omega-lock[p2]==0.3.0"
+pip install omega-lock==0.3.1
+pip install "omega-lock[p2]==0.3.1"
 ```
 
 ## Minimal use
