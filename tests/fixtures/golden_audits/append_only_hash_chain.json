@@ -48,7 +48,7 @@
       ],
       "hash_chain_valid": true,
       "method": "golden:append_only_hash_chain",
-      "omega_lock_version": "0.3.1",
+      "omega_lock_version": "0.3.2",
       "runs": [
         {
           "call_index": 0,
@@ -175,7 +175,7 @@
       ],
       "hash_chain_valid": true,
       "method": "golden:append_only_hash_chain",
-      "omega_lock_version": "0.3.1",
+      "omega_lock_version": "0.3.2",
       "runs": [
         {
           "call_index": 0,
@@ -309,7 +309,7 @@
       }
     ],
     "method": "golden:append_only_hash_chain",
-    "omega_lock_version": "0.3.1",
+    "omega_lock_version": "0.3.2",
     "runs": [
       {
         "call_index": 0,

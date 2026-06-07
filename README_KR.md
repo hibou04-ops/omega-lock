@@ -7,7 +7,7 @@ Omega-Lock은 **후보 생성 이후**에 동작합니다. search·tuning·calib
 후보를 제안하면, Omega-Lock은 그 후보가 배포되기 전에 사전에 선언한 evidence
 gate를 통과하는지 판단합니다.
 
-[![Version 0.3.1](https://img.shields.io/badge/version-0.3.1-orange.svg)](pyproject.toml)
+[![Version 0.3.2](https://img.shields.io/badge/version-0.3.2-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -18,22 +18,27 @@ gate를 통과하는지 판단합니다.
 **README 종류:** [Full README](README.md) · [한국어 README](README_KR.md) ·
 [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
-현재 로컬 패키지 버전: `0.3.1`. 이 문서는 PyPI 또는 GitHub Release 게시 여부를
+현재 로컬 패키지 버전: `0.3.2`. 이 문서는 PyPI 또는 GitHub Release 게시 여부를
 주장하지 않습니다. 로컬 버전 메타데이터는 registry 게시의 증거가 아니며,
 registry 상태는 별도의 post-release 검증을 거쳐야 합니다.
 
-## 0.3.1에서 새로워진 점
+## 0.3.2에서 새로워진 점
 
-내부 guard·문서 hardening만 포함하며, 공개 API나 runtime 동작 변경은 없습니다.
+패키징 수정과 휴면(default-off) 실행 seam — 기존 사용자에게 동작 변경은 없습니다.
 
-- omega family "docking" guard 표면을 강화합니다: producer contract manifest
-  (`src/omega_lock/contract.py`), family docking 규약(`DOCKING.md`), 그리고 선언된
-  각 cross-repo coupling이 guard를 갖추고 있는지 기계적으로 확인하는 tier-aware
-  오프라인 presence-lint(`scripts/check_docking_presence.py`).
-- `DOCKING.md`를 갱신해 presence-lint를 이제 구현된 C4 "teeth"로 기록했습니다
-  (이전에는 owner 결정으로 보류).
-- 정직한 범위: `omega-lock>=0.3.0`을 pin하는 소비자를 위한 내부 release·guard
-  위생이며, golden audit fixture는 새 버전 문자열을 담기 위해서만 재생성됩니다.
+- 소스 배포(sdist) 패키징 수정: 이제 sdist가 `scripts/`, `tests/`
+  (`tests/fixtures/` 포함), `examples/`를 함께 포함합니다. 따라서
+  `pip download omega-lock --no-binary :all:` 후 압축을 푼 sdist에서
+  `pytest --collect-only`를 실행하면 collection 오류가 0개입니다. wheel은
+  그대로이며 여전히 import 패키지만 포함합니다.
+- 선택적 병렬 실행 seam: `GridSearch.run`, `ZoomingGridSearch.run`,
+  `measure_stress`, `WalkForward.run`이 이제 선택적
+  `executor: concurrent.futures.Executor | None = None`을 받습니다. 기본값
+  (`None`)은 엄격히 직렬이며 이전 동작과 byte 단위로 동일합니다. executor를
+  넘기면 결과는 입력 순서로 재조립됩니다. 모두 추가적인 선택적 키워드 인자일
+  뿐이며 소비되는(consumed) 표면은 바뀌지 않았습니다.
+- golden audit fixture는 새 버전 문자열을 담기 위해서만 재생성되며, default-off
+  seam은 추가적인 golden 변경을 만들지 않습니다.
 
 ## 언제 쓰나
 
@@ -59,11 +64,11 @@ registry 상태는 별도의 post-release 검증을 거쳐야 합니다.
 ## 설치
 
 ```bash
-pip install omega-lock==0.3.1
-pip install "omega-lock[p2]==0.3.1"
+pip install omega-lock==0.3.2
+pip install "omega-lock[p2]==0.3.2"
 ```
 
-PyPI 명령은 사용하는 package index에 `0.3.1`이 보일 때만 사용하세요. 로컬 버전
+PyPI 명령은 사용하는 package index에 `0.3.2`이 보일 때만 사용하세요. 로컬 버전
 메타데이터는 registry 게시의 증거가 아닙니다.
 
 소스에서 설치:

@@ -1,8 +1,8 @@
 # Omega-Lock Easy Start
 
-Current local package version: `0.3.1`.
+Current local package version: `0.3.2`.
 
-[![Version 0.3.1](https://img.shields.io/badge/version-0.3.1-orange.svg)](pyproject.toml)
+[![Version 0.3.2](https://img.shields.io/badge/version-0.3.2-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -16,12 +16,15 @@ Omega-Lock audits tuned candidates before they ship. It runs after candidate
 generation and checks whether a candidate survives walk-forward validation,
 declared hard constraints, and a reviewable append-only audit trail.
 
-## What's new in 0.3.1
+## What's new in 0.3.2
 
-Internal hardening only — nothing changes in how you use Omega-Lock. It tightens
-the cross-repo "docking" guards (contract manifest, `DOCKING.md`, and a new
-offline presence-lint) and regenerates the golden audit fixtures to carry the
-new version string. No public API or runtime behavior changes.
+Packaging fix plus an optional, off-by-default speed seam — nothing changes in
+how you already use Omega-Lock. The published source distribution now ships its
+`scripts/`, `tests/`, and `examples/`, so the downloaded sdist's tests actually
+run (`pytest --collect-only` has zero errors); the wheel is unchanged. The grid,
+stress, and walk-forward entry points gained an optional `executor=` argument
+you can opt into for parallel evaluation — the default stays serial and
+byte-identical. Golden fixtures only carry the new version string.
 
 ## Use it when
 
@@ -81,11 +84,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | Installed console executable | none currently |
 
-Use PyPI only if version `0.3.1` is published in your package index:
+Use PyPI only if version `0.3.2` is published in your package index:
 
 ```bash
-pip install omega-lock==0.3.1
-pip install "omega-lock[p2]==0.3.1"
+pip install omega-lock==0.3.2
+pip install "omega-lock[p2]==0.3.2"
 ```
 
 ## Minimal use

@@ -1,0 +1,29 @@
+# Source distribution (sdist) contents.
+#
+# The wheel ships only the import package (src/omega_lock, via
+# [tool.setuptools.packages.find] where=["src"]). The sdist additionally
+# ships the developer-facing test/check surfaces so that
+# `pip download omega-lock --no-binary :all:` then
+# `pytest --collect-only` on the unpacked sdist has ZERO collection errors.
+#
+# Why each graft is required (each is read at test-collection time):
+#   scripts/  -- many tests load scripts/*.py at module import time via
+#                importlib.util.spec_from_file_location (e.g.
+#                tests/test_docking_presence.py execs
+#                scripts/check_docking_presence.py).
+#   tests/    -- the tests themselves, including tests/fixtures/ (golden
+#                audit JSON read by the deterministic golden tests).
+#   examples/ -- pyproject sets pythonpath=["src","examples"]; tests such as
+#                tests/test_demo_sram.py `import demo_sram` /
+#                `from omega_lock_demos...`, which resolve through examples/.
+#
+# Grafts are sdist-only and never affect the wheel (examples/, tests/, and
+# scripts/ live outside src/, so packages.find never collects them).
+graft scripts
+graft tests
+graft examples
+
+# Keep the sdist deterministic and clean: never ship compiled bytecode.
+global-exclude *.py[cod]
+global-exclude __pycache__
+prune **/__pycache__

@@ -12,9 +12,11 @@ and is NOT part of this module — the caller constructs the two targets.
 """
 from __future__ import annotations
 
+from concurrent.futures import Executor
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from omega_lock._parallel import _ordered_eval_map
 from omega_lock.grid import GridPoint
 from omega_lock.target import CalibrableTarget, EvalResult
 
@@ -133,7 +135,22 @@ class WalkForward:
     test_target: CalibrableTarget
     trade_ratio_scale: float = 1.0       # e.g. len(test) / len(train) for time series
 
-    def run(self, train_grid: list[GridPoint], top_n: int = 10) -> WalkForwardResult:
+    def run(
+        self,
+        train_grid: list[GridPoint],
+        top_n: int = 10,
+        *,
+        executor: Executor | None = None,
+    ) -> WalkForwardResult:
+        """Re-evaluate the train-best ``top_n`` candidates on the test target.
+
+        ``executor`` is an optional, default-off
+        ``concurrent.futures.Executor`` seam. When provided, the per-candidate
+        test evaluations are dispatched through it and reassembled in INPUT
+        order — load-bearing because the train/test fitness vectors are
+        Pearson-paired positionally. ``None`` (the default) => strictly serial,
+        byte-identical to prior behavior.
+        """
         if not train_grid:
             raise ValueError("train_grid is empty")
         ranked = sorted(train_grid, key=lambda p: p.result.fitness, reverse=True)
@@ -145,13 +162,13 @@ class WalkForward:
         # again below for trade-count. Stochastic test_targets produced
         # an artifact where the "test fitness of best" and "test trade
         # count of best" came from different runs.
-        test_results: list[EvalResult] = []
+        test_results: list[EvalResult] = _ordered_eval_map(
+            executor, top, lambda gp: self.test_target.evaluate(gp.params)
+        )
         train_fs: list[float] = []
         test_fs: list[float] = []
         test_trials: list[int] = []
-        for gp in top:
-            r = self.test_target.evaluate(gp.params)
-            test_results.append(r)
+        for gp, r in zip(top, test_results):
             train_fs.append(gp.result.fitness)
             test_fs.append(r.fitness)
             test_trials.append(r.sample_count)
