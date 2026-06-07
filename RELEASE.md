@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist for every omega-lock release. The current target is `0.3.1`.
+Use this checklist for every omega-lock release. The current target is `0.3.2`.
 
 ## Before Building
 
@@ -42,19 +42,37 @@ Get-ChildItem dist
 python -m twine check dist/*.whl dist/*.tar.gz
 ```
 
-## 0.3.1 Release Note
+## 0.3.2 Release Note
+
+- source-distribution packaging fix: the sdist now ships `scripts/`, `tests/`
+  (including `tests/fixtures/`), and `examples/` via `MANIFEST.in`, so
+  `pip download omega-lock --no-binary :all:` then `pytest --collect-only` on
+  the unpacked sdist has zero collection errors. The wheel is unchanged and
+  still ships only the import package (no tests/scripts/examples leak in).
+- dormant, default-off parallel-execution seam: `GridSearch.run`,
+  `ZoomingGridSearch.run`, `measure_stress`, and `WalkForward.run` accept an
+  optional `executor: concurrent.futures.Executor | None = None` and dispatch
+  via a shared `_ordered_eval_map` helper that reassembles results in INPUT
+  order. The default (`None`) is serial and byte-identical; these are additive
+  optional keyword arguments only, so the consumed-surface contract is
+  unchanged.
+- golden audit fixtures regenerated only to carry the new version string; the
+  default-off seam produces zero additional golden change, and the audit report
+  schema and SHA-256 hash chain are unchanged.
+
+## Historical Release Notes
+
+### 0.3.1
 
 - internal guard and documentation hardening only; no public API or runtime
   behavior changes
-- hardens the omega family docking guard surface: producer contract manifest
+- hardened the omega family docking guard surface: producer contract manifest
   (`src/omega_lock/contract.py`), the family docking convention (`DOCKING.md`),
   and a tier-aware offline presence-lint (`scripts/check_docking_presence.py`)
 - `DOCKING.md` updated to record the presence-lint as the now-implemented C4
   "teeth" (previously deferred as an owner decision)
 - golden audit fixtures regenerated only to carry the new version string; the
   audit report schema and hash-chain semantics are unchanged
-
-## Historical Release Notes
 
 ### 0.3.0
 
@@ -81,10 +99,10 @@ python -m twine check dist/*.whl dist/*.tar.gz
 
 ## Expected Artifacts
 
-For 0.3.1, the expected files are:
+For 0.3.2, the expected files are:
 
-- `omega_lock-0.3.1-py3-none-any.whl`
-- `omega_lock-0.3.1.tar.gz`
+- `omega_lock-0.3.2-py3-none-any.whl`
+- `omega_lock-0.3.2.tar.gz`
 
 If an isolated PEP 517 build cannot download build dependencies in a restricted
 environment, `python -m build --no-isolation` is acceptable for local sandbox
@@ -101,13 +119,13 @@ Review `git status` first, then:
 
 ```bash
 git add -A
-git commit -m "Prepare release 0.3.1"
-git tag v0.3.1
+git commit -m "Prepare release 0.3.2"
+git tag v0.3.2
 git push origin main
-git push origin v0.3.1
+git push origin v0.3.2
 ```
 
-Create GitHub Release `v0.3.1` to trigger `.github/workflows/publish.yml`, or
+Create GitHub Release `v0.3.2` to trigger `.github/workflows/publish.yml`, or
 publish manually:
 
 ```bash
@@ -122,16 +140,16 @@ all agree on the same version.
 After PyPI publication is expected to exist:
 
 ```bash
-python scripts/post_release_verify.py --version 0.3.1 --distribution omega-lock
+python scripts/post_release_verify.py --version 0.3.2 --distribution omega-lock
 python -m pip index versions omega-lock
-python -m pip install --no-cache-dir --upgrade omega-lock==0.3.1
+python -m pip install --no-cache-dir --upgrade omega-lock==0.3.2
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
 
 For cache-sensitive releases, verify the exact wheel URL exposed by PyPI JSON:
 
 ```bash
-python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.1/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
+python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.2/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
 python -m pip install --no-cache-dir --force-reinstall "<wheel-url-from-pypi-json>"
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```

@@ -12,9 +12,11 @@ via its own param_space() ranges (we re-clip here defensively too).
 from __future__ import annotations
 
 import time
+from concurrent.futures import Executor
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
 
+from omega_lock._parallel import _ordered_eval_map
 from omega_lock.params import clip, default_epsilon
 from omega_lock.target import CalibrableTarget, EvalResult
 
@@ -95,6 +97,8 @@ def measure_stress(
     baseline_result: EvalResult,
     subset: list[str] | None = None,
     options: StressOptions | None = None,
+    *,
+    executor: Executor | None = None,
 ) -> list[StressResult]:
     """Measure perturbation sensitivity for each parameter in the target.
 
@@ -104,6 +108,12 @@ def measure_stress(
         baseline_result: pre-computed baseline evaluation (fitness for comparison)
         subset: optional list of param names to measure (default: all in target)
         options: StressOptions (custom epsilons, progress callback, verbosity)
+        executor: optional, default-off ``concurrent.futures.Executor`` seam.
+            When provided, per-parameter measurements are dispatched through it
+            and reassembled in input order (the z-score normalization is an
+            order-dependent float sum, so input order is load-bearing). When
+            ``None`` (the default) measurement is strictly serial and
+            byte-identical to prior behavior.
 
     Returns:
         List of StressResult, one per measured param. Normalized by z-score
@@ -113,10 +123,9 @@ def measure_stress(
     specs = {s.name: s for s in target.param_space()}
     names_to_measure = subset if subset is not None else list(specs.keys())
 
-    results: list[StressResult] = []
     baseline_fitness = baseline_result.fitness
 
-    for idx, name in enumerate(names_to_measure):
+    def _measure_one(name: str) -> tuple[StressResult, float]:
         if name not in specs:
             raise KeyError(f"param '{name}' not in target param_space()")
         spec = specs[name]
@@ -188,6 +197,12 @@ def measure_stress(
                 minus_n_trials=r_minus.sample_count,
             )
 
+        return res, t0
+
+    measured = _ordered_eval_map(executor, names_to_measure, _measure_one)
+
+    results: list[StressResult] = []
+    for idx, (res, t0) in enumerate(measured):
         results.append(res)
         dur = time.time() - t0
         if opts.verbose:

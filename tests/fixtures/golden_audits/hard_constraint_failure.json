@@ -35,7 +35,7 @@
       }
     ],
     "method": "golden:hard_constraint_failure",
-    "omega_lock_version": "0.3.1",
+    "omega_lock_version": "0.3.2",
     "runs": [
       {
         "call_index": 0,

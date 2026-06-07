@@ -3,6 +3,35 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## 0.3.2
+
+- Source-distribution packaging fix (the reason for this release). The 0.3.1
+  sdist shipped `tests/` but not `scripts/`, `tests/fixtures/`, or `examples/`,
+  so `pip download omega-lock --no-binary :all:` then `pytest --collect-only`
+  on the unpacked sdist threw collection errors (module-level script loaders
+  and one example importer). A `MANIFEST.in` now grafts `scripts/`, `tests/`
+  (including `tests/fixtures/`), and `examples/` into the sdist. The wheel is
+  unchanged — it still ships only the import package, with no tests, scripts, or
+  examples — and the sdist excludes compiled bytecode (`__pycache__`, `*.pyc`).
+- Dormant, default-off parallel-execution seam. `GridSearch.run`,
+  `ZoomingGridSearch.run`, `measure_stress`, and `WalkForward.run` gained an
+  optional `executor: concurrent.futures.Executor | None = None` keyword
+  argument. When omitted (the default), evaluation is strictly serial and
+  byte-identical to prior behavior. When an executor is supplied, work is
+  dispatched through a shared internal `_ordered_eval_map` helper that
+  reassembles results in INPUT order (load-bearing for walk-forward Pearson
+  pairing and stress z-score normalization). For `ZoomingGridSearch`, only the
+  within-round combo loop parallelizes; the zoom rounds stay sequential because
+  each round re-centers on the prior winner.
+- These are additive optional keyword arguments only — no `EvalResult`,
+  `P1Result`, or `StressResult` shape changed, and no consumed contract key
+  changed, so consumers that pin `omega-lock>=0.3.0` are unaffected and the
+  consumed-surface contract manifest subset check stays green.
+- Golden audit fixtures regenerated only to carry the new `omega_lock_version`
+  string. The default-off seam produces zero additional golden change; the
+  audit report schema and SHA-256 hash chain are unchanged (the version is not
+  part of the hashed payload, so every chain digest is byte-identical).
+
 ## 0.3.1
 
 - Internal guard and documentation hardening only. No public API changes and

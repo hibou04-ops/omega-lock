@@ -16,9 +16,11 @@ from __future__ import annotations
 
 import itertools
 import time
+from concurrent.futures import Executor
 from dataclasses import dataclass
 from typing import Any
 
+from omega_lock._parallel import _ordered_eval_map
 from omega_lock.params import clip
 from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
 
@@ -108,7 +110,19 @@ class GridSearch:
             axes[name] = grid_points(specs[name], self.grid_points_per_axis)
         return axes
 
-    def run(self, base_params: dict[str, Any]) -> list[GridPoint]:
+    def run(
+        self,
+        base_params: dict[str, Any],
+        *,
+        executor: Executor | None = None,
+    ) -> list[GridPoint]:
+        """Evaluate the full grid.
+
+        ``executor`` (a ``concurrent.futures.Executor``) is an optional,
+        default-off seam: when provided, combos are dispatched through it and
+        reassembled in input order; when ``None`` (the default) evaluation is
+        strictly serial and byte-identical to prior behavior.
+        """
         specs = self._specs_by_name()
         axes = self.axes()
         combos = list(itertools.product(*[axes[n] for n in self.unlocked]))
@@ -116,9 +130,7 @@ class GridSearch:
             sizes = [len(axes[n]) for n in self.unlocked]
             print(f"  grid: {len(combos)} combos (axes={sizes})")
 
-        out: list[GridPoint] = []
-        t_start = time.time()
-        for i, combo in enumerate(combos):
+        def _eval_one(combo: tuple[Any, ...]) -> tuple[dict[str, Any], dict[str, Any], EvalResult, float]:
             unlocked_vals: dict[str, Any] = {}
             params = dict(base_params)
             for name, raw_val in zip(self.unlocked, combo):
@@ -128,6 +140,13 @@ class GridSearch:
             t0 = time.time()
             r = self.target.evaluate(params)
             dt = time.time() - t0
+            return unlocked_vals, params, r, dt
+
+        t_start = time.time()
+        evaluated = _ordered_eval_map(executor, combos, _eval_one)
+
+        out: list[GridPoint] = []
+        for i, (unlocked_vals, params, r, dt) in enumerate(evaluated):
             out.append(GridPoint(
                 idx=i,
                 unlocked=unlocked_vals,
@@ -185,7 +204,19 @@ class ZoomingGridSearch:
     def _specs_by_name(self) -> dict[str, ParamSpec]:
         return {s.name: s for s in self.target.param_space()}
 
-    def run(self, base_params: dict[str, Any]) -> list[GridPoint]:
+    def run(
+        self,
+        base_params: dict[str, Any],
+        *,
+        executor: Executor | None = None,
+    ) -> list[GridPoint]:
+        """Run all zoom rounds.
+
+        ``executor`` parallelizes ONLY the within-round combo evaluations;
+        the zoom ROUNDS stay sequential by design, because each round
+        re-centers its grid on the previous round's winner. Default ``None``
+        => serial, byte-identical to prior behavior.
+        """
         specs = self._specs_by_name()
         for name in self.unlocked:
             if name not in specs:
@@ -220,8 +251,7 @@ class ZoomingGridSearch:
                 print(f"  zoom[{zoom_r+1}/{self.zoom_rounds}] {len(combos)} combos "
                       f"axes={sizes} ranges={ranges}")
 
-            round_points: list[GridPoint] = []
-            for combo in combos:
+            def _eval_one(combo: tuple[Any, ...]) -> tuple[dict[str, Any], dict[str, Any], EvalResult, float]:
                 unlocked_vals: dict[str, Any] = {}
                 params = dict(base_params)
                 for name, raw_val in zip(self.unlocked, combo):
@@ -230,12 +260,16 @@ class ZoomingGridSearch:
                     params[name] = v
                 t_eval0 = time.time()
                 r = self.target.evaluate(params)
+                return unlocked_vals, params, r, time.time() - t_eval0
+
+            round_points: list[GridPoint] = []
+            for unlocked_vals, params, r, dt in _ordered_eval_map(executor, combos, _eval_one):
                 round_points.append(GridPoint(
                     idx=global_idx,
                     unlocked=unlocked_vals,
                     params=params,
                     result=r,
-                    wall_seconds=time.time() - t_eval0,
+                    wall_seconds=dt,
                 ))
                 global_idx += 1
             all_points.extend(round_points)

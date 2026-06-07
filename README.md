@@ -7,7 +7,7 @@ Omega-Lock runs **after candidate generation**. A search, tuning, or calibration
 method proposes a candidate; Omega-Lock decides whether that candidate survives
 the declared evidence gates before it is allowed to ship.
 
-[![Version 0.3.1](https://img.shields.io/badge/version-0.3.1-orange.svg)](pyproject.toml)
+[![Version 0.3.2](https://img.shields.io/badge/version-0.3.2-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -18,25 +18,28 @@ the declared evidence gates before it is allowed to ship.
 **README family:** [Full README](README.md) · [한국어 README](README_KR.md) ·
 [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
-Current local package version: `0.3.1`. This README does not assert PyPI or
+Current local package version: `0.3.2`. This README does not assert PyPI or
 GitHub release status. Local version metadata is not proof of registry
 publication; registry status requires explicit post-release verification.
 
-## What's new in 0.3.1
+## What's new in 0.3.2
 
-Internal guard and documentation hardening only — no public API or runtime
-behavior changes:
+Packaging fix plus a dormant, default-off execution seam — no behavior change
+for existing users:
 
-- Hardens the omega family "docking" guard surface: the producer contract
-  manifest (`src/omega_lock/contract.py`), the family docking convention
-  (`DOCKING.md`), and a tier-aware offline presence-lint
-  (`scripts/check_docking_presence.py`) that mechanically asserts each declared
-  cross-repo coupling carries its guard.
-- `DOCKING.md` updated to record the presence-lint as the now-implemented C4
-  "teeth" (previously deferred as an owner decision).
-- Honest scope: this is internal release/guard hygiene for consumers that pin
-  `omega-lock>=0.3.0`; the golden audit fixtures are regenerated only to carry
-  the new version string.
+- Source-distribution packaging fix: the published sdist now ships `scripts/`,
+  `tests/` (including `tests/fixtures/`), and `examples/`, so
+  `pip download omega-lock --no-binary :all:` then `pytest --collect-only` on
+  the unpacked sdist has zero collection errors. The wheel is unchanged and
+  still ships only the import package.
+- Optional parallel-execution seam: `GridSearch.run`, `ZoomingGridSearch.run`,
+  `measure_stress`, and `WalkForward.run` now accept an optional
+  `executor: concurrent.futures.Executor | None = None`. The default (`None`)
+  is strictly serial and byte-identical to prior behavior; when an executor is
+  supplied, results are reassembled in input order. These are additive optional
+  keyword arguments only — no consumed surface changed.
+- Golden audit fixtures regenerated only to carry the new version string; the
+  default-off seam produces zero additional golden change.
 
 ## Use it when
 
@@ -62,11 +65,11 @@ behavior changes:
 ## Install
 
 ```bash
-pip install omega-lock==0.3.1
-pip install "omega-lock[p2]==0.3.1"
+pip install omega-lock==0.3.2
+pip install "omega-lock[p2]==0.3.2"
 ```
 
-Use the PyPI command only after `0.3.1` is visible in the package index you use.
+Use the PyPI command only after `0.3.2` is visible in the package index you use.
 Local version metadata is not proof of registry publication.
 
 From source:
