@@ -1,8 +1,8 @@
 # Omega-Lock 쉬운 설명
 
-현재 로컬 패키지 버전: `0.3.2`.
+현재 로컬 패키지 버전: `0.3.3`.
 
-[![Version 0.3.2](https://img.shields.io/badge/version-0.3.2-orange.svg)](pyproject.toml)
+[![Version 0.3.3](https://img.shields.io/badge/version-0.3.3-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -16,15 +16,12 @@ Omega-Lock은 배포 전 튜닝 후보를 검증합니다. 후보 생성 이후�
 walk-forward validation, 선언된 hard constraints, 검토 가능한 append-only audit
 trail을 통과하는지 확인합니다.
 
-## 0.3.2에서 새로워진 점
+## 0.3.3에서 새로워진 점
 
-패키징 수정과 선택적·기본 비활성 속도 seam — 이미 쓰고 있는 방식은 달라지지
-않습니다. 이제 게시되는 소스 배포(sdist)가 `scripts/`, `tests/`, `examples/`를
-함께 포함하므로 내려받은 sdist의 테스트가 실제로 동작합니다
-(`pytest --collect-only` 오류 0개). wheel은 그대로입니다. grid·stress·
-walk-forward 진입점에 선택적 `executor=` 인자가 추가되어 병렬 평가를 선택할 수
-있으며, 기본값은 직렬이고 byte 단위로 동일합니다. golden fixture는 새 버전
-문자열만 담습니다.
+classifier 승격뿐 — 이미 쓰고 있는 방식은 달라지지 않습니다. `Development
+Status`가 이제 `4 - Beta`입니다(이전 `3 - Alpha`). 0.3.2 이후 기능 변경은
+없으므로 0.3.2의 선택적·기본 비활성 `executor=` 속도 seam과 소스 배포(sdist)
+패키징 수정은 그대로 유지됩니다. golden fixture는 새 버전 문자열만 담습니다.
 
 ## 언제 쓰나
 
@@ -84,11 +81,11 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | Python import package | `omega_lock` |
 | 설치되는 console executable | 현재 없음 |
 
-사용하는 package index에 `0.3.2`이 게시되어 있는 경우에만 PyPI로 설치하세요.
+사용하는 package index에 `0.3.3`이 게시되어 있는 경우에만 PyPI로 설치하세요.
 
 ```bash
-pip install omega-lock==0.3.2
-pip install "omega-lock[p2]==0.3.2"
+pip install omega-lock==0.3.3
+pip install "omega-lock[p2]==0.3.3"
 ```
 
 ## 최소 사용 예시
