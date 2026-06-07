@@ -34,7 +34,7 @@
       }
     ],
     "method": "golden:feasible_best_differs_from_absolute_best",
-    "omega_lock_version": "0.3.2",
+    "omega_lock_version": "0.3.3",
     "runs": [
       {
         "call_index": 0,

@@ -3,6 +3,20 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## 0.3.3
+
+- Classifier promotion only. The PyPI trove classifier `Development Status`
+  advanced from `3 - Alpha` to `4 - Beta`. There is no functional code change
+  since 0.3.2: the dormant, default-off parallel-execution executor seam
+  (`GridSearch.run`, `ZoomingGridSearch.run`, `measure_stress`,
+  `WalkForward.run` `executor=` keyword) and the source-distribution packaging
+  fix that shipped in 0.3.2 both stand unchanged. Consumers that pin
+  `omega-lock>=0.3.0` are unaffected.
+- Golden audit fixtures regenerated only to carry the new `omega_lock_version`
+  string. The audit report schema and SHA-256 hash chain are unchanged (the
+  version is not part of the hashed payload, so every chain digest is
+  byte-identical).
+
 ## 0.3.2
 
 - Source-distribution packaging fix (the reason for this release). The 0.3.1

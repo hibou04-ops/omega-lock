@@ -115,8 +115,8 @@ def _by_name(results: list[object]) -> dict[str, object]:
 def test_release_audit_current_repo_offline_json_is_stable():
     root = Path(__file__).resolve().parents[1]
 
-    results = AUDIT.run_release_audit(root, intended_version="0.3.2", offline=True)
-    payload = AUDIT.to_payload(results, root=root, intended_version="0.3.2", offline=True)
+    results = AUDIT.run_release_audit(root, intended_version="0.3.3", offline=True)
+    payload = AUDIT.to_payload(results, root=root, intended_version="0.3.3", offline=True)
     rendered_once = AUDIT.render_json(payload)
     rendered_twice = AUDIT.render_json(payload)
 
