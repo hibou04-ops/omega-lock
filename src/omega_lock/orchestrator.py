@@ -43,7 +43,12 @@ from omega_lock.stress import (
     select_unlock_top_k,
 )
 from omega_lock.target import CalibrableTarget, EvalResult
-from omega_lock.walk_forward import WalkForward, WalkForwardResult
+from omega_lock.walk_forward import (
+    DEFAULT_WALK_FORWARD_TOP_N,
+    WalkForward,
+    WalkForwardResult,
+    assert_strict_bundle,
+)
 
 
 P1_RESULT_SCHEMA_VERSION = "omega-lock.p1-result.v2"
@@ -72,7 +77,7 @@ class P1Config:
     unlock_k: int = 3
     grid_points_per_axis: int = 5
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
-    walk_forward_top_n: int = 10
+    walk_forward_top_n: int = DEFAULT_WALK_FORWARD_TOP_N
     trade_ratio_scale: float = 1.0
     exclude_suppressed_in_unlock: bool = False
     exclude_ofi_in_unlock: bool = False  # deprecated mirror of exclude_suppressed_in_unlock
@@ -367,6 +372,9 @@ def run_p1(
             disjoint data slice that has not been seen by train or test.
     """
     cfg = config or P1Config()
+    # Fail-loud BEFORE any target evaluation: the strict KC-4a Pearson floor
+    # (>= 0.5) and the strict walk-forward sample size must travel together.
+    assert_strict_bundle(cfg.kc_thresholds, cfg.walk_forward_top_n)
     t_start = time.time()
 
     # 1. Baseline
@@ -678,7 +686,7 @@ class IterativeConfig:
     rounds: int = 3
     per_round_unlock_k: int = 3
     grid_points_per_axis: int = 5
-    walk_forward_top_n: int = 10
+    walk_forward_top_n: int = DEFAULT_WALK_FORWARD_TOP_N
     trade_ratio_scale: float = 1.0
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
     stop_on_kc_fail: bool = True

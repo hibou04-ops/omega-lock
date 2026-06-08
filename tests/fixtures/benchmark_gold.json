@@ -29,7 +29,7 @@
     "generalization_gap": 1.160386383976792,
     "n_evaluations": 91,
     "param_L2_error": 1.8745369798669986,
-    "status_pass": 1,
+    "status_pass": 0,
     "stress_rank_spearman": 1.0
   },
   "PhantomKeyholeDeep|plain_grid|seed=7": {
@@ -40,7 +40,7 @@
     "generalization_gap": 0.46867676925480384,
     "n_evaluations": 91,
     "param_L2_error": 1.8123802642442954,
-    "status_pass": 0,
+    "status_pass": 1,
     "stress_rank_spearman": 0.8285714285714285
   },
   "PhantomKeyhole|fractal_vise|seed=42": {

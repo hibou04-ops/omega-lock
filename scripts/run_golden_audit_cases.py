@@ -304,7 +304,11 @@ def _p1_config() -> P1Config:
             gini_min=0.0,
             top_bot_ratio_min=1.0,
             trade_count_min=1,
-            pearson_min=0.9,
+            # non-strict (< 0.5): the strict-bundle guard (assert_strict_bundle)
+            # forbids pearson_min >= 0.5 with this small walk_forward_top_n=4.
+            # The golden targets are deterministic (corr ~1 / ~0) so any floor in
+            # (0, 0.5) yields the same pass/fail — the audit mechanism is what's tested.
+            pearson_min=0.4,
             trade_ratio_min=0.0,
         ),
         stress_verbose=False,

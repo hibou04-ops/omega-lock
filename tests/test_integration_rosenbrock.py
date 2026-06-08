@@ -103,6 +103,10 @@ def test_run_p1_with_walk_forward_hybrid():
             trade_count_min=1,
             gini_min=0.0,                # 1-param case: gini = 0, disable check
             top_bot_ratio_min=1.0,       # already auto-skipped for 1 param
+            min_nonzero_stress_count=None,  # genuine 1-D target (unlock_k=1):
+                                            # the KC-2c default (2) would
+                                            # false-FAIL a single nonzero axis;
+                                            # documented escape for a 1-D objective
             pearson_min=0.3,
             trade_ratio_min=0.3,
         ),

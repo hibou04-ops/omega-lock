@@ -104,10 +104,13 @@ def test_stress_zero_when_perturbation_clipped_to_baseline_value():
 
 
 def test_kc2_passes_single_spike_when_min_nonzero_disabled():
-    """Default behaviour (min_nonzero_stress_count=None) is unchanged —
-    a single-spike profile passes Gini + ratio gates."""
+    """With KC-2c explicitly disabled (min_nonzero_stress_count=None) a
+    single-spike profile passes Gini + ratio gates. (The bare default is
+    now 2 — see test_kc2_single_spike_fails_on_default below.)"""
     stresses = [10.0, 0.0, 0.0, 0.0, 0.0]
-    report = check_kc2(stresses, KCThresholds())
+    report = check_kc2(
+        stresses, KCThresholds(min_nonzero_stress_count=None)
+    )
     assert report.status == "PASS"
     assert report.detail["nonzero_stress_count"] == 1
     assert report.detail["nonzero_ok"] is True
@@ -124,6 +127,60 @@ def test_kc2_single_spike_fails_when_min_nonzero_count_required():
     assert "nonzero_stress_count=1<2" in report.message
 
 
+def test_kc2_single_spike_fails_on_default():
+    """REGRESSION (threshold recalibration plan T2): a single-spike stress
+    profile — one axis non-zero, every other axis flat 0.0 — must now FAIL
+    KC-2c on the BARE default thresholds (min_nonzero_stress_count flipped
+    None -> 2). This closes the verified degeneracy where the single spike
+    sails through BOTH gini and the top/bot ratio:
+
+        ratio = top_mean / bot_mean if bot_mean > 0 else inf
+
+    With every non-top axis at 0.0, bot_mean is 0 so ratio is inf, and
+    inf >= top_bot_ratio_min is always True; gini is near-maximal too. So
+    gini_ok and ratio_ok BOTH pass — proving raising gini_min/ratio_min is
+    theater. Only the non-zero count gate (KC-2c) catches it.
+    """
+    stresses = [10.0, 0.0, 0.0, 0.0, 0.0]
+    report = check_kc2(stresses, KCThresholds())  # bare default
+
+    # The whole point: gini + ratio are FOOLED (both pass)...
+    assert report.detail["gini_ok"] is True
+    assert report.detail["ratio_ok"] is True
+    # ...but KC-2c on the default floor catches the single spike.
+    assert report.detail["min_nonzero_stress_count"] == 2
+    assert report.detail["nonzero_stress_count"] == 1
+    assert report.detail["nonzero_ok"] is False
+    assert report.status == "FAIL"
+    assert "nonzero_stress_count=1<2" in report.message
+
+
+def test_kc2_pure_objective_none_escape_passes_single_spike():
+    """A genuine 1-D objective can opt out of KC-2c via the documented
+    escape: KCThresholds.pure_objective(min_nonzero_stress_count=None).
+    The single spike then passes (KC-2c is advisory-only again), while the
+    action gates KC-3/KC-4b remain disabled by the pure_objective preset.
+    """
+    stresses = [10.0, 0.0, 0.0, 0.0, 0.0]
+    t = KCThresholds.pure_objective(min_nonzero_stress_count=None)
+    report = check_kc2(stresses, t)
+
+    assert t.min_nonzero_stress_count is None
+    # pure_objective still disables the action-count gates:
+    assert t.trade_count_min is None
+    assert t.trade_ratio_min is None
+    assert report.status == "PASS"
+    assert report.detail["nonzero_ok"] is True
+
+
+def test_kc2_pure_objective_bare_inherits_default_floor():
+    """Bare pure_objective() does NOT silently re-disable KC-2c: it only
+    overrides the action gates, so min_nonzero_stress_count keeps the new
+    default of 2 (escape must be explicit)."""
+    t = KCThresholds.pure_objective()
+    assert t.min_nonzero_stress_count == 2
+
+
 def test_kc2_passes_when_nonzero_count_meets_threshold():
     stresses = [10.0, 5.0, 1.0, 0.0, 0.0]
     report = check_kc2(
@@ -135,14 +192,18 @@ def test_kc2_passes_when_nonzero_count_meets_threshold():
 
 
 def test_kc2_records_min_nonzero_threshold_in_detail():
-    """Even when the threshold isn't enforced, the detail dict captures
-    what was configured so the artifact is self-documenting."""
+    """The detail dict captures what was configured so the artifact is
+    self-documenting. The bare default is now 2; the disabled value (None)
+    is also faithfully recorded."""
     stresses = [1.0, 1.0, 1.0]
     default_report = check_kc2(stresses, KCThresholds())
-    assert default_report.detail["min_nonzero_stress_count"] is None
+    assert default_report.detail["min_nonzero_stress_count"] == 2
     assert default_report.detail["nonzero_stress_count"] == 3
+    # 3 nonzero axes >= default floor of 2, so this flat-but-multi-axis
+    # profile still passes KC-2c on the default.
+    assert default_report.detail["nonzero_ok"] is True
 
-    enforced_report = check_kc2(
-        stresses, KCThresholds(min_nonzero_stress_count=2)
+    disabled_report = check_kc2(
+        stresses, KCThresholds(min_nonzero_stress_count=None)
     )
-    assert enforced_report.detail["min_nonzero_stress_count"] == 2
+    assert disabled_report.detail["min_nonzero_stress_count"] is None

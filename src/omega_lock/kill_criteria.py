@@ -23,15 +23,24 @@ class KCThresholds:
     time_box_seconds: float = 3 * 24 * 3600      # KC-1: 3 days
     gini_min: float = 0.2                         # KC-2a: stress differentiation
     top_bot_ratio_min: float = 2.0                # KC-2b: head vs tail ratio
-    # KC-2c (advisory): require at least N params with non-zero stress.
+    # KC-2c: require at least N params with non-zero stress.
     # Reviewer P2: a "single spike" stress profile (one axis carries the
     # signal, everything else is flat zero) sails through Gini + top/bot
-    # because top mean is high and bot mean is zero giving an inf ratio.
+    # because top mean is high and bot mean is zero giving an inf ratio
+    # (ratio = top/bot if bot>0 else inf; inf >= any floor is always True).
+    # gini_min and top_bot_ratio_min are therefore theater against this
+    # degeneracy — only this count closes the hole.
     # That can be a legit effective-dimension signal, OR a noisy target
-    # with one accidental axis. Set this to >=2 to demand evidence of
-    # multi-axis structure. Default None = advisory only (recorded in
-    # KC-2 detail but doesn't gate).
-    min_nonzero_stress_count: int | None = None
+    # with one accidental axis. Default raised None -> 2 (threshold
+    # recalibration plan T2) so the single-spike degeneracy hard-FAILs
+    # KC-2c by default and demands evidence of multi-axis structure.
+    # Capped at 2 deliberately: 2 is the minimum that distinguishes
+    # "single accidental axis" from "real structure" without false-FAILing
+    # genuine low-dimensional targets more than necessary. Escape for a
+    # legitimate 1-D objective: KCThresholds.pure_objective(
+    # min_nonzero_stress_count=None) (or pass None explicitly), which
+    # makes KC-2c advisory-only again (recorded in detail, doesn't gate).
+    min_nonzero_stress_count: int | None = 2
     trade_count_min: int | None = 50              # KC-3: per best-config action floor (None -> SKIP)
     pearson_min: float = 0.3                      # KC-4a: walk-forward correlation
     trade_ratio_min: float | None = 0.5           # KC-4b: test/train action ratio (None -> SKIP)
@@ -47,6 +56,30 @@ class KCThresholds:
         any field, e.g. ``KCThresholds.pure_objective(pearson_min=0.5)``.
         """
         base: dict[str, Any] = {"trade_count_min": None, "trade_ratio_min": None}
+        base.update(overrides)
+        return cls(**base)
+
+    @classmethod
+    def strict(cls, **overrides: Any) -> "KCThresholds":
+        """Preset for high-confidence runs: tighten ONLY the KC-4a walk-forward
+        Pearson floor (0.3 -> 0.5), leaving every other field at the bare
+        default (gini/ratio/trade gates and the KC-2c count unchanged).
+
+        Rationale (threshold recalibration plan T3/#2): at the small
+        walk-forward sample the per-candidate Pearson floor admits ~20% of
+        pure-noise candidates at 0.3; raising it to 0.5 cuts that false-PASS
+        rate to ~7%. This is a *gate* tightening, so it is intentionally
+        opt-in: the bare ``KCThresholds()`` default stays 0.3 (preserving the
+        omegaprompt cross-package contract that asserts the default == 0.3).
+
+        The higher Pearson floor only earns its lower false-PASS rate when it
+        is fed enough walk-forward points; run_p1 / run_p2_tpe therefore raise
+        if a ``strict()`` (pearson_min >= 0.5) thresholds object is paired with
+        ``walk_forward_top_n < DEFAULT_WALK_FORWARD_TOP_N`` (the two-object
+        strict bundle must travel together). Pass keyword overrides to tune
+        any field, e.g. ``KCThresholds.strict(gini_min=0.3)``.
+        """
+        base: dict[str, Any] = {"pearson_min": 0.5}
         base.update(overrides)
         return cls(**base)
 

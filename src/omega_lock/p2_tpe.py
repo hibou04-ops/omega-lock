@@ -49,7 +49,12 @@ from omega_lock.stress import (
     select_unlock_top_k,
 )
 from omega_lock.target import CalibrableTarget, EvalResult, ParamSpec
-from omega_lock.walk_forward import WalkForward, WalkForwardResult
+from omega_lock.walk_forward import (
+    DEFAULT_WALK_FORWARD_TOP_N,
+    WalkForward,
+    WalkForwardResult,
+    assert_strict_bundle,
+)
 
 
 class TrialLike(Protocol):
@@ -112,7 +117,7 @@ class P2Config:
     unlock_k: int = 3
     n_trials: int = 125
     seed: int = 42
-    walk_forward_top_n: int = 10
+    walk_forward_top_n: int = DEFAULT_WALK_FORWARD_TOP_N
     trade_ratio_scale: float = 1.0
     kc_thresholds: KCThresholds = field(default_factory=KCThresholds)
     exclude_suppressed_in_unlock: bool = False
@@ -260,10 +265,16 @@ def run_p2_tpe(
 
     Raises:
         ImportError: if optuna is not installed (optional dep `p2`).
+        ValueError: if a strict KC-4a Pearson floor (>= 0.5) is paired with
+            walk_forward_top_n < DEFAULT_WALK_FORWARD_TOP_N (strict bundle
+            half-applied).
     """
+    cfg = config or P2Config()
+    # Fail-loud on a half-applied strict bundle BEFORE _require_optuna(), so
+    # the guard fires whether or not the optional optuna dep is installed.
+    assert_strict_bundle(cfg.kc_thresholds, cfg.walk_forward_top_n)
     _require_optuna()
 
-    cfg = config or P2Config()
     t_start = time.time()
 
     # 1. Baseline

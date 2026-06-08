@@ -58,10 +58,14 @@ def test_kc2_low_ratio_fails():
 
 # KC-2 advisory boundary
 
-def test_kc2_single_nonzero_stress_visible_but_advisory_by_default():
+def test_kc2_single_nonzero_stress_visible_but_advisory_when_disabled():
+    # KC-2c is on by default now (min_nonzero_stress_count=2), so the
+    # disabled/advisory behaviour must be requested explicitly with None.
     r = check_kc2(
         [10.0, 0.0, 0.0, 0.0],
-        KCThresholds(gini_min=0.0, top_bot_ratio_min=1.0),
+        KCThresholds(
+            gini_min=0.0, top_bot_ratio_min=1.0, min_nonzero_stress_count=None
+        ),
     )
 
     assert r.status == "PASS"
@@ -211,3 +215,33 @@ def test_kc4_correlation_still_gates_in_pure_mode():
     t = KCThresholds.pure_objective(pearson_min=0.3)
     r = check_kc4(train, test, trade_ratio=0.0, thresholds=t)
     assert r.status == "FAIL"  # KC-4a (correlation) is retained
+
+
+# ── strict() preset (T3: high-confidence Pearson floor) ──
+
+
+def test_strict_raises_pearson_floor_only():
+    t = KCThresholds.strict()
+    assert t.pearson_min == 0.5
+    # Every other field stays at the bare default — strict() tightens ONLY
+    # the KC-4a Pearson floor, not the trade/gini/ratio/count gates.
+    bare = KCThresholds()
+    assert t.gini_min == bare.gini_min
+    assert t.top_bot_ratio_min == bare.top_bot_ratio_min
+    assert t.trade_count_min == bare.trade_count_min
+    assert t.trade_ratio_min == bare.trade_ratio_min
+    assert t.min_nonzero_stress_count == bare.min_nonzero_stress_count
+    assert t.time_box_seconds == bare.time_box_seconds
+
+
+def test_strict_does_not_change_bare_default():
+    # The omegaprompt cross-package contract asserts the bare default
+    # pearson_min == 0.3. strict() must NOT perturb that default.
+    assert KCThresholds().pearson_min == 0.3
+    assert KCThresholds.strict().pearson_min == 0.5
+
+
+def test_strict_accepts_overrides():
+    t = KCThresholds.strict(gini_min=0.3)
+    assert t.pearson_min == 0.5  # preset value preserved
+    assert t.gini_min == 0.3     # override applied

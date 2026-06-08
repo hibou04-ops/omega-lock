@@ -16,6 +16,33 @@ import pytest
 
 from omega_lock import IterativeConfig, P1Config
 from omega_lock.p2_tpe import P2Config
+from omega_lock.walk_forward import DEFAULT_WALK_FORWARD_TOP_N
+
+
+# ---------------------------------------------------------------------------
+# walk_forward_top_n single source of truth (threshold recalibration plan T1)
+# ---------------------------------------------------------------------------
+
+
+def test_default_walk_forward_top_n_value():
+    # The recalibrated input size: 10 -> 20.
+    assert DEFAULT_WALK_FORWARD_TOP_N == 20
+
+
+def test_all_configs_share_walk_forward_top_n_default():
+    # Single source of truth: P1Config, IterativeConfig and P2Config must
+    # ALL default to the one module constant — drift impossible by
+    # construction (they reference DEFAULT_WALK_FORWARD_TOP_N, not a literal).
+    assert P1Config().walk_forward_top_n == DEFAULT_WALK_FORWARD_TOP_N
+    assert IterativeConfig().walk_forward_top_n == DEFAULT_WALK_FORWARD_TOP_N
+    assert P2Config().walk_forward_top_n == DEFAULT_WALK_FORWARD_TOP_N
+    # And they agree with each other (the point of a shared constant).
+    assert (
+        P1Config().walk_forward_top_n
+        == IterativeConfig().walk_forward_top_n
+        == P2Config().walk_forward_top_n
+        == 20
+    )
 
 
 # ---------------------------------------------------------------------------

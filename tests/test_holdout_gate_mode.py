@@ -231,7 +231,12 @@ def test_walk_forward_kc4_failure_blocks_release_status():
                 gini_min=0.0,
                 top_bot_ratio_min=1.0,
                 trade_count_min=1,
-                pearson_min=0.9,
+                # The walk-forward target is ANTI-correlated (pearson < 0),
+                # so KC-4 FAILs at any positive floor — 0.9 was never
+                # load-bearing here. Use the default 0.3 (< 0.5) so this
+                # toy small-sample run (top_n=4) does NOT trip the strict
+                # KC-4a bundle guard (which is for pearson_min >= 0.5).
+                pearson_min=0.3,
                 trade_ratio_min=0.0,
             ),
             stress_verbose=False,

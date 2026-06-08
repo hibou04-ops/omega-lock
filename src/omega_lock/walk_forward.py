@@ -14,11 +14,58 @@ from __future__ import annotations
 
 from concurrent.futures import Executor
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from omega_lock._parallel import _ordered_eval_map
 from omega_lock.grid import GridPoint
 from omega_lock.target import CalibrableTarget, EvalResult
+
+if TYPE_CHECKING:
+    from omega_lock.kill_criteria import KCThresholds
+
+
+# Single source of truth for the walk-forward top-N (KC-4 grid points).
+# Lives here (lowest in the import graph that all three search configs
+# already depend on) so P1Config, IterativeConfig (orchestrator.py) and
+# P2Config (p2_tpe.py) reference ONE constant — drift is impossible by
+# construction. Raised 10 -> 20: a larger walk-forward sample lowers the
+# false-PASS rate of the KC-4a Pearson gate (the 2.0.2 perf gains buy the
+# affordability of this cheap statistical INPUT — see threshold recalibration
+# plan T1/D3). This is an input-size tightening, not a gate-threshold move.
+DEFAULT_WALK_FORWARD_TOP_N = 20
+
+
+def assert_strict_bundle(
+    kc_thresholds: "KCThresholds", walk_forward_top_n: int
+) -> None:
+    """Fail-loud guard for the two-object strict bundle (plan T3/D2).
+
+    ``KCThresholds.strict()`` raises the KC-4a Pearson floor to 0.5. That
+    lower false-PASS rate is only *earned* when the walk-forward gate is fed
+    enough points — otherwise the tighter floor is applied to a sample too
+    small to support it, which is exactly the kind of silent half-applied
+    tightening this framework exists to prevent.
+
+    So the strict KCThresholds value (pearson_min >= 0.5) and the strict
+    search input (walk_forward_top_n >= DEFAULT_WALK_FORWARD_TOP_N) MUST
+    travel together. If only one is present, raise ValueError at the call
+    site (run_p1 / run_p2_tpe) before any work is done, rather than leaving
+    the mismatch to documentation.
+
+    A non-strict thresholds object (pearson_min < 0.5 — including the bare
+    default 0.3) never trips this guard regardless of walk_forward_top_n.
+    """
+    if kc_thresholds.pearson_min >= 0.5 and walk_forward_top_n < DEFAULT_WALK_FORWARD_TOP_N:
+        raise ValueError(
+            "strict KC-4a bundle is half-applied: pearson_min="
+            f"{kc_thresholds.pearson_min} (>= 0.5, e.g. KCThresholds.strict()) "
+            f"requires walk_forward_top_n >= {DEFAULT_WALK_FORWARD_TOP_N} to earn "
+            f"the lower false-PASS rate, but got walk_forward_top_n="
+            f"{walk_forward_top_n}. Raise walk_forward_top_n to "
+            f"{DEFAULT_WALK_FORWARD_TOP_N} (the default) or drop pearson_min "
+            "below 0.5. The strict Pearson floor and the strict sample size "
+            "must travel together."
+        )
 
 
 PearsonStatus = Literal[
@@ -138,7 +185,7 @@ class WalkForward:
     def run(
         self,
         train_grid: list[GridPoint],
-        top_n: int = 10,
+        top_n: int = DEFAULT_WALK_FORWARD_TOP_N,
         *,
         executor: Executor | None = None,
     ) -> WalkForwardResult:
