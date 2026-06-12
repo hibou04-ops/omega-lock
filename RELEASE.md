@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist for every omega-lock release. The current target is `0.3.4`.
+Use this checklist for every omega-lock release. The current target is `0.3.5`.
 
 ## Before Building
 
@@ -42,7 +42,18 @@ Get-ChildItem dist
 python -m twine check dist/*.whl dist/*.tar.gz
 ```
 
-## 0.3.4 Release Note
+## 0.3.5 Release Note
+
+- documentation / distribution release; no API change. The README family
+  (EN/KR + easy variants) was rewritten to be jargon-free and
+  search-optimized, with comparison tables and two new docs
+  (`docs/HOW_IT_WORKS.md`, `docs/API.md`). The consumed-surface contract,
+  docking guard, and every public symbol are untouched, so consumers pinning
+  `omega-lock>=0.3.0,<0.4.0` are unaffected.
+
+## Historical Release Notes
+
+### 0.3.4
 
 - additive feature release; no existing public symbol was renamed, moved, or
   re-defaulted, so consumers pinning `omega-lock>=0.3.0,<0.4.0` are unaffected.
@@ -69,8 +80,6 @@ python -m twine check dist/*.whl dist/*.tar.gz
 - golden audit fixtures regenerated only to carry the new version string; the
   audit report schema and SHA-256 hash chain are unchanged (the version is not
   part of the hashed payload, so every chain digest is byte-identical).
-
-## Historical Release Notes
 
 ### 0.3.3
 
@@ -136,10 +145,10 @@ python -m twine check dist/*.whl dist/*.tar.gz
 
 ## Expected Artifacts
 
-For 0.3.4, the expected files are:
+For 0.3.5, the expected files are:
 
-- `omega_lock-0.3.4-py3-none-any.whl`
-- `omega_lock-0.3.4.tar.gz`
+- `omega_lock-0.3.5-py3-none-any.whl`
+- `omega_lock-0.3.5.tar.gz`
 
 If an isolated PEP 517 build cannot download build dependencies in a restricted
 environment, `python -m build --no-isolation` is acceptable for local sandbox
@@ -156,13 +165,13 @@ Review `git status` first, then:
 
 ```bash
 git add -A
-git commit -m "Prepare release 0.3.4"
-git tag v0.3.4
+git commit -m "Prepare release 0.3.5"
+git tag v0.3.5
 git push origin main
-git push origin v0.3.4
+git push origin v0.3.5
 ```
 
-Create GitHub Release `v0.3.4` to trigger `.github/workflows/publish.yml`, or
+Create GitHub Release `v0.3.5` to trigger `.github/workflows/publish.yml`, or
 publish manually:
 
 ```bash
@@ -177,16 +186,16 @@ all agree on the same version.
 After PyPI publication is expected to exist:
 
 ```bash
-python scripts/post_release_verify.py --version 0.3.4 --distribution omega-lock
+python scripts/post_release_verify.py --version 0.3.5 --distribution omega-lock
 python -m pip index versions omega-lock
-python -m pip install --no-cache-dir --upgrade omega-lock==0.3.4
+python -m pip install --no-cache-dir --upgrade omega-lock==0.3.5
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
 
 For cache-sensitive releases, verify the exact wheel URL exposed by PyPI JSON:
 
 ```bash
-python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.4/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
+python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.5/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
 python -m pip install --no-cache-dir --force-reinstall "<wheel-url-from-pypi-json>"
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```

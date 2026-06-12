@@ -3,6 +3,33 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## 0.3.5
+
+Documentation / distribution release: jargon-free, search-optimized README
+family (EN/KR + easy variants), comparison tables, HOW_IT_WORKS + API docs;
+no API changes — backward compatible, docking surface untouched.
+
+- The README family was rewritten for distribution: a 30-second hook, a
+  searchable keyword line, plain-English explanations, and comparison tables
+  positioning omega-lock against the tools people already know (Optuna / Ax /
+  Ray Tune, MLflow / W&B, promptfoo / DSPy). Private internal jargon was
+  removed from all prose; the frozen public API symbols (`run_p1`,
+  `check_kc4`, `KCThresholds`, ...) survive only as a one-line plain-language
+  glossary in a single bottom note. The four README variants
+  (`README.md`, `README_KR.md`, `EASY_README.md`, `EASY_README_KR.md`)
+  cross-link to each other.
+- New `docs/HOW_IT_WORKS.md`: a plain-English explanation of the walk-forward
+  transfer gate, hard-constraint feasibility, and the append-only audit trail,
+  with the real default thresholds drawn from source.
+- New `docs/API.md`: a power-user reference mapping the plain README names to
+  the frozen public symbols, with exact signatures.
+- No source, behavior, or public-API change. Every public symbol, the
+  consumed-surface contract, the SHA-256 audit hash chain, and the docking
+  guard (12/12) are unchanged, so consumers pinning
+  `omega-lock>=0.3.0,<0.4.0` are unaffected. Golden audit fixtures were
+  regenerated only to carry the new version string (the version is not part of
+  the hashed payload, so every chain digest is byte-identical).
+
 ## 0.3.4
 
 All changes are additive: no existing public symbol was renamed, moved, or
