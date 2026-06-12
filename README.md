@@ -2,9 +2,9 @@
 
 **The best score is lying to you — and your optimizer can't catch it.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and tells you whether that score is real or just luck — **before** it ships.
 
-[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg)](https://pypi.org/project/omega-lock/)
-[![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg)](https://pypi.org/project/omega-lock/)
-[![License](https://img.shields.io/pypi/l/omega-lock.svg)](https://pypi.org/project/omega-lock/)
+[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=3600)](https://pypi.org/project/omega-lock/)
+[![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=3600)](https://pypi.org/project/omega-lock/)
+[![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=3600)](https://pypi.org/project/omega-lock/)
 
 ```bash
 pip install omega-lock
