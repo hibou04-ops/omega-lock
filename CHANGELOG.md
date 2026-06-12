@@ -3,6 +3,25 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## Unreleased
+
+- New deterministic case-study example `examples/walkforward_gate_demo.py`:
+  naive best-score selection overfits to slice noise, the KC-4 walk-forward
+  gate fails the run, and constraint-gated feasible-best selection holds up
+  on a holdout slice. Offline, seeded, hash-based noise; runs in well under
+  a second. Pinned by `tests/test_walkforward_gate_demo.py`.
+- New bridge example `examples/optuna_audit_demo.py`: gate an existing Optuna
+  study's completed trials through `WalkForward` + `check_kc4` and
+  feasible-best selection in a ~15-line bridge. Skips gracefully when optuna
+  is not installed.
+- README entry-point rework: leads with the value proposition ("the best
+  score is not deployable"), the two demos above as Quickstart, and a
+  terminology decoder table (P1/P2, KC-1..4, SC-2, `best_any` vs
+  `best_feasible`, stress/unlock/lock, `pure_objective`). The per-release
+  summary block moved to `docs/WHATS_NEW.md`; no content was deleted.
+- `docs/EXAMPLES_GALLERY.md` lists the two new examples. No library code
+  changes and no public API changes.
+
 ## 0.3.3
 
 - Classifier promotion only. The PyPI trove classifier `Development Status`

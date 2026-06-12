@@ -18,19 +18,67 @@ the declared evidence gates before it is allowed to ship.
 **README family:** [Full README](README.md) · [한국어 README](README_KR.md) ·
 [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
-Current local package version: `0.3.3`. This README does not assert PyPI or
-GitHub release status. Local version metadata is not proof of registry
-publication; registry status requires explicit post-release verification.
+## The problem: the best score is not deployable
 
-## What's new in 0.3.3
+Every optimizer hands back its highest-scoring candidate. That number answers
+"what scored highest on the data the search consumed?" — not "does it survive
+out-of-sample?" and not "does it respect the hard constraints?". Selection
+pressure concentrates luck at the top of the leaderboard: noise spikes,
+constraint violations, and slice-specific artifacts. Omega-Lock treats the raw
+winner as untrusted until it passes the declared gates — a walk-forward
+transfer check (KC-4), hard-constraint feasibility (`best_feasible` vs
+`best_any`), and an append-only audit trail a reviewer can replay.
 
-Classifier promotion only — no functional change for existing users:
+## Quickstart: watch the gate catch an overfit (offline, < 60 s)
 
-- `Development Status` promoted from `3 - Alpha` to `4 - Beta`. There is no
-  functional code change since 0.3.2: the dormant, default-off parallel-execution
-  executor seam and the sdist packaging fix that shipped in 0.3.2 both stand.
-- Golden audit fixtures regenerated only to carry the new version string; the
-  audit report schema and SHA-256 hash chain are unchanged.
+```bash
+git clone https://github.com/hibou04-ops/omega-lock.git
+cd omega-lock
+pip install -e ".[dev]"
+
+python examples/walkforward_gate_demo.py
+```
+
+A seeded synthetic search finds a lucky-noise "winner" that out-scores the
+true optimum on the train slice. The demo prints the whole story with numbers:
+naive `best_any` collapses out-of-sample (train 5.967 -> holdout 1.527,
+-74.4%), the walk-forward gate stamps the run `FAIL:KC-4` (Pearson 0.179,
+threshold 0.3), and the constraint-gated `best_feasible` holds up (train 5.233
+-> holdout 5.276) on a slice no selection step ever consulted. Deterministic:
+your run prints the same numbers.
+
+Already have an Optuna study? Bridge its completed trials through the same
+walk-forward gate and feasible-best selection in about 15 lines (the demo
+skips cleanly when optuna is not installed):
+
+```bash
+pip install "omega-lock[p2]"   # optional Optuna extra
+python examples/optuna_audit_demo.py
+```
+
+`run_p2_tpe` is the integrated variant: a fresh Optuna TPE search inside the
+full gate pipeline (stress -> KC-2 -> TPE -> KC-4 -> KC-1/KC-3).
+
+## Terminology decoder
+
+This codebase uses a compact internal dialect. The table below decodes it:
+
+| Term | Meaning |
+| --- | --- |
+| `P1` / `run_p1` | The calibration audit pipeline: baseline -> stress -> top-K unlock -> grid search -> walk-forward -> kill-criteria verdict. |
+| `P2` / `run_p2_tpe` | The same gates with Optuna TPE search replacing the grid (optional `[p2]` extra). |
+| `KC-1` | Kill criterion 1: time box — the run must finish within a declared wall-clock budget. |
+| `KC-2` | Kill criterion 2: stress differentiation — per-parameter sensitivities must separate (Gini + top/bottom ratio); a flat profile means the search is noise-mining. |
+| `KC-3` | Kill criterion 3: action-count floor — a minimum number of actions (e.g. trades, samples) behind the best config. |
+| `KC-4` | Kill criterion 4: the walk-forward gate — Pearson correlation between train and test fitness over the top-N candidates, plus an action-ratio check. |
+| `SC-2` | Sanity control 2: a same-budget random-search baseline. Advisory only — flags runs where grid search does not beat random sampling (Bergstra & Bengio 2012). |
+| `best_any` | The highest-fitness candidate, constraints ignored. |
+| `best_feasible` | The highest-fitness candidate that satisfies every declared hard constraint. |
+| stress / unlock / lock | Per-parameter perturbation sensitivity; the top-K most sensitive parameters are searched ("unlocked"), the rest stay fixed ("locked"). |
+| `KCThresholds.pure_objective()` | Preset that disables the action-count gates (KC-3 and the KC-4 action-ratio sub-gate) for non-action objectives (math, ML, simulation). |
+
+Release notes: [CHANGELOG.md](CHANGELOG.md) · short per-release summaries
+(including 0.3.3) moved to [docs/WHATS_NEW.md](docs/WHATS_NEW.md).
 
 ## Use it when
 
@@ -54,6 +102,10 @@ Classifier promotion only — no functional change for existing users:
 8. verify generated claims and repository consistency offline
 
 ## Install
+
+Current local package version: `0.3.3`. This README does not assert PyPI or
+GitHub release status. Local version metadata is not proof of registry
+publication; registry status requires explicit post-release verification.
 
 ```bash
 pip install omega-lock==0.3.3
