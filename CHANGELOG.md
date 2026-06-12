@@ -3,6 +3,23 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## 0.3.7
+
+Marketplace: shorten action.yml description to GitHub's 125-char limit so the
+composite Action can be published to GitHub Marketplace. No library/API changes.
+
+- The composite Action's `action.yml` `description` was rewritten to a single
+  line under GitHub's 125-character Marketplace limit (114 chars) so the
+  overfit gate can be published to the GitHub Marketplace and consumed as
+  `uses: hibou04-ops/omega-lock@v0.3.7`. The action's inputs, outputs, run
+  steps, and branding are unchanged; only the version default and the usage
+  example pin advanced to `0.3.7`.
+- No source, behavior, or public-API change. Every public symbol, the
+  consumed-surface contract, the SHA-256 audit hash chain, and the docking
+  guard (12/12) are unchanged, so consumers pinning
+  `omega-lock>=0.3.0,<0.4.0` are unaffected. The release is backward
+  compatible; `publish.yml` reads the version from `pyproject.toml`.
+
 ## 0.3.6
 
 Ship a composite GitHub Action (`action.yml`) so the overfit gate can run as

@@ -3,7 +3,7 @@
 #
 # Usage in a workflow:
 #
-#   - uses: hibou04-ops/omega-lock@v0.3.6
+#   - uses: hibou04-ops/omega-lock@v0.3.7
 #     with:
 #       train: train_scores.json       # in-sample scores (JSON array)
 #       holdout: holdout_scores.json   # held-out scores (JSON array, index-aligned)
@@ -15,9 +15,7 @@
 # ranking (i.e. the winner was selection luck, not transferable skill).
 # An optional HTML scorecard is written for the PR.
 name: omega-lock overfit gate
-description: >-
-  Re-test an optimizer's winning candidate on a held-out slice and fail the
-  build when the tuned score does not transfer (selection-luck overfitting).
+description: Re-test your optimizer's winning candidate on a held-out slice and fail the build when the score doesn't transfer.
 author: hibou04-ops
 branding:
   icon: shield
@@ -46,7 +44,7 @@ inputs:
       omega-lock version to install from PyPI. Defaults to the action's own
       pinned version. Use 'latest' to always pull the newest release.
     required: false
-    default: "0.3.6"
+    default: "0.3.7"
   python-version:
     description: Python version to set up.
     required: false
