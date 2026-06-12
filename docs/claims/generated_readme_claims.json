@@ -23,14 +23,13 @@
         }
       ],
       "readme_markers": [
-        "append-only JSON trail",
+        "append-only audit trail",
         "Append-only audit trail",
-        "call_index"
+        "records the verdict, inputs, and thresholds"
       ],
       "readme_refs": [
-        "README.md:3",
-        "README.md:41",
-        "README.md:229"
+        "README.md:84",
+        "README.md:120"
       ],
       "status": "validated"
     },
@@ -41,10 +40,12 @@
       "note": "Qualitative positioning marker; not upgraded to a quantitative proof claim.",
       "proof": [],
       "readme_markers": [
-        "audit-first framework"
+        "second opinion",
+        "gate you bolt onto the search"
       ],
       "readme_refs": [
-        "README.md:158"
+        "README.md:31",
+        "README.md:127"
       ],
       "status": "qualitative"
     },
@@ -86,12 +87,10 @@
         }
       ],
       "readme_markers": [
-        "run_benchmark",
-        "mechanically computed metrics",
-        "stress_rank_spearman"
+        "shareable dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:148"
+        "README.md:160"
       ],
       "status": "validated"
     },
@@ -122,12 +121,12 @@
         }
       ],
       "readme_markers": [
-        "Console command and simple facade",
-        "omega-lock demo"
+        "omega-lock demo",
+        "omega-lock gate"
       ],
       "readme_refs": [
-        "README.md:60",
-        "README.md:96"
+        "README.md:11",
+        "README.md:154"
       ],
       "status": "validated"
     },
@@ -138,12 +137,12 @@
       "note": "Qualitative role-differentiation and positioning marker; not promoted to a quantitative or superiority claim.",
       "proof": [],
       "readme_markers": [
-        "How is this different?",
-        "audit-gate-first, not optimizer-replacement-first"
+        "Where it sits next to the tools you know",
+        "output-side overfit gate"
       ],
       "readme_refs": [
-        "README.md:107",
-        "README.md:123"
+        "README.md:137",
+        "README.md:145"
       ],
       "status": "qualitative"
     },
@@ -179,14 +178,13 @@
         }
       ],
       "readme_markers": [
-        "Run the deterministic demos (no API, no network)",
-        "Both runs are deterministic",
-        "python examples/demo_replay.py"
+        "60s, offline",
+        "fully offline case study",
+        "nothing to set up"
       ],
       "readme_refs": [
-        "README.md:23",
-        "README.md:91",
-        "README.md:104"
+        "README.md:11",
+        "README.md:39"
       ],
       "status": "validated"
     },
@@ -212,14 +210,13 @@
         }
       ],
       "readme_markers": [
-        "feasible best vs absolute best",
+        "best_feasible \u2260 best_any",
         "best_feasible",
         "best_any"
       ],
       "readme_refs": [
-        "README.md:127",
-        "README.md:230",
-        "README.md:543"
+        "README.md:48",
+        "README.md:119"
       ],
       "status": "validated"
     },
@@ -245,14 +242,13 @@
         }
       ],
       "readme_markers": [
-        "Declarative hard constraints",
-        "constraint_policy=\"prefer_feasible\"",
-        "constraints are evaluated and recorded"
+        "Hard-constraint feasibility",
+        "passes your latency / cost / risk limits",
+        "violates a constraint you declared"
       ],
       "readme_refs": [
-        "README.md:21",
-        "README.md:56",
-        "README.md:121"
+        "README.md:119",
+        "README.md:124"
       ],
       "status": "validated"
     },
@@ -274,10 +270,10 @@
       ],
       "readme_markers": [
         "render_html",
-        "single-file HTML scorecard"
+        "dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:108"
+        "README.md:160"
       ],
       "status": "validated"
     },
@@ -308,10 +304,10 @@
         }
       ],
       "readme_markers": [
-        "`omega-lock diff` command"
+        "omega-lock gate --help"
       ],
       "readme_refs": [
-        "README.md:248"
+        "README.md:155"
       ],
       "status": "validated"
     },
@@ -338,10 +334,11 @@
       ],
       "readme_markers": [
         "audit_optuna_study",
-        "user_attrs[\"feasible\"]"
+        "Already have an Optuna study?"
       ],
       "readme_refs": [
-        "README.md:70"
+        "README.md:99",
+        "README.md:103"
       ],
       "status": "validated"
     },
@@ -372,14 +369,12 @@
         }
       ],
       "readme_markers": [
-        "pip install omega-lock==",
-        "from omega_lock import",
-        "git clone https://github.com/hibou04-ops/omega-lock.git"
+        "pip install omega-lock",
+        "from omega_lock.simple import gate_scores"
       ],
       "readme_refs": [
-        "README.md:12",
-        "README.md:109",
-        "README.md:331"
+        "README.md:10",
+        "README.md:90"
       ],
       "status": "validated"
     },
@@ -400,13 +395,10 @@
         }
       ],
       "readme_markers": [
-        "SHA-256 hash",
-        "verify_hash_chain",
-        "tamper-evident audit reports"
+        "tamper-evident"
       ],
       "readme_refs": [
-        "README.md:29",
-        "README.md:138"
+        "README.md:120"
       ],
       "status": "validated"
     },
@@ -428,10 +420,11 @@
       ],
       "readme_markers": [
         "gate_scores",
-        "omega_lock.simple.audit()"
+        "omega_lock.simple"
       ],
       "readme_refs": [
-        "README.md:101"
+        "README.md:88",
+        "README.md:90"
       ],
       "status": "validated"
     },
@@ -457,11 +450,10 @@
         }
       ],
       "readme_markers": [
-        "stress_rank_spearman",
-        "frozen fixture"
+        "rank parameters by perturbation sensitivity"
       ],
       "readme_refs": [
-        "README.md:153"
+        "README.md:166"
       ],
       "status": "validated"
     },
@@ -488,13 +480,13 @@
       ],
       "readme_markers": [
         "walk-forward validation",
-        "Walk-forward gate (KC-4)",
-        "walk-forward re-evaluation on test target"
+        "Walk-forward transfer gate",
+        "re-tests the winner on a slice the search never touched"
       ],
       "readme_refs": [
-        "README.md:3",
-        "README.md:39",
-        "README.md:303"
+        "README.md:14",
+        "README.md:29",
+        "README.md:118"
       ],
       "status": "validated"
     }

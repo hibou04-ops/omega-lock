@@ -1,125 +1,131 @@
-# Omega-Lock Easy Start
+# omega-lock
 
-Current local package version: `0.3.4`.
+**The best score is lying to you. This tool catches the lie before it ships.**
 
-[![Version 0.3.4](https://img.shields.io/badge/version-0.3.4-orange.svg)](pyproject.toml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
-[![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
-[![Methodology audit gate](https://img.shields.io/badge/methodology-audit--gate-6f42c1.svg)](docs/TRUST_MODEL.md)
-[![Trust first](https://img.shields.io/badge/trust-first-0f766e.svg)](docs/TRUST_MODEL.md)
-[![Measurement grade audit](https://img.shields.io/badge/measurement--grade-audit-555.svg)](docs/TOOLKIT_POSITIONING.md)
-
-[Full README](README.md) · [한국어 README](README_KR.md) · [쉬운 한국어 README](EASY_README_KR.md)
-
-Omega-Lock audits tuned candidates before they ship. It runs after candidate
-generation and checks whether a candidate survives walk-forward validation,
-declared hard constraints, and a reviewable append-only audit trail.
-
-## What's new in 0.3.4
-
-All additive — nothing you already use changes:
-
-- an installed console command, `omega-lock`: `omega-lock demo` (the
-  walk-forward case study), `omega-lock gate --train a.json --holdout b.json`
-  (KC-4 transfer gate over two score arrays, exit code 0/1), and
-  `omega-lock report --input p1_result.json -o out.html`. There is still no
-  `omega-lock diff` command.
-- `audit_optuna_study(study, holdout_evaluate=...)` — gate an existing Optuna
-  study without re-running the search (optuna stays an optional extra).
-- `render_html(result, "out.html")` — a deterministic, stdlib-only,
-  single-file dark-theme HTML scorecard for any audit result.
-- `gate_scores(train_scores, holdout_scores)` — the KC-4 gate over two plain
-  number lists, returning `passed` / `pearson` / `reasons`.
-
-## Use it when
-
-- before shipping a tuned or calibrated candidate
-- when the top-scoring candidate may break a hard constraint
-- when reviewers need `best_any` and `best_feasible` separately
-- when you need an offline, reproducible audit artifact
-
-## What it checks
-
-- hard constraints, evaluated and recorded on every candidate
-- `best_feasible` (constraint-satisfying) vs `best_any` (top raw score)
-- walk-forward / holdout transfer, when a test target is configured
-- an append-only JSON audit trail, with optional SHA-256 hash-chain evidence
-- non-action objectives (math, ML, simulation) via `KCThresholds.pure_objective()`
-
-## What it does not prove
-
-- it does not prove correctness or root cause
-- it does not prove a candidate is globally optimal
-- it does not prove PyPI/GitHub publication — registry status needs separate post-release verification
-- not a dashboard or web app — the `omega-lock` console command ships `demo`, `gate`, and `report` only; Omega-Lock does not provide an `omega-lock diff` command
-
-## The core idea
-
-The highest-fitness candidate is not always the safest. If it violates a
-declared constraint, the audit report still shows it as `best_any`, while
-`best_feasible` shows the highest-fitness candidate that satisfies the hard
-constraints. For most audit/CI runs, use:
-
-```python
-P1Config(constraint_policy="prefer_feasible")
-```
-
-## Run offline demos
+[![pip install omega-lock](https://img.shields.io/badge/pip%20install-omega--lock-3775A9.svg)](https://pypi.org/project/omega-lock/)
 
 ```bash
-git clone https://github.com/hibou04-ops/omega-lock.git
-cd omega-lock
-pip install -e ".[dev]"
-
-python examples/demo_replay.py
-python examples/demo_sram.py
+pip install omega-lock
 ```
 
-Both demos are deterministic and require no network or API keys. The replay is
-the same demo flow shown in the 60-second video:
+This is the plain-English page. No jargon, no setup, no prior knowledge needed.
+Want the technical version with CI examples, the Optuna bridge, and the full API?
+Read [README.md](README.md).
 
-https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
+---
 
-## Install names
+## Start with a story
 
-| Surface | Name |
-| --- | --- |
-| GitHub repo | `hibou04-ops/omega-lock` |
-| PyPI distribution | `omega-lock` |
-| Python import package | `omega_lock` |
-| Installed console executable | `omega-lock` (since 0.3.4: `demo`, `gate`, `report`) |
+Imagine you are trying to find the best setting for something — maybe a recipe, a
+price, or a knob on a machine. You don't know the right answer, so you do the
+obvious thing: you try a lot of options and keep the one that scored highest.
 
-Use PyPI only if version `0.3.4` is published in your package index:
+Say you try 500 different settings on the data you have. One of them comes back
+with a great score. You feel good. You ship it.
+
+Here is the trap. When you try 500 things and keep only the single best one, you
+are not just keeping the most skillful one. You are also keeping the **luckiest**
+one. With 500 tries, some setting was always going to look amazing by pure
+chance — the way someone in a huge crowd always wins the raffle.
+
+And luck does not come back tomorrow.
+
+---
+
+## The one picture that explains everything
+
+Take that winning score and split it into two parts:
+
+```
+the winning score you saw   =   real skill   +   a lucky streak
+```
+
+The real skill is the part that will still be there next week. The lucky streak
+is the part that vanishes the moment you look away. The problem is that the score
+on your screen mixes the two together, and it looks the same either way.
+
+So how do you separate them? You take the winner and you re-test it on **fresh
+data it has never seen before** — data that had no chance to be part of the luck.
+Whatever score survives on the fresh data is the real skill. Whatever evaporated
+was the lucky streak.
+
+That is the entire idea. omega-lock does exactly this, automatically.
+
+---
+
+## Watch it happen — 60 seconds, fully offline
 
 ```bash
-pip install omega-lock==0.3.4
-pip install "omega-lock[p2]==0.3.4"
+omega-lock demo
 ```
 
-## Minimal use
+It runs a small, self-contained story. A search picks a setting that looks
+brilliant on its own data. Then omega-lock re-tests that same setting on fresh
+data and shows you what is really there:
 
-```python
-from omega_lock import P1Config, run_p1
-from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
+```
+the winning setting
 
-audited = AuditingTarget(
-    my_target,
-    constraints=[
-        Constraint("must_be_feasible", lambda params, result: result.metadata["sharpe"] > 0.5),
-    ],
-)
+   on its own data    5.967     looked like a champion
+   on fresh data      1.527     ▼ -74%   almost all of it was luck
 
-result = run_p1(
-    train_target=audited,
-    config=P1Config(constraint_policy="prefer_feasible"),
-)
-
-report = make_report(audited, method="run_p1", seed=42)
-print(render_scorecard(report))
+VERDICT: DO NOT SHIP — the win did not hold up on fresh data.
 ```
 
-For proof behind README claims, see
-[docs/claims/generated_readme_claims.md](docs/claims/generated_readme_claims.md).
-For the trust boundary and what each guarantee does not cover, see
-[docs/TRUST_MODEL.md](docs/TRUST_MODEL.md).
+The score dropped by nearly three quarters. That gap was never skill. It was the
+crowd-and-raffle effect, and omega-lock caught it before it could fool you.
+
+---
+
+## Use it on your own work — one command
+
+When you have your own numbers, give omega-lock two files: the scores your search
+tool found, and the scores of those same settings checked again on fresh data.
+
+```bash
+omega-lock gate --train searched.json --holdout fresh.json
+```
+
+It answers with a simple yes or no:
+
+```
+PASS  ->  exit 0    the win held up on fresh data — safe to ship
+FAIL  ->  exit 1    the win did not hold up — stop, do not ship
+```
+
+That is it. One command, one clear answer.
+
+---
+
+## What it actually looks at
+
+omega-lock runs a few plain checks. Any one of them can tell you to stop.
+
+**1. Does the win hold up on fresh data?**
+It re-tests the winner on data it has never seen and measures how strongly the two
+match. If the fresh-data result falls apart, the win was luck, and omega-lock says
+stop.
+
+**2. Is this winner even allowed?**
+Sometimes the highest score comes from a setting you can't actually use — too slow,
+too expensive, against the rules. This is an is-this-even-allowed check: you set a
+budget or a speed cap, and omega-lock finds the best winner that obeys it, instead
+of cheering for one you'd have to throw away.
+
+**3. Can you prove later what you decided?**
+Every run is written down in a paper trail that can't be edited after the fact. If
+someone asks months later why a candidate passed or failed, the answer is right
+there, exactly as it happened.
+
+---
+
+## The one thing to remember
+
+The highest score is the most suspicious number you own. A real winner survives
+fresh data it has never seen. Luck does not. omega-lock is the quick, honest check
+that tells the two apart — before you ship the wrong one.
+
+---
+
+**More:** [Full README](README.md) (CI setup, search-tool bridges, the developer API) ·
+[한국어 README](README_KR.md) · [쉬운 한국어 README](EASY_README_KR.md)

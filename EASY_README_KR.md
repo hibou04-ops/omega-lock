@@ -1,124 +1,127 @@
-# Omega-Lock 쉬운 설명
+# omega-lock
 
-현재 로컬 패키지 버전: `0.3.4`.
+**가장 높은 점수가 당신을 속이고 있습니다. 이 도구는 그 거짓말이 배포되기 전에 잡아냅니다.**
 
-[![Version 0.3.4](https://img.shields.io/badge/version-0.3.4-orange.svg)](pyproject.toml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
-[![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
-[![Methodology audit gate](https://img.shields.io/badge/methodology-audit--gate-6f42c1.svg)](docs/TRUST_MODEL.md)
-[![Trust first](https://img.shields.io/badge/trust-first-0f766e.svg)](docs/TRUST_MODEL.md)
-[![Measurement grade audit](https://img.shields.io/badge/measurement--grade-audit-555.svg)](docs/TOOLKIT_POSITIONING.md)
-
-[Full README](README.md) · [한국어 README](README_KR.md) · [Easy README](EASY_README.md)
-
-Omega-Lock은 배포 전 튜닝 후보를 검증합니다. 후보 생성 이후에 동작하며, 후보가
-walk-forward validation, 선언된 hard constraints, 검토 가능한 append-only audit
-trail을 통과하는지 확인합니다.
-
-## 0.3.4에서 새로워진 점
-
-전부 추가 기능이며, 이미 쓰고 있는 방식은 달라지지 않습니다.
-
-- 설치되는 console 명령 `omega-lock`: `omega-lock demo`(walk-forward 사례
-  연구), `omega-lock gate --train a.json --holdout b.json`(두 점수 배열에
-  대한 KC-4 전이 gate, 종료 코드 0/1), `omega-lock report --input
-  p1_result.json -o out.html`. `omega-lock diff` 명령은 여전히 없습니다.
-- `audit_optuna_study(study, holdout_evaluate=...)` — 이미 돌려 둔 Optuna
-  study를 재탐색 없이 gate에 통과시킵니다(optuna는 선택 의존성 유지).
-- `render_html(result, "out.html")` — stdlib만으로 만드는 결정적 단일 파일
-  다크 테마 HTML scorecard.
-- `gate_scores(train_scores, holdout_scores)` — 두 점수 리스트에 대한 KC-4
-  gate. `passed` / `pearson` / `reasons`를 돌려줍니다.
-
-## 언제 쓰나
-
-- 튜닝·캘리브레이션된 후보를 배포하기 전
-- 최고 점수 후보가 hard constraint를 깨뜨릴 수 있을 때
-- 검토자가 `best_any`와 `best_feasible`을 분리해서 봐야 할 때
-- 오프라인에서 재현 가능한 audit artifact가 필요할 때
-
-## 무엇을 검사하나
-
-- 모든 후보에 대해 평가·기록되는 hard constraints
-- `best_feasible`(constraint 만족) vs `best_any`(최고 raw 점수)
-- test target이 설정된 경우 walk-forward / holdout 전이
-- append-only JSON audit trail, 선택적 SHA-256 hash chain 증거
-- `KCThresholds.pure_objective()`로 비-action 목적(수학, ML, 시뮬레이션) 지원
-
-## 무엇을 증명하지 않나
-
-- correctness나 root cause를 증명하지 않습니다
-- 후보가 전역 최적해라고 증명하지 않습니다
-- PyPI/GitHub 게시를 증명하지 않습니다 — registry 상태는 별도의 post-release 검증이 필요합니다
-- dashboard나 web app이 아닙니다 — console 명령 `omega-lock`은 `demo`, `gate`, `report`만 제공하며, `omega-lock diff` 명령은 제공하지 않습니다
-
-## 핵심 아이디어
-
-fitness가 가장 높은 후보가 항상 가장 안전한 후보는 아닙니다. hard constraint를
-위반했다면 audit report는 그 후보를 `best_any`로 보여주고, `best_feasible`은
-constraint를 만족하는 후보 중 fitness가 가장 높은 후보를 보여줍니다. 일반적인
-audit/CI 실행에는 다음 설정을 권장합니다.
-
-```python
-P1Config(constraint_policy="prefer_feasible")
-```
-
-## 오프라인 데모 실행
+[![pip install omega-lock](https://img.shields.io/badge/pip%20install-omega--lock-3775A9.svg)](https://pypi.org/project/omega-lock/)
 
 ```bash
-git clone https://github.com/hibou04-ops/omega-lock.git
-cd omega-lock
-pip install -e ".[dev]"
-
-python examples/demo_replay.py
-python examples/demo_sram.py
+pip install omega-lock
 ```
 
-두 데모는 deterministic이며 network/API key가 필요 없습니다. replay는 60초 영상과
-같은 데모 흐름을 보여줍니다.
+이 페이지는 쉬운 설명 페이지입니다. 전문 용어도, 설정도, 사전 지식도 필요 없습니다.
+CI 예제, 탐색 도구 연결, 전체 API가 담긴 기술 버전을 원하시면
+[README.md](README.md)를 읽어 보세요.
 
-https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
+---
 
-## 이름 구분
+## 이야기로 시작합니다
 
-| 구분 | 이름 |
-| --- | --- |
-| GitHub repo | `hibou04-ops/omega-lock` |
-| PyPI distribution | `omega-lock` |
-| Python import package | `omega_lock` |
-| 설치되는 console executable | `omega-lock` (0.3.4부터: `demo`, `gate`, `report`) |
+무언가의 가장 좋은 설정을 찾으려 한다고 상상해 보세요 — 요리법일 수도, 가격일 수도,
+기계의 손잡이일 수도 있습니다. 정답을 모르니 당연한 일을 합니다: 여러 옵션을 시도해 보고
+가장 높은 점수가 나온 것을 남깁니다.
 
-사용하는 package index에 `0.3.4`가 게시되어 있는 경우에만 PyPI로 설치하세요.
+500개의 서로 다른 설정을 가지고 있는 데이터로 시도했다고 합시다. 그중 하나가 멋진 점수를
+들고 돌아옵니다. 기분이 좋습니다. 그대로 배포합니다.
+
+여기에 함정이 있습니다. 500개를 시도하고 그중 단 하나의 최고만 남기면, 당신은 가장 실력
+있는 것만 남기는 게 아닙니다. 가장 **운 좋은** 것도 함께 남깁니다. 500번을 시도하면 어떤
+설정 하나는 순전히 우연으로 늘 굉장해 보이게 마련입니다 — 거대한 군중 속에서 누군가는
+항상 추첨에 당첨되듯이 말입니다.
+
+그리고 그 운은 내일 다시 오지 않습니다.
+
+---
+
+## 모든 것을 설명하는 한 장의 그림
+
+그 우승 점수를 두 부분으로 나눠 봅시다:
+
+```
+당신이 본 우승 점수   =   진짜 실력   +   운 좋은 흐름
+```
+
+진짜 실력은 다음 주에도 그대로 남아 있을 부분입니다. 운 좋은 흐름은 눈을 돌리는 순간
+사라지는 부분입니다. 문제는 화면에 뜬 점수가 이 둘을 섞어 놓았고, 어느 쪽이든 똑같아
+보인다는 데 있습니다.
+
+그렇다면 어떻게 둘을 분리할까요? 우승자를 가져다가 **한 번도 본 적 없는 새로운 데이터**에서
+다시 테스트하는 것입니다 — 운에 끼어들 기회가 전혀 없었던 데이터죠. 새 데이터에서 살아남는
+점수가 진짜 실력입니다. 증발해 버린 것이 운 좋은 흐름이었습니다.
+
+이것이 전부입니다. omega-lock이 바로 이 일을 자동으로 해 줍니다.
+
+---
+
+## 직접 보세요 — 60초, 완전히 오프라인
 
 ```bash
-pip install omega-lock==0.3.4
-pip install "omega-lock[p2]==0.3.4"
+omega-lock demo
 ```
 
-## 최소 사용 예시
+작고 독립적인 이야기를 실행합니다. 탐색이 자기 데이터에서는 훌륭해 보이는 설정을 고릅니다.
+그러면 omega-lock이 그 똑같은 설정을 새 데이터에서 다시 테스트하고, 실제로 무엇이 남아
+있는지 보여 줍니다:
 
-```python
-from omega_lock import P1Config, run_p1
-from omega_lock.audit import AuditingTarget, Constraint, make_report, render_scorecard
+```
+the winning setting
 
-audited = AuditingTarget(
-    my_target,
-    constraints=[
-        Constraint("must_be_feasible", lambda params, result: result.metadata["sharpe"] > 0.5),
-    ],
-)
+   on its own data    5.967     looked like a champion
+   on fresh data      1.527     ▼ -74%   almost all of it was luck
 
-result = run_p1(
-    train_target=audited,
-    config=P1Config(constraint_policy="prefer_feasible"),
-)
-
-report = make_report(audited, method="run_p1", seed=42)
-print(render_scorecard(report))
+VERDICT: DO NOT SHIP — the win did not hold up on fresh data.
 ```
 
-README claim의 근거는
-[docs/claims/generated_readme_claims.md](docs/claims/generated_readme_claims.md)에
-정리되어 있습니다. 신뢰 경계와 각 보증이 다루지 않는 범위는
-[docs/TRUST_MODEL.md](docs/TRUST_MODEL.md)를 참고하세요.
+점수가 거의 4분의 3이나 떨어졌습니다. 그 차이는 애초에 실력이 아니었습니다. 군중과 추첨
+효과였고, omega-lock은 그것이 당신을 속이기 전에 잡아냈습니다.
+
+---
+
+## 당신의 작업에 직접 써 보기 — 명령 한 줄
+
+당신만의 숫자가 있을 때, omega-lock에 파일 두 개를 주세요: 당신의 탐색 도구가 찾은 점수,
+그리고 그 똑같은 설정들을 새 데이터에서 다시 확인한 점수입니다.
+
+```bash
+omega-lock gate --train searched.json --holdout fresh.json
+```
+
+예 또는 아니오로 간단하게 답합니다:
+
+```
+PASS  ->  exit 0    the win held up on fresh data — safe to ship
+FAIL  ->  exit 1    the win did not hold up — stop, do not ship
+```
+
+그게 전부입니다. 명령 하나, 분명한 답 하나.
+
+---
+
+## 실제로 무엇을 살펴보는가
+
+omega-lock은 몇 가지 단순한 검사를 실행합니다. 그중 어느 하나라도 멈추라고 말할 수 있습니다.
+
+**1. 새 데이터에서도 그 우승이 유지되는가?**
+우승자를 한 번도 본 적 없는 데이터에서 다시 테스트하고, 그 둘이 얼마나 강하게 맞아떨어지는지
+측정합니다. 새 데이터 결과가 무너지면 그 우승은 운이었고, omega-lock은 멈추라고 말합니다.
+
+**2. 이 우승자가 애초에 허용되는 것인가?**
+때로는 가장 높은 점수가 실제로는 쓸 수 없는 설정에서 나옵니다 — 너무 느리거나, 너무 비싸거나,
+규칙에 어긋나거나. 이것은 "이게 애초에 허용되나?" 검사입니다: 예산이나 속도 상한을 정하면,
+omega-lock이 버려야 할 우승자를 응원하는 대신 그 규칙을 지키는 최고의 우승자를 찾아 줍니다.
+
+**3. 무엇을 결정했는지 나중에 증명할 수 있는가?**
+모든 실행은 사후에 편집할 수 없는 기록 장부에 적힙니다. 몇 달 뒤 누군가 어떤 후보가 왜
+통과했거나 떨어졌는지 묻는다면, 그 답이 일어난 그대로 거기에 있습니다.
+
+---
+
+## 기억할 단 한 가지
+
+가장 높은 점수는 당신이 가진 가장 의심스러운 숫자입니다. 진짜 우승자는 한 번도 본 적 없는
+새 데이터에서 살아남습니다. 운은 그렇지 못합니다. omega-lock은 그 둘을 가려내는 빠르고
+정직한 검사입니다 — 당신이 잘못된 것을 배포하기 전에 말입니다.
+
+---
+
+**더 보기:** [Full README](README.md) (CI 설정, 탐색 도구 연결, 개발자 API) ·
+[한국어 README](README_KR.md) · [Easy README](EASY_README.md)
