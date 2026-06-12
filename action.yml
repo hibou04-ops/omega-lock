@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: Apache-2.0
+# Composite GitHub Action: run the omega-lock overfit gate in CI.
+#
+# Usage in a workflow:
+#
+#   - uses: hibou04-ops/omega-lock@v0.3.6
+#     with:
+#       train: train_scores.json       # in-sample scores (JSON array)
+#       holdout: holdout_scores.json   # held-out scores (JSON array, index-aligned)
+#
+# This installs omega-lock from PyPI (pinned to the action's version by
+# default), then runs `omega-lock gate`, which applies the walk-forward
+# transfer (Pearson) gate to the two score arrays. The gate exits non-zero —
+# failing the job — when the held-out scores do not track the in-sample
+# ranking (i.e. the winner was selection luck, not transferable skill).
+# An optional HTML scorecard is written for the PR.
+name: omega-lock overfit gate
+description: >-
+  Re-test an optimizer's winning candidate on a held-out slice and fail the
+  build when the tuned score does not transfer (selection-luck overfitting).
+author: hibou04-ops
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  train:
+    description: Path to a JSON array of in-sample (tuned) scores, one per candidate.
+    required: true
+  holdout:
+    description: >-
+      Path to a JSON array of held-out scores, index-aligned with `train`
+      (same candidates, evaluated on data the search never saw).
+    required: true
+  pearson-min:
+    description: >-
+      Transfer-gate threshold (minimum train-vs-holdout Pearson). Default 0.3.
+    required: false
+    default: "0.3"
+  report:
+    description: Optional path to write an HTML scorecard for the run.
+    required: false
+    default: ""
+  version:
+    description: >-
+      omega-lock version to install from PyPI. Defaults to the action's own
+      pinned version. Use 'latest' to always pull the newest release.
+    required: false
+    default: "0.3.6"
+  python-version:
+    description: Python version to set up.
+    required: false
+    default: "3.12"
+
+outputs:
+  passed:
+    description: "'true' if the transfer gate passed, 'false' otherwise."
+    value: ${{ steps.gate.outputs.passed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install omega-lock
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          python -m pip install --upgrade omega-lock
+        else
+          python -m pip install "omega-lock==${{ inputs.version }}"
+        fi
+
+    - name: Run omega-lock gate
+      id: gate
+      shell: bash
+      env:
+        PYTHONUTF8: "1"
+      run: |
+        report_flag=""
+        if [ -n "${{ inputs.report }}" ]; then
+          report_flag="--report ${{ inputs.report }}"
+        fi
+
+        set +e
+        omega-lock gate \
+          --train "${{ inputs.train }}" \
+          --holdout "${{ inputs.holdout }}" \
+          --pearson-min "${{ inputs.pearson-min }}" \
+          $report_flag
+        gate_exit=$?
+        set -e
+
+        if [ "$gate_exit" -eq 0 ]; then
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "passed=false" >> "$GITHUB_OUTPUT"
+        fi
+        exit $gate_exit

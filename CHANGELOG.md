@@ -3,6 +3,25 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
+## 0.3.6
+
+Ship a composite GitHub Action (`action.yml`) so the overfit gate can run as
+`uses: hibou04-ops/omega-lock@v0.3.6` in CI / be published to GitHub
+Marketplace. No library/API changes.
+
+- New repo-root `action.yml`: a composite action that sets up Python, installs
+  `omega-lock` from PyPI (pinned to this release by default, or `latest`), and
+  runs `omega-lock gate` over a `train` / `holdout` score pair with a
+  configurable `pearson-min` transfer threshold and an optional HTML
+  `report`. It exposes a `passed` output and fails the job (non-zero exit)
+  when the held-out scores do not track the in-sample ranking. Branding:
+  `icon: shield`, `color: blue`.
+- No source, behavior, or public-API change. Every public symbol, the
+  consumed-surface contract, the SHA-256 audit hash chain, and the docking
+  guard (12/12) are unchanged, so consumers pinning
+  `omega-lock>=0.3.0,<0.4.0` are unaffected. The release is backward
+  compatible; `publish.yml` reads the version from `pyproject.toml`.
+
 ## 0.3.5
 
 Documentation / distribution release: jargon-free, search-optimized README
