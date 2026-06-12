@@ -1,8 +1,8 @@
 # Omega-Lock Easy Start
 
-Current local package version: `0.3.3`.
+Current local package version: `0.3.4`.
 
-[![Version 0.3.3](https://img.shields.io/badge/version-0.3.3-orange.svg)](pyproject.toml)
+[![Version 0.3.4](https://img.shields.io/badge/version-0.3.4-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -16,13 +16,21 @@ Omega-Lock audits tuned candidates before they ship. It runs after candidate
 generation and checks whether a candidate survives walk-forward validation,
 declared hard constraints, and a reviewable append-only audit trail.
 
-## What's new in 0.3.3
+## What's new in 0.3.4
 
-Classifier promotion only — nothing changes in how you already use Omega-Lock.
-The `Development Status` is now `4 - Beta` (was `3 - Alpha`); there is no
-functional change since 0.3.2, so the optional off-by-default `executor=` speed
-seam and the source-distribution packaging fix from 0.3.2 both stand. Golden
-fixtures only carry the new version string.
+All additive — nothing you already use changes:
+
+- an installed console command, `omega-lock`: `omega-lock demo` (the
+  walk-forward case study), `omega-lock gate --train a.json --holdout b.json`
+  (KC-4 transfer gate over two score arrays, exit code 0/1), and
+  `omega-lock report --input p1_result.json -o out.html`. There is still no
+  `omega-lock diff` command.
+- `audit_optuna_study(study, holdout_evaluate=...)` — gate an existing Optuna
+  study without re-running the search (optuna stays an optional extra).
+- `render_html(result, "out.html")` — a deterministic, stdlib-only,
+  single-file dark-theme HTML scorecard for any audit result.
+- `gate_scores(train_scores, holdout_scores)` — the KC-4 gate over two plain
+  number lists, returning `passed` / `pearson` / `reasons`.
 
 ## Use it when
 
@@ -44,7 +52,7 @@ fixtures only carry the new version string.
 - it does not prove correctness or root cause
 - it does not prove a candidate is globally optimal
 - it does not prove PyPI/GitHub publication — registry status needs separate post-release verification
-- not a dashboard or web app, and ships no installed console command — Omega-Lock does not provide an `omega-lock diff` command
+- not a dashboard or web app — the `omega-lock` console command ships `demo`, `gate`, and `report` only; Omega-Lock does not provide an `omega-lock diff` command
 
 ## The core idea
 
@@ -80,13 +88,13 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | GitHub repo | `hibou04-ops/omega-lock` |
 | PyPI distribution | `omega-lock` |
 | Python import package | `omega_lock` |
-| Installed console executable | none currently |
+| Installed console executable | `omega-lock` (since 0.3.4: `demo`, `gate`, `report`) |
 
-Use PyPI only if version `0.3.3` is published in your package index:
+Use PyPI only if version `0.3.4` is published in your package index:
 
 ```bash
-pip install omega-lock==0.3.3
-pip install "omega-lock[p2]==0.3.3"
+pip install omega-lock==0.3.4
+pip install "omega-lock[p2]==0.3.4"
 ```
 
 ## Minimal use

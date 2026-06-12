@@ -1,5 +1,5 @@
 {
-  "claim_count": 13,
+  "claim_count": 17,
   "claims": [
     {
       "claim": "README.md says each probed candidate is appended to a reviewable JSON audit trail with phase, role, round, and call index context.",
@@ -92,6 +92,42 @@
       ],
       "readme_refs": [
         "README.md:148"
+      ],
+      "status": "validated"
+    },
+    {
+      "claim": "README.md says the package installs an omega-lock console command with demo, gate, and report subcommands backed by [project.scripts].",
+      "classification": "source_of_truth",
+      "id": "cli_demo_gate_report",
+      "proof": [
+        {
+          "note": "argparse entry point with demo/gate/report subcommands.",
+          "path": "src/omega_lock/cli.py",
+          "type": "source_of_truth"
+        },
+        {
+          "note": "[project.scripts] omega-lock = omega_lock.cli:main.",
+          "path": "pyproject.toml",
+          "type": "source_of_truth"
+        },
+        {
+          "note": "Packaged case-study engine so the wheel can run omega-lock demo.",
+          "path": "src/omega_lock/_demo.py",
+          "type": "source_of_truth"
+        },
+        {
+          "command": "python -m pytest tests/test_cli.py -q",
+          "network": false,
+          "type": "reproducible_command"
+        }
+      ],
+      "readme_markers": [
+        "Console command and simple facade",
+        "omega-lock demo"
+      ],
+      "readme_refs": [
+        "README.md:60",
+        "README.md:96"
       ],
       "status": "validated"
     },
@@ -221,18 +257,48 @@
       "status": "validated"
     },
     {
-      "claim": "README.md says no installed omega-lock diff console command currently ships.",
+      "claim": "README.md says render_html produces a deterministic, stdlib-only, single-file HTML scorecard (verdict banner, best_any vs best_feasible table, stress ranking, inline SVG scatter) for audit results.",
+      "classification": "source_of_truth",
+      "id": "html_scorecard_stdlib",
+      "proof": [
+        {
+          "note": "Pure-stdlib string templating; deterministic output without caller-supplied timestamps.",
+          "path": "src/omega_lock/report_html.py",
+          "type": "source_of_truth"
+        },
+        {
+          "command": "python -m pytest tests/test_report_html.py -q",
+          "network": false,
+          "type": "reproducible_command"
+        }
+      ],
+      "readme_markers": [
+        "render_html",
+        "single-file HTML scorecard"
+      ],
+      "readme_refs": [
+        "README.md:108"
+      ],
+      "status": "validated"
+    },
+    {
+      "claim": "README.md says the installed omega-lock console command ships demo, gate, and report subcommands only, and that no omega-lock diff console command ships.",
       "classification": "generated_doc",
       "id": "no_omega_lock_diff_cli",
       "proof": [
         {
-          "note": "CLI executable status is documented as none currently.",
+          "note": "CLI executable status documents omega-lock (since 0.3.4) with demo/gate/report subcommands and no diff command.",
           "path": "docs/REPO_SURFACE.md",
           "type": "generated_doc"
         },
         {
-          "note": "No [project.scripts] entry is present.",
+          "note": "[project.scripts] defines omega-lock = omega_lock.cli:main; no diff entry point exists.",
           "path": "pyproject.toml",
+          "type": "source_of_truth"
+        },
+        {
+          "note": "argparse subcommands are demo, gate, and report only.",
+          "path": "src/omega_lock/cli.py",
           "type": "source_of_truth"
         },
         {
@@ -245,7 +311,37 @@
         "`omega-lock diff` command"
       ],
       "readme_refs": [
-        "README.md:132"
+        "README.md:248"
+      ],
+      "status": "validated"
+    },
+    {
+      "claim": "README.md says audit_optuna_study gates an existing Optuna study's completed trials through the walk-forward KC-4 gate and splits best_any from best_feasible via per-trial user_attrs feasibility flags, with a lazy optional optuna import.",
+      "classification": "source_of_truth",
+      "id": "optuna_study_audit_bridge",
+      "proof": [
+        {
+          "note": "audit_optuna_study reuses WalkForward + check_kc4; import optuna is lazy inside the function.",
+          "path": "src/omega_lock/integrations/optuna_bridge.py",
+          "type": "source_of_truth"
+        },
+        {
+          "note": "Deterministic demo using the bridge API end to end.",
+          "path": "examples/optuna_audit_demo.py",
+          "type": "source_of_truth"
+        },
+        {
+          "command": "python -m pytest tests/test_optuna_bridge.py -q",
+          "network": false,
+          "type": "reproducible_command"
+        }
+      ],
+      "readme_markers": [
+        "audit_optuna_study",
+        "user_attrs[\"feasible\"]"
+      ],
+      "readme_refs": [
+        "README.md:70"
       ],
       "status": "validated"
     },
@@ -311,6 +407,31 @@
       "readme_refs": [
         "README.md:29",
         "README.md:138"
+      ],
+      "status": "validated"
+    },
+    {
+      "claim": "README.md says omega_lock.simple offers a plain-language facade: gate_scores over two score lists returning a GateVerdict, and an audit wrapper over run_p1.",
+      "classification": "source_of_truth",
+      "id": "simple_facade_gate_scores",
+      "proof": [
+        {
+          "note": "gate_scores wraps check_kc4; audit wraps CallableAdapter + run_p1; render_html re-exported.",
+          "path": "src/omega_lock/simple.py",
+          "type": "source_of_truth"
+        },
+        {
+          "command": "python -m pytest tests/test_simple_facade.py -q",
+          "network": false,
+          "type": "reproducible_command"
+        }
+      ],
+      "readme_markers": [
+        "gate_scores",
+        "omega_lock.simple.audit()"
+      ],
+      "readme_refs": [
+        "README.md:101"
       ],
       "status": "validated"
     },
@@ -383,7 +504,7 @@
     "generated_doc": 1,
     "qualitative_marker": 3,
     "reproducible_command": 1,
-    "source_of_truth": 6
+    "source_of_truth": 10
   },
   "readme": "README.md",
   "schema_version": 1,
@@ -391,6 +512,6 @@
   "status_counts": {
     "qualitative": 3,
     "todo": 0,
-    "validated": 10
+    "validated": 14
   }
 }

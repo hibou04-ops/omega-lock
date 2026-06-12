@@ -3,24 +3,73 @@
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 
-## Unreleased
+## 0.3.4
 
+All changes are additive: no existing public symbol was renamed, moved, or
+re-defaulted, and no consumed wire key changed, so consumers pinning
+`omega-lock>=0.3.0,<0.4.0` are unaffected.
+
+- New installed console command `omega-lock` via `[project.scripts]`
+  (`src/omega_lock/cli.py`, argparse only) with three subcommands:
+  `omega-lock demo` (runs the walk-forward gate case study), `omega-lock
+  gate --train a.json --holdout b.json [--report out.html] [--pearson-min X]`
+  (KC-4 Pearson transfer gate over two JSON arrays of scores; exit code 0/1),
+  and `omega-lock report --input p1_result.json -o out.html` (renders a saved
+  `P1Result` or audit-report JSON artifact). There is still no `omega-lock
+  diff` command. The case-study engine moved into the package as
+  `omega_lock._demo` so the wheel can run it; the example file re-exports the
+  same symbols and prints the identical, test-pinned narrative.
+- New Optuna bridge API `audit_optuna_study(study, *, holdout_evaluate=None,
+  thresholds=None, top_n=10) -> StudyAuditReport` in
+  `omega_lock.integrations.optuna_bridge` (re-exported at the package root).
+  It extracts completed trials, re-evaluates the train-best top-N under the
+  caller's `holdout_evaluate`, runs the reused `WalkForward` + `check_kc4`
+  gate (no duplicated math), and splits `best_any` vs `best_feasible` from
+  per-trial `user_attrs["feasible"]` flags (documented as absent otherwise).
+  Minimize-direction studies are handled; multi-objective studies are
+  rejected. `import optuna` stays lazy inside the function with a clean
+  install hint, so the module imports safely without optuna.
+  `examples/optuna_audit_demo.py` now uses this API instead of hand-rolled
+  bridge plumbing.
+- New stdlib-only HTML scorecard `render_html(obj, path)` in
+  `omega_lock.report_html`, accepting `P1Result` | `AuditReport` |
+  `StudyAuditReport` | `GateVerdict` (objects or their serialized dict
+  forms): verdict banner per KC gate, `best_any` vs `best_feasible` table
+  (train vs holdout), stress ranking table, and an inline SVG scatter of
+  train vs holdout fitness with the identity line. Pure string templating —
+  no matplotlib, no template engine — and deterministic output (no
+  timestamps unless `generated_at=` is passed).
+- New plain-language facade `omega_lock.simple`:
+  `gate_scores(train_scores, holdout_scores) -> GateVerdict` (wraps the KC-4
+  Pearson gate; `GateVerdict` carries `passed`, `pearson`, `reasons`),
+  `audit(target_fn, param_specs, *, holdout_fn=None, **cfg) -> P1Result`
+  (thin `CallableAdapter` + `run_p1` wrapper with a `pure_objective`
+  threshold default and friendly `{name: (low, high)}` spec syntax), and a
+  `render_html` re-export. `GateVerdict`, `gate_scores`, `render_html`,
+  `StudyAuditReport`, `TrialCandidate`, and `audit_optuna_study` are added
+  to `omega_lock.__all__`; `simple.audit()` itself stays at
+  `omega_lock.simple.audit` because the root name `omega_lock.audit` already
+  belongs to the audit subpackage.
 - New deterministic case-study example `examples/walkforward_gate_demo.py`:
   naive best-score selection overfits to slice noise, the KC-4 walk-forward
   gate fails the run, and constraint-gated feasible-best selection holds up
   on a holdout slice. Offline, seeded, hash-based noise; runs in well under
   a second. Pinned by `tests/test_walkforward_gate_demo.py`.
-- New bridge example `examples/optuna_audit_demo.py`: gate an existing Optuna
-  study's completed trials through `WalkForward` + `check_kc4` and
-  feasible-best selection in a ~15-line bridge. Skips gracefully when optuna
-  is not installed.
+- Bridge example `examples/optuna_audit_demo.py`: gate an existing Optuna
+  study's completed trials and write an HTML scorecard via the new API.
+  Skips gracefully when optuna is not installed.
 - README entry-point rework: leads with the value proposition ("the best
-  score is not deployable"), the two demos above as Quickstart, and a
-  terminology decoder table (P1/P2, KC-1..4, SC-2, `best_any` vs
-  `best_feasible`, stress/unlock/lock, `pure_objective`). The per-release
-  summary block moved to `docs/WHATS_NEW.md`; no content was deleted.
-- `docs/EXAMPLES_GALLERY.md` lists the two new examples. No library code
-  changes and no public API changes.
+  score is not deployable"), the demos as Quickstart, and a terminology
+  decoder table (P1/P2, KC-1..4, SC-2, `best_any` vs `best_feasible`,
+  stress/unlock/lock, `pure_objective`). The per-release summary block moved
+  to `docs/WHATS_NEW.md`; no content was deleted.
+- `docs/EXAMPLES_GALLERY.md` lists the new examples and the CLI;
+  `docs/claims/public_claims.yml` gains ledger-backed claims for the CLI,
+  the Optuna bridge, the HTML scorecard, and the facade.
+- Golden audit fixtures regenerated only to carry the new version string;
+  the audit report schema and SHA-256 hash chain are unchanged (the version
+  is not part of the hashed payload, so every chain digest is
+  byte-identical).
 
 ## 0.3.3
 

@@ -53,7 +53,18 @@ from omega_lock.audit import (
     make_report, render_scorecard,
 )
 
-__version__ = "0.3.3"
+# 0.3.4 additive surface — plain-language facade, HTML scorecard, Optuna bridge.
+# NOTE: omega_lock.simple.audit() is deliberately NOT re-exported here — the
+# name `omega_lock.audit` already belongs to the audit subpackage above.
+# The Optuna bridge module is import-safe without optuna installed; the
+# heavy `import optuna` happens lazily inside audit_optuna_study().
+from omega_lock.simple import GateVerdict, gate_scores
+from omega_lock.report_html import render_html
+from omega_lock.integrations.optuna_bridge import (
+    StudyAuditReport, TrialCandidate, audit_optuna_study,
+)
+
+__version__ = "0.3.4"
 
 __all__ = [
     "CalibrableTarget", "ParamSpec", "EvalResult",
@@ -75,4 +86,7 @@ __all__ = [
     "compute_generalization_gap", "compute_spearman",
     "AuditingTarget", "Constraint", "AuditedRun", "AuditReport",
     "make_report", "render_scorecard",
+    "GateVerdict", "gate_scores",
+    "render_html",
+    "StudyAuditReport", "TrialCandidate", "audit_optuna_study",
 ]

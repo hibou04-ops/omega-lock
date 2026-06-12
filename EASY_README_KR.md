@@ -1,8 +1,8 @@
 # Omega-Lock 쉬운 설명
 
-현재 로컬 패키지 버전: `0.3.3`.
+현재 로컬 패키지 버전: `0.3.4`.
 
-[![Version 0.3.3](https://img.shields.io/badge/version-0.3.3-orange.svg)](pyproject.toml)
+[![Version 0.3.4](https://img.shields.io/badge/version-0.3.4-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -16,12 +16,20 @@ Omega-Lock은 배포 전 튜닝 후보를 검증합니다. 후보 생성 이후�
 walk-forward validation, 선언된 hard constraints, 검토 가능한 append-only audit
 trail을 통과하는지 확인합니다.
 
-## 0.3.3에서 새로워진 점
+## 0.3.4에서 새로워진 점
 
-classifier 승격뿐 — 이미 쓰고 있는 방식은 달라지지 않습니다. `Development
-Status`가 이제 `4 - Beta`입니다(이전 `3 - Alpha`). 0.3.2 이후 기능 변경은
-없으므로 0.3.2의 선택적·기본 비활성 `executor=` 속도 seam과 소스 배포(sdist)
-패키징 수정은 그대로 유지됩니다. golden fixture는 새 버전 문자열만 담습니다.
+전부 추가 기능이며, 이미 쓰고 있는 방식은 달라지지 않습니다.
+
+- 설치되는 console 명령 `omega-lock`: `omega-lock demo`(walk-forward 사례
+  연구), `omega-lock gate --train a.json --holdout b.json`(두 점수 배열에
+  대한 KC-4 전이 gate, 종료 코드 0/1), `omega-lock report --input
+  p1_result.json -o out.html`. `omega-lock diff` 명령은 여전히 없습니다.
+- `audit_optuna_study(study, holdout_evaluate=...)` — 이미 돌려 둔 Optuna
+  study를 재탐색 없이 gate에 통과시킵니다(optuna는 선택 의존성 유지).
+- `render_html(result, "out.html")` — stdlib만으로 만드는 결정적 단일 파일
+  다크 테마 HTML scorecard.
+- `gate_scores(train_scores, holdout_scores)` — 두 점수 리스트에 대한 KC-4
+  gate. `passed` / `pearson` / `reasons`를 돌려줍니다.
 
 ## 언제 쓰나
 
@@ -43,7 +51,7 @@ Status`가 이제 `4 - Beta`입니다(이전 `3 - Alpha`). 0.3.2 이후 기능 �
 - correctness나 root cause를 증명하지 않습니다
 - 후보가 전역 최적해라고 증명하지 않습니다
 - PyPI/GitHub 게시를 증명하지 않습니다 — registry 상태는 별도의 post-release 검증이 필요합니다
-- dashboard나 web app이 아니며 설치되는 console 명령도 없습니다 — Omega-Lock은 `omega-lock diff` 명령을 제공하지 않습니다
+- dashboard나 web app이 아닙니다 — console 명령 `omega-lock`은 `demo`, `gate`, `report`만 제공하며, `omega-lock diff` 명령은 제공하지 않습니다
 
 ## 핵심 아이디어
 
@@ -79,13 +87,13 @@ https://github.com/user-attachments/assets/1012965d-0a01-41b5-96f5-93f87ad751e7
 | GitHub repo | `hibou04-ops/omega-lock` |
 | PyPI distribution | `omega-lock` |
 | Python import package | `omega_lock` |
-| 설치되는 console executable | 현재 없음 |
+| 설치되는 console executable | `omega-lock` (0.3.4부터: `demo`, `gate`, `report`) |
 
-사용하는 package index에 `0.3.3`이 게시되어 있는 경우에만 PyPI로 설치하세요.
+사용하는 package index에 `0.3.4`가 게시되어 있는 경우에만 PyPI로 설치하세요.
 
 ```bash
-pip install omega-lock==0.3.3
-pip install "omega-lock[p2]==0.3.3"
+pip install omega-lock==0.3.4
+pip install "omega-lock[p2]==0.3.4"
 ```
 
 ## 최소 사용 예시

@@ -11,7 +11,7 @@ approve a release, create a tag, publish to PyPI, or change runtime behavior.
 | GitHub repo | `hibou04-ops/omega-lock` | Local `origin` remote is `https://github.com/hibou04-ops/omega-lock.git`; remote GitHub availability is `ENVIRONMENT_BLOCKED`. |
 | PyPI distribution | `omega-lock` | Local `pyproject.toml` project name is `omega-lock`; PyPI registry status is `ENVIRONMENT_BLOCKED`. |
 | Python import package | `omega_lock` | Local package exists under `src/omega_lock`. |
-| CLI executable status | None currently. | No `[project.scripts]`, `[project.gui-scripts]`, `[project.entry-points]`, `console_scripts`, or `gui_scripts` entries were found locally. |
+| CLI executable status | `omega-lock` (since 0.3.4). | `pyproject.toml` `[project.scripts]` defines `omega-lock = "omega_lock.cli:main"` with `demo`, `gate`, and `report` subcommands. No `omega-lock diff` command ships. (Earlier baseline rows below this table predate 0.3.4 and are retained as historical inspection notes.) |
 | Source of current package version | `pyproject.toml` `[project].version = "0.3.0"`; runtime mirror `src/omega_lock/__init__.py` `__version__ = "0.3.0"`. | Verified from local files. |
 | Release/tag/PyPI verification status | Local tags are listed below; GitHub releases and PyPI publication status are `ENVIRONMENT_BLOCKED`. | No network registry or GitHub release check was performed. |
 

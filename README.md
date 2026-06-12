@@ -7,7 +7,7 @@ Omega-Lock runs **after candidate generation**. A search, tuning, or calibration
 method proposes a candidate; Omega-Lock decides whether that candidate survives
 the declared evidence gates before it is allowed to ship.
 
-[![Version 0.3.3](https://img.shields.io/badge/version-0.3.3-orange.svg)](pyproject.toml)
+[![Version 0.3.4](https://img.shields.io/badge/version-0.3.4-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -47,9 +47,28 @@ threshold 0.3), and the constraint-gated `best_feasible` holds up (train 5.233
 -> holdout 5.276) on a slice no selection step ever consulted. Deterministic:
 your run prints the same numbers.
 
-Already have an Optuna study? Bridge its completed trials through the same
-walk-forward gate and feasible-best selection in about 15 lines (the demo
-skips cleanly when optuna is not installed):
+Installing from a package index instead? The same case study ships as a
+console command (new in 0.3.4):
+
+```bash
+pip install omega-lock && omega-lock demo
+```
+
+(Use the package-index command only once `0.3.4` is visible in the index you
+use; local version metadata is not proof of registry publication.)
+
+Already have an Optuna study? Since 0.3.4 the bridge is a three-line API:
+`audit_optuna_study` re-evaluates the study's top-N under your holdout
+scorer, runs the same KC-4 walk-forward gate, and splits `best_any` from
+`best_feasible` (inferred from per-trial `user_attrs["feasible"]` flags when
+present — documented as absent otherwise):
+
+```python
+from omega_lock import audit_optuna_study
+
+report = audit_optuna_study(study, holdout_evaluate=score_on_holdout)
+print(report.passed, report.gated_best)   # gate verdict + certified pick
+```
 
 ```bash
 pip install "omega-lock[p2]"   # optional Optuna extra
@@ -78,7 +97,40 @@ This codebase uses a compact internal dialect. The table below decodes it:
 | `KCThresholds.pure_objective()` | Preset that disables the action-count gates (KC-3 and the KC-4 action-ratio sub-gate) for non-action objectives (math, ML, simulation). |
 
 Release notes: [CHANGELOG.md](CHANGELOG.md) · short per-release summaries
-(including 0.3.3) moved to [docs/WHATS_NEW.md](docs/WHATS_NEW.md).
+(including 0.3.4) moved to [docs/WHATS_NEW.md](docs/WHATS_NEW.md).
+
+## Console command and simple facade (new in 0.3.4)
+
+The package installs one console command, `omega-lock`:
+
+```bash
+omega-lock demo
+omega-lock gate --train train_scores.json --holdout holdout_scores.json --report gate.html
+omega-lock report --input p1_result.json -o scorecard.html
+```
+
+`omega-lock demo` prints the walk-forward case study above. `omega-lock gate`
+reads two JSON arrays of numbers — the same candidates scored in-sample and
+on held-out data — applies the KC-4 Pearson gate, and exits 0/1 with the
+verdict. `omega-lock report` renders a saved `P1Result` (or audit report)
+JSON artifact to an HTML scorecard. The same gate is available in Python
+without pipeline jargon:
+
+```python
+from omega_lock import gate_scores, render_html
+
+verdict = gate_scores(train_scores, holdout_scores)
+print(verdict.passed, verdict.pearson, verdict.reasons)
+render_html(verdict, "gate.html")
+```
+
+`render_html` renders any audit artifact (`P1Result`, `AuditReport`,
+`StudyAuditReport`, `GateVerdict`) to a deterministic, dependency-free
+single-file HTML scorecard: verdict banner, `best_any` vs `best_feasible`
+table, stress ranking, and an inline SVG train-vs-holdout scatter (pure
+stdlib — no matplotlib, no templates). `omega_lock.simple.audit()` is the
+matching plain-language wrapper over `run_p1` for auditing a bare scoring
+function over a parameter space.
 
 ## Use it when
 
@@ -103,16 +155,16 @@ Release notes: [CHANGELOG.md](CHANGELOG.md) · short per-release summaries
 
 ## Install
 
-Current local package version: `0.3.3`. This README does not assert PyPI or
+Current local package version: `0.3.4`. This README does not assert PyPI or
 GitHub release status. Local version metadata is not proof of registry
 publication; registry status requires explicit post-release verification.
 
 ```bash
-pip install omega-lock==0.3.3
-pip install "omega-lock[p2]==0.3.3"
+pip install omega-lock==0.3.4
+pip install "omega-lock[p2]==0.3.4"
 ```
 
-Use the PyPI command only after `0.3.3` is visible in the package index you use.
+Use the PyPI command only after `0.3.4` is visible in the package index you use.
 Local version metadata is not proof of registry publication.
 
 From source:
@@ -195,7 +247,8 @@ declared evidence gates?"
 - not cryptographic signing or immutable storage
 - not a published-registry verifier — registry status requires explicit
   post-release verification
-- no installed console command — Omega-Lock does not currently ship a console
+- not a diff tool — the `omega-lock` console command ships `demo`, `gate`,
+  and `report` subcommands only; there is still no installed console
   `omega-lock diff` command
 
 ## What omega-lock audits
@@ -244,7 +297,7 @@ Name boundaries are intentionally distinct:
 | GitHub repo | `hibou04-ops/omega-lock` |
 | PyPI distribution | `omega-lock` |
 | Python import package | `omega_lock` |
-| Installed console executable | none currently |
+| Installed console executable | `omega-lock` (since 0.3.4: `demo`, `gate`, `report`) |
 
 Python import:
 
