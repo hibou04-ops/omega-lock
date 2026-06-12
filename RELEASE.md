@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist for every omega-lock release. The current target is `0.3.3`.
+Use this checklist for every omega-lock release. The current target is `0.3.4`.
 
 ## Before Building
 
@@ -42,17 +42,44 @@ Get-ChildItem dist
 python -m twine check dist/*.whl dist/*.tar.gz
 ```
 
-## 0.3.3 Release Note
+## 0.3.4 Release Note
+
+- additive feature release; no existing public symbol was renamed, moved, or
+  re-defaulted, so consumers pinning `omega-lock>=0.3.0,<0.4.0` are unaffected.
+- new installed console command `omega-lock` (`[project.scripts]`) with
+  `demo`, `gate`, and `report` subcommands (argparse only; still no
+  `omega-lock diff` command). The walk-forward case-study engine moved into
+  the package as `omega_lock._demo` so the wheel can run it;
+  `examples/walkforward_gate_demo.py` re-exports the same symbols and prints
+  the identical narrative.
+- new Optuna bridge API `omega_lock.integrations.optuna_bridge.
+  audit_optuna_study` (re-exported at package root): gates an existing study's
+  completed trials through the reused WalkForward + check_kc4 machinery,
+  splits `best_any` vs `best_feasible` via per-trial `user_attrs["feasible"]`
+  flags, and lazily imports optuna inside the function (optional `[p2]` extra
+  unchanged).
+- new stdlib-only `omega_lock.report_html.render_html`: deterministic
+  single-file dark-theme HTML scorecard for `P1Result` / `AuditReport` /
+  `StudyAuditReport` / `GateVerdict` (verdict banner, best_any vs
+  best_feasible table, stress ranking, inline SVG train-vs-holdout scatter).
+- new plain-language facade `omega_lock.simple`: `gate_scores` -> `GateVerdict`
+  and `audit` -> `P1Result`. `simple.audit()` is deliberately not re-exported
+  at the package root because `omega_lock.audit` is already the audit
+  subpackage.
+- golden audit fixtures regenerated only to carry the new version string; the
+  audit report schema and SHA-256 hash chain are unchanged (the version is not
+  part of the hashed payload, so every chain digest is byte-identical).
+
+## Historical Release Notes
+
+### 0.3.3
 
 - classifier promotion only: `Development Status` advanced from `3 - Alpha` to
   `4 - Beta`. No functional code change since 0.3.2 — the dormant, default-off
   parallel-execution executor seam and the sdist packaging fix shipped in 0.3.2
   both stand unchanged.
 - golden audit fixtures regenerated only to carry the new version string; the
-  audit report schema and SHA-256 hash chain are unchanged (the version is not
-  part of the hashed payload, so every chain digest is byte-identical).
-
-## Historical Release Notes
+  audit report schema and SHA-256 hash chain are unchanged.
 
 ### 0.3.2
 
@@ -109,10 +136,10 @@ python -m twine check dist/*.whl dist/*.tar.gz
 
 ## Expected Artifacts
 
-For 0.3.3, the expected files are:
+For 0.3.4, the expected files are:
 
-- `omega_lock-0.3.3-py3-none-any.whl`
-- `omega_lock-0.3.3.tar.gz`
+- `omega_lock-0.3.4-py3-none-any.whl`
+- `omega_lock-0.3.4.tar.gz`
 
 If an isolated PEP 517 build cannot download build dependencies in a restricted
 environment, `python -m build --no-isolation` is acceptable for local sandbox
@@ -129,13 +156,13 @@ Review `git status` first, then:
 
 ```bash
 git add -A
-git commit -m "Prepare release 0.3.3"
-git tag v0.3.3
+git commit -m "Prepare release 0.3.4"
+git tag v0.3.4
 git push origin main
-git push origin v0.3.3
+git push origin v0.3.4
 ```
 
-Create GitHub Release `v0.3.3` to trigger `.github/workflows/publish.yml`, or
+Create GitHub Release `v0.3.4` to trigger `.github/workflows/publish.yml`, or
 publish manually:
 
 ```bash
@@ -150,16 +177,16 @@ all agree on the same version.
 After PyPI publication is expected to exist:
 
 ```bash
-python scripts/post_release_verify.py --version 0.3.3 --distribution omega-lock
+python scripts/post_release_verify.py --version 0.3.4 --distribution omega-lock
 python -m pip index versions omega-lock
-python -m pip install --no-cache-dir --upgrade omega-lock==0.3.3
+python -m pip install --no-cache-dir --upgrade omega-lock==0.3.4
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
 
 For cache-sensitive releases, verify the exact wheel URL exposed by PyPI JSON:
 
 ```bash
-python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.3/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
+python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.4/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
 python -m pip install --no-cache-dir --force-reinstall "<wheel-url-from-pypi-json>"
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```

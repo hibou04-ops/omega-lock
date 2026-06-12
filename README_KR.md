@@ -7,7 +7,7 @@ Omega-Lock은 **후보 생성 이후**에 동작합니다. search·tuning·calib
 후보를 제안하면, Omega-Lock은 그 후보가 배포되기 전에 사전에 선언한 evidence
 gate를 통과하는지 판단합니다.
 
-[![Version 0.3.3](https://img.shields.io/badge/version-0.3.3-orange.svg)](pyproject.toml)
+[![Version 0.3.4](https://img.shields.io/badge/version-0.3.4-orange.svg)](pyproject.toml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![License Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Quality pytest + pyright + ruff](https://img.shields.io/badge/quality-pytest%20%2B%20pyright%20%2B%20ruff-2ea44f.svg)](.github/workflows/quality-ci.yml)
@@ -18,19 +18,29 @@ gate를 통과하는지 판단합니다.
 **README 종류:** [Full README](README.md) · [한국어 README](README_KR.md) ·
 [Easy README](EASY_README.md) · [쉬운 한국어 README](EASY_README_KR.md)
 
-현재 로컬 패키지 버전: `0.3.3`. 이 문서는 PyPI 또는 GitHub Release 게시 여부를
+현재 로컬 패키지 버전: `0.3.4`. 이 문서는 PyPI 또는 GitHub Release 게시 여부를
 주장하지 않습니다. 로컬 버전 메타데이터는 registry 게시의 증거가 아니며,
 registry 상태는 별도의 post-release 검증을 거쳐야 합니다.
 
-## 0.3.3에서 새로워진 점
+## 0.3.4에서 새로워진 점
 
-classifier 승격뿐 — 기존 사용자에게 기능 변경은 없습니다.
+전부 추가(additive)이며 기존 공개 API는 변경되지 않았습니다.
 
-- `Development Status`가 `3 - Alpha`에서 `4 - Beta`로 승격되었습니다. 0.3.2
-  이후 기능 코드 변경은 없습니다. 0.3.2에서 도입된 휴면(default-off) 병렬 실행
-  executor seam과 sdist 패키징 수정은 그대로 유지됩니다.
-- golden audit fixture는 새 버전 문자열을 담기 위해서만 재생성되며, audit
-  report 스키마와 SHA-256 hash chain은 바뀌지 않았습니다.
+- **console 명령 `omega-lock`** ([project.scripts]): `omega-lock demo`
+  (walk-forward gate 사례 연구), `omega-lock gate --train a.json --holdout
+  b.json` (KC-4 Pearson gate, 종료 코드 0/1), `omega-lock report --input
+  p1_result.json -o out.html`. `omega-lock diff` 명령은 여전히 없습니다.
+- **Optuna bridge API `audit_optuna_study`**: 기존 Optuna study의 완료
+  trial을 walk-forward gate에 통과시키고 `best_any` / `best_feasible`
+  (`user_attrs["feasible"]` 플래그 기반)을 분리합니다. optuna import는
+  함수 내부에서 lazy로 일어나므로 미설치 환경에서도 import는 안전합니다.
+- **HTML scorecard `render_html`**: `P1Result` / `AuditReport` /
+  `StudyAuditReport` / `GateVerdict`를 stdlib만으로 단일 파일 다크 테마
+  HTML(판정 배너, best_any vs best_feasible 표, stress 랭킹, inline SVG
+  scatter)로 렌더링합니다. 타임스탬프를 넘기지 않으면 결정적 출력입니다.
+- **쉬운 facade `omega_lock.simple`**: `gate_scores(train, holdout)` →
+  `GateVerdict(passed, pearson, reasons)`, `audit(target_fn, param_specs)`
+  → `P1Result`. 새 이름 추가일 뿐, 기존 심볼의 rename이 아닙니다.
 
 ## 언제 쓰나
 
@@ -56,11 +66,11 @@ classifier 승격뿐 — 기존 사용자에게 기능 변경은 없습니다.
 ## 설치
 
 ```bash
-pip install omega-lock==0.3.3
-pip install "omega-lock[p2]==0.3.3"
+pip install omega-lock==0.3.4
+pip install "omega-lock[p2]==0.3.4"
 ```
 
-PyPI 명령은 사용하는 package index에 `0.3.3`이 보일 때만 사용하세요. 로컬 버전
+PyPI 명령은 사용하는 package index에 `0.3.4`가 보일 때만 사용하세요. 로컬 버전
 메타데이터는 registry 게시의 증거가 아닙니다.
 
 소스에서 설치:
@@ -143,8 +153,9 @@ optimizer는 "무엇이 가장 높은 점수를 받았는가?"에 답하고, Ome
 - cryptographic signing이나 immutable storage가 아닙니다
 - published-registry verifier가 아닙니다 — registry 상태는 별도의 post-release
   검증이 필요합니다
-- 설치되는 console 명령은 없습니다 — Omega-Lock은 현재 console `omega-lock diff`
-  명령을 제공하지 않습니다
+- diff 도구가 아닙니다 — console 명령 `omega-lock`은 `demo`, `gate`,
+  `report` 하위 명령만 제공하며, console `omega-lock diff` 명령은 여전히
+  없습니다
 
 ## 무엇을 감사하나
 
@@ -190,7 +201,7 @@ candidate가 없으면 즉시 실패해야 하는 경우에는
 | GitHub repo | `hibou04-ops/omega-lock` |
 | PyPI distribution | `omega-lock` |
 | Python import package | `omega_lock` |
-| 설치되는 console executable | 현재 없음 |
+| 설치되는 console executable | `omega-lock` (0.3.4부터: `demo`, `gate`, `report`) |
 
 Python import:
 
