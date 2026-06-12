@@ -43,8 +43,10 @@ orientation as the study objective. Multi-objective studies are rejected.
 """
 from __future__ import annotations
 
+from importlib import import_module
+
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from omega_lock.grid import GridPoint
 from omega_lock.kill_criteria import KCReport, KCThresholds, check_kc4
@@ -221,7 +223,10 @@ def audit_optuna_study(
             with values, or ``top_n`` < 2.
     """
     try:
-        import optuna
+        # importlib indirection mirrors p2_tpe.py: optuna is an optional
+        # extra, and a static ``import optuna`` fails pyright in environments
+        # without it (the publish-readiness gate runs without extras).
+        optuna = cast(Any, import_module("optuna"))
     except ImportError as exc:  # pragma: no cover - exercised via sys.modules stub
         raise ImportError(_OPTUNA_BRIDGE_INSTALL_HINT) from exc
 

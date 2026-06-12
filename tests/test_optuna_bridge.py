@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -24,8 +24,10 @@ from omega_lock.integrations.optuna_bridge import (
 from omega_lock.kill_criteria import KCThresholds
 from omega_lock.walk_forward import pearson
 
+from importlib import import_module as _import_module
+
 try:
-    import optuna as _optuna_module
+    _optuna_module = cast(Any, _import_module("optuna"))
 
     _HAS_OPTUNA = True
 except ImportError:  # pragma: no cover - exercised on minimal installs
