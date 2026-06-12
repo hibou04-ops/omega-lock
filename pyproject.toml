@@ -25,6 +25,12 @@ keywords = [
     "kill-criteria",
     "machine-learning",
     "research",
+    "overfitting",
+    "walk-forward-validation",
+    "cross-validation",
+    "optuna",
+    "mlops",
+    "ci",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
