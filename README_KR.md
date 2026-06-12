@@ -2,9 +2,9 @@
 
 **가장 높은 점수가 당신을 속이고 있습니다 — 그리고 당신의 옵티마이저는 그것을 잡아내지 못합니다.** omega-lock은 튜너가 끝난 *뒤에* 실행되는 게이트입니다. 튜너가 고른 "우승" 후보를 받아, 그 점수가 진짜인지 단순한 운인지를 — 배포 **전에** — 알려줍니다.
 
-[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=1800)](https://pypi.org/project/omega-lock/)
-[![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=1800)](https://pypi.org/project/omega-lock/)
-[![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=1800)](https://pypi.org/project/omega-lock/)
+[![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
+[![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
+[![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
 ```bash
 pip install omega-lock
