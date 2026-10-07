@@ -24,12 +24,13 @@
       ],
       "readme_markers": [
         "append-only audit trail",
-        "Append-only audit trail",
-        "records the verdict, inputs, and thresholds"
+        "evaluated candidates",
+        "score-array CLI only prints its verdict"
       ],
       "readme_refs": [
-        "README.md:84",
-        "README.md:120"
+        "README.md:192",
+        "README.md:192",
+        "README.md:192"
       ],
       "status": "validated"
     },
@@ -44,8 +45,8 @@
         "gate you bolt onto the search"
       ],
       "readme_refs": [
-        "README.md:31",
-        "README.md:127"
+        "README.md:50",
+        "README.md:150"
       ],
       "status": "qualitative"
     },
@@ -61,7 +62,9 @@
         "No PyPI or GitHub download analytics are asserted here"
       ],
       "readme_refs": [
-        "README.md:14"
+        "README.md:188",
+        "README.md:188",
+        "README.md:188"
       ],
       "status": "qualitative"
     },
@@ -90,7 +93,7 @@
         "shareable dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:160"
+        "README.md:180"
       ],
       "status": "validated"
     },
@@ -126,7 +129,7 @@
       ],
       "readme_refs": [
         "README.md:11",
-        "README.md:154"
+        "README.md:29"
       ],
       "status": "validated"
     },
@@ -141,8 +144,8 @@
         "output-side overfit gate"
       ],
       "readme_refs": [
-        "README.md:137",
-        "README.md:145"
+        "README.md:159",
+        "README.md:167"
       ],
       "status": "qualitative"
     },
@@ -184,7 +187,8 @@
       ],
       "readme_refs": [
         "README.md:11",
-        "README.md:39"
+        "README.md:60",
+        "README.md:54"
       ],
       "status": "validated"
     },
@@ -215,8 +219,9 @@
         "best_any"
       ],
       "readme_refs": [
-        "README.md:48",
-        "README.md:119"
+        "README.md:67",
+        "README.md:67",
+        "README.md:67"
       ],
       "status": "validated"
     },
@@ -247,8 +252,9 @@
         "violates a constraint you declared"
       ],
       "readme_refs": [
-        "README.md:119",
-        "README.md:124"
+        "README.md:141",
+        "README.md:141",
+        "README.md:141"
       ],
       "status": "validated"
     },
@@ -273,7 +279,8 @@
         "dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:160"
+        "README.md:180",
+        "README.md:180"
       ],
       "status": "validated"
     },
@@ -307,7 +314,7 @@
         "omega-lock gate --help"
       ],
       "readme_refs": [
-        "README.md:155"
+        "README.md:177"
       ],
       "status": "validated"
     },
@@ -337,8 +344,8 @@
         "Already have an Optuna study?"
       ],
       "readme_refs": [
-        "README.md:99",
-        "README.md:103"
+        "README.md:123",
+        "README.md:118"
       ],
       "status": "validated"
     },
@@ -374,7 +381,7 @@
       ],
       "readme_refs": [
         "README.md:10",
-        "README.md:90"
+        "README.md:110"
       ],
       "status": "validated"
     },
@@ -398,7 +405,7 @@
         "tamper-evident"
       ],
       "readme_refs": [
-        "README.md:120"
+        "README.md:192"
       ],
       "status": "validated"
     },
@@ -423,8 +430,8 @@
         "omega_lock.simple"
       ],
       "readme_refs": [
-        "README.md:88",
-        "README.md:90"
+        "README.md:110",
+        "README.md:110"
       ],
       "status": "validated"
     },
@@ -453,7 +460,7 @@
         "rank parameters by perturbation sensitivity"
       ],
       "readme_refs": [
-        "README.md:166"
+        "README.md:190"
       ],
       "status": "validated"
     },
@@ -485,8 +492,8 @@
       ],
       "readme_refs": [
         "README.md:14",
-        "README.md:29",
-        "README.md:118"
+        "README.md:140",
+        "README.md:50"
       ],
       "status": "validated"
     }

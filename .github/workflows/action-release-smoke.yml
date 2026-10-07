@@ -1,0 +1,51 @@
+name: Action release smoke
+
+# Manual, read-only, synthetic/stored evidence only. Run after exact PyPI publication.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v0.3.8
+          persist-credentials: false
+      - name: Synthetic aligned and reversed scores
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name, values in [('train',[1,2,3,4,5]),('holdout',[1,2,3,4,5]),('reverse',[5,4,3,2,1])]:
+              Path(name+'.json').write_text(json.dumps(values))
+          PY
+      - name: Passing tagged Action
+        id: pass
+        uses: hibou04-ops/omega-lock@v0.3.8
+        with:
+          train: train.json
+          holdout: holdout.json
+          report: "score card.html"
+      - name: Blocking tagged Action
+        id: block
+        continue-on-error: true
+        uses: hibou04-ops/omega-lock@v0.3.8
+        with:
+          train: train.json
+          holdout: reverse.json
+      - name: Verify exact package and pass/block outputs
+        env:
+          PASS: ${{ steps.pass.outputs.passed }}
+          BLOCK: ${{ steps.block.outputs.passed }}
+          BLOCK_OUTCOME: ${{ steps.block.outcome }}
+        run: |
+          python -c "import omega_lock; assert omega_lock.__version__=='0.3.8'"
+          python -m pip check
+          test "$BLOCK_OUTCOME" = failure
+          test "$PASS" = true
+          test "$BLOCK" = false
+          test -s "score card.html"
