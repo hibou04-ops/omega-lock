@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist for every omega-lock release. The current target is `0.3.7`.
+Use this checklist for every omega-lock release. The current target is `0.3.8`.
 
 ## Before Building
 
@@ -42,7 +42,14 @@ Get-ChildItem dist
 python -m twine check dist/*.whl dist/*.tar.gz
 ```
 
-## 0.3.7 Release Note
+## 0.3.8 Release Note
+
+- Fix installed CLI input-read errors and the README's score-array API example.
+- Clarify CLI correlation gating versus library search and optional audit trails.
+- Refresh current docking/citation guidance while retaining independent guards.
+- Bound optional Optuna to >=3,<5 after reproducing 5.x demo regressions.
+
+### Historical 0.3.7 Release Note
 
 - packaging / metadata release; no library or public-API change. Shortens the
   composite Action's `action.yml` `description` to under GitHub's 125-character
@@ -165,10 +172,10 @@ python -m twine check dist/*.whl dist/*.tar.gz
 
 ## Expected Artifacts
 
-For 0.3.7, the expected files are:
+For 0.3.8, the expected files are:
 
-- `omega_lock-0.3.7-py3-none-any.whl`
-- `omega_lock-0.3.7.tar.gz`
+- `omega_lock-0.3.8-py3-none-any.whl`
+- `omega_lock-0.3.8.tar.gz`
 
 If an isolated PEP 517 build cannot download build dependencies in a restricted
 environment, `python -m build --no-isolation` is acceptable for local sandbox
@@ -185,13 +192,13 @@ Review `git status` first, then:
 
 ```bash
 git add -A
-git commit -m "Prepare release 0.3.7"
-git tag v0.3.7
+git commit -m "Prepare release 0.3.8"
+git tag v0.3.8
 git push origin main
-git push origin v0.3.7
+git push origin v0.3.8
 ```
 
-Create GitHub Release `v0.3.7` to trigger `.github/workflows/publish.yml`, or
+Create GitHub Release `v0.3.8` to trigger `.github/workflows/publish.yml`, or
 publish manually:
 
 ```bash
@@ -206,16 +213,16 @@ all agree on the same version.
 After PyPI publication is expected to exist:
 
 ```bash
-python scripts/post_release_verify.py --version 0.3.7 --distribution omega-lock
+python scripts/post_release_verify.py --version 0.3.8 --distribution omega-lock
 python -m pip index versions omega-lock
-python -m pip install --no-cache-dir --upgrade omega-lock==0.3.7
+python -m pip install --no-cache-dir --upgrade omega-lock==0.3.8
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
 
 For cache-sensitive releases, verify the exact wheel URL exposed by PyPI JSON:
 
 ```bash
-python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.7/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
+python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.8/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
 python -m pip install --no-cache-dir --force-reinstall "<wheel-url-from-pypi-json>"
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.8 - 2026-10-08
+
+Correct the standalone score-array/API examples and CLI-versus-search/audit scope; update current docking guidance and citation pin. Handle unreadable/invalid-encoding inputs as exit 2. Bound optional Optuna to >=3,<5 after reproducing 5.x demo failures.
+
+Compatibility: no renamed imports, CLI/MCP identifiers, schemas or relaxed gates.
+Upgrade with the same PyPI distribution name; MCP users reinstall its [mcp] extra.
+
+
 This changelog records local repository release notes only. It is not PyPI
 publication proof, GitHub release proof, or release approval.
 

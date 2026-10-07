@@ -82,7 +82,7 @@ TIER_A_PIN_SPEC = ">=0.3.0,<0.4.0"
 # Tier B "pin" (DOCKING.md C2/C4): the CI checkout job id, NOT a dependency.
 TIER_B_CI_JOB_ID = "omega-lock-citation-drift"
 # Optional nice-to-have: the immutable SHA the Tier B checkout pins to.
-TIER_B_EXPECTED_SHA = "c03b8ac3c97752f64796dee49f9f11ab90cbce7d"
+TIER_B_EXPECTED_SHA = "12559db9c3e422c87dd0cabd785f056c85b44533"
 
 Status = Literal["PASS", "FAIL", "SKIP"]
 

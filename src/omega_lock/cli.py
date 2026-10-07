@@ -36,6 +36,8 @@ def _load_json(path: str) -> Any:
         raise SystemExit2(f"file not found: {path}")
     except json.JSONDecodeError as exc:
         raise SystemExit2(f"invalid JSON in {path}: {exc}")
+    except (OSError, UnicodeError) as exc:
+        raise SystemExit2(f"could not read {path}: {exc}") from exc
 
 
 def _load_score_array(path: str, label: str) -> list[float]:

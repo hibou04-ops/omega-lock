@@ -20,6 +20,22 @@ def _write_json(path: Path, payload: Any) -> str:
     return str(path)
 
 
+@pytest.mark.parametrize("kind", ["directory", "invalid-encoding"])
+def test_gate_unreadable_input_exits_two_without_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture, kind: str,
+):
+    train = tmp_path / "train.json"
+    if kind == "directory":
+        train.mkdir()
+    else:
+        train.write_bytes(b"\xff\xfe")
+    holdout = _write_json(tmp_path / "holdout.json", [1, 2, 3])
+    assert main(["gate", "--train", str(train), "--holdout", holdout]) == 2
+    error = capsys.readouterr().err
+    assert "could not read" in error
+    assert "Traceback" not in error
+
+
 # ── demo ───────────────────────────────────────────────────────────────────
 
 
