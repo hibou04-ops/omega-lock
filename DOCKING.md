@@ -1,4 +1,94 @@
-# Omega family docking — "born docked"
+# Omega Aile docking — current user guide and guarded contracts
+
+Omega Aile — Quiet precision. AI research guided by evidence.
+
+## Start here: choose a standalone tool or a supported connection
+
+All five tools install separately on Python 3.11+. Installation uses the network;
+offline examples and static checks do not require provider keys. Live provider
+paths require configured infrastructure and may incur provider charges.
+
+| Tool | Standalone use | Actual connection | Installation/compatibility |
+|---|---|---|---|
+| omega-lock | Gate index-aligned numeric train/holdout scores; library search and audits | Required runtime engine of omegaprompt | `omega-lock`; consumer range `>=0.3.0,<0.4.0` |
+| omegaprompt | Calibrate prompts; inspect and gate CalibrationArtifact files | Imports omega-lock; optionally consumes mini preflight records | `omegaprompt`; `omegacal` remains a compatibility alias |
+| antemortem-cli | Scaffold, classify and verify repository-risk documents | Pinned source-citation validation in CI only; no omega-lock import/dependency | PyPI/import/CLI `antemortem` |
+| mini-omega-lock | Empirical probes and context projections | Requires omegaprompt types; returns measurements for PreflightReport | `mini-omega-lock`; CLI `preflight`; metadata `omegaprompt>=1.1.0` |
+| mini-antemortem-cli | Deterministic calibration-config classification | Requires omegaprompt types; emits AnalyticalFinding for PreflightReport | PyPI/CLI `mini-antemortem-cli`; metadata `omegaprompt>=1.1.0` |
+
+The mini packages can be useful without running calibration, but still install
+omegaprompt as a runtime dependency. Their current verified consumer combination
+is omegaprompt 2.1.2. The metadata lower bound does not mean every intermediate
+version was tested. They are not submodules of omega-lock or antemortem.
+All four MCP implementations retain their existing executables/tool contracts
+through the optional `[mcp]` extra with SDK `>=1.0.0,<2.0.0` (FastMCP).
+
+### Empirical measurements to a plan
+
+With `mini-omega-lock` installed, call its existing `empirical_preflight` API
+using your configured judge, rubric and probe, as in its
+[offline deterministic demo](https://github.com/hibou04-ops/mini-omega-lock/blob/main/examples/demo_replay.py).
+The returned values are measurement objects, not a completed ship verdict:
+
+```python
+from mini_omega_lock import empirical_preflight
+from omegaprompt.preflight import PreflightReport, derive_adaptation_plan
+
+quality, endpoint, performance, warnings = empirical_preflight(
+    judge=judge, rubric=rubric, probe_item=probe, probe_response="4",
+)
+report = PreflightReport(
+    judge_quality=quality, endpoint=endpoint, performance=performance,
+    warnings=list(warnings),
+)
+plan = derive_adaptation_plan(report=report)
+print(report.model_dump_json(indent=2))
+print(plan.model_dump_json(indent=2))
+```
+
+For saved CLI `preflight --json` output, validate each of `judge_quality`,
+`endpoint` and `performance` against the matching PreflightReport field and
+carry `warnings` too. The extra `summary` and `adaptation_plan` keys are CLI
+output, not PreflightReport fields (`extra="forbid"`). Never pass the whole CLI
+JSON object as a report or turn an unmeasured warning into a PASS.
+
+### Analytical findings to a plan
+
+Use the mini-antemortem
+[fixture-backed check command](https://github.com/hibou04-ops/mini-antemortem-cli/blob/main/README.md#cli),
+save `check --json` output as `analytical.json`, then explicitly convert it:
+
+```python
+import json
+from pathlib import Path
+from omegaprompt.preflight import PreflightReport, derive_adaptation_plan
+from omegaprompt.preflight.contracts import AnalyticalFinding
+
+payload = json.loads(Path("analytical.json").read_text(encoding="utf-8"))
+report = PreflightReport(analytical_findings=[
+    AnalyticalFinding.model_validate(row) for row in payload["findings"]
+])
+plan = derive_adaptation_plan(report=report)
+print(plan.model_dump_json(indent=2))
+```
+
+Both report and plan are inspectable JSON; supplying `adaptation_plan` to the
+existing calibration runtime enables its applied/advisory behavior. See
+[AGENT_TRIGGERS.md](https://github.com/hibou04-ops/omegaprompt/blob/main/AGENT_TRIGGERS.md)
+and the [runtime contract](https://github.com/hibou04-ops/omegaprompt/blob/main/src/omegaprompt/runtime.py).
+An adaptation plan is not permission to ship: artifact integrity and configured
+generalization gates still decide. Schema/version mismatches fail validation;
+serious findings can remain visible even when an advisory CLI returns zero.
+
+Optuna has a native optional omega-lock bridge (`omega-lock[p2]`, Optuna >=3,<5).
+promptfoo/DSPy are parallel tools requiring caller-authored conversion of scores,
+datasets, rules or prompt variants. No native one-click adapter is claimed.
+
+## Original three-repository docking policy
+
+The guarded registry below covers the original engine and source-citation
+seams. The user guide above separately describes the existing mini/preflight
+data contracts; it does not add a runtime dependency to the citation seam.
 
 > Family anchor for the 3-repo omega family: **omega-lock** (this repo) ·
 > **omegaprompt** · **antemortem-cli**.
@@ -69,7 +159,7 @@ without a working guard is a bug.
 | # | Coupling (direction) | Tier | Kind | Pin | Guard(s) | Runtime import? | Status |
 |---|---|---|---|---|---|---|---|
 | 1 | omega-lock (producer) → omegaprompt (consumer) | **A** | Runtime seam | `omega-lock>=0.3.0,<0.4.0` (omegaprompt `pyproject.toml`) | **Producer CI:** `tests/test_contract_manifest.py` (omega-lock) self-checks its emitted wire-keys + signatures against `src/omega_lock/contract.py`'s `CONSUMED_CONTRACT`. **Consumer CI:** `tests/test_omega_lock_contract.py` (omegaprompt) fails loud against the installed dep; **scheduled `@main` canary** `.github/workflows/omega-lock-compat.yml` (omegaprompt) runs the same consumer test against bleeding-edge omega-lock. **No import between the two CI guards.** | Yes (omegaprompt imports `omega_lock`) | ACTIVE |
-| 2 | antemortem-cli → omega-lock | **B** | Doc-citation only (asymmetric) | omega-lock **SHA `c03b8ac3c97752f64796dee49f9f11ab90cbce7d`** (= tag `v0.3.0`), pinned as a CI-time `actions/checkout` ref into `_omega_lock_pin/` — **NOT a dependency** | `scripts/check_omega_lock_citations.py` (antemortem, reuses antemortem's own `citations.verify_citation`) run by the isolated `omega-lock-citation-drift` CI job in `.github/workflows/ci.yml`; plus the offline namespace-invariant test `tests/test_omega_lock_citation_invariant.py` (antemortem) | **No — zero `import omega_lock`, zero omega-lock dep (load-bearing; see C1)** | ACTIVE |
+| 2 | antemortem-cli → omega-lock | **B** | Doc-citation only (asymmetric) | omega-lock **SHA `12559db9c3e422c87dd0cabd785f056c85b44533`** (= tag `v0.3.2`), pinned as a CI-time `actions/checkout` ref into `_omega_lock_pin/` — **NOT a dependency** | `scripts/check_omega_lock_citations.py` (antemortem, reuses antemortem's own `citations.verify_citation`) run by the isolated `omega-lock-citation-drift` CI job in `.github/workflows/ci.yml`; plus the offline namespace-invariant test `tests/test_omega_lock_citation_invariant.py` (antemortem) | **No — zero `import omega_lock`, zero omega-lock dep (load-bearing; see C1)** | ACTIVE |
 
 ### Pin discipline notes
 
@@ -79,7 +169,7 @@ without a working guard is a bug.
   manifest; the two declarations are deliberately independent and meet only in
   CI.
 - **Tier B pin is an immutable SHA**, not a range and not a mutable tag.
-  `c03b8ac` is annotated as `= tag v0.3.0` for human readability, but CI pins the
+  `12559db` is annotated as `= tag v0.3.2` for human readability, but CI pins the
   SHA so a re-tag cannot silently change what the citation guard checks against.
   (The FINAL_PLAN C2 prose originally said "TAG v0.3.0"; the friction-review
   superseding item — and the shipped CI — use the immutable SHA. SHA wins.)

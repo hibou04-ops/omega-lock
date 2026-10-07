@@ -14,6 +14,25 @@ CI 예제, 탐색 도구 연결, 전체 API가 담긴 기술 버전을 원하시
 
 ---
 
+## 시작 · 단독 사용 · 도킹
+
+**Omega Aile** — Quiet precision. AI research guided by evidence.
+
+튜닝 후보의 train/holdout 점수와 선언한 기준을 검사합니다. CLI는 점수 상관 게이트이며, 라이브러리는 탐색·제약·감사 기록도 제공합니다.
+
+Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
+
+```bash
+python -m pip install omega-lock==0.3.8
+python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
+omega-lock gate --train train.json --holdout holdout.json --report gate.html
+```
+
+합성 예제는 PASS/종료 0, 상관 1.000이며 gate.html을 만듭니다. holdout 배열을 뒤집으면 FAIL/1, 입력 오류는 2입니다. 실제 일반화 성능을 증명하지 않습니다. Optuna bridge는 선택 extras [p2]의 >=3,<5 범위입니다.
+
+[실제 연결 방식과 입력·출력](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [전체 안내](README.md). 두 mini 도구의 현재 검증 조합은 omegaprompt 2.1.2이며, 별도 배포 패키지입니다.
+
+
 ## 이야기로 시작합니다
 
 무언가의 가장 좋은 설정을 찾으려 한다고 상상해 보세요 — 요리법일 수도, 가격일 수도,

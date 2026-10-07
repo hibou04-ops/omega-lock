@@ -115,8 +115,11 @@ def _by_name(results: list[object]) -> dict[str, object]:
 def test_release_audit_current_repo_offline_json_is_stable():
     root = Path(__file__).resolve().parents[1]
 
-    results = AUDIT.run_release_audit(root, intended_version="0.3.7", offline=True)
-    payload = AUDIT.to_payload(results, root=root, intended_version="0.3.7", offline=True)
+    import tomllib
+
+    version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+    results = AUDIT.run_release_audit(root, intended_version=version, offline=True)
+    payload = AUDIT.to_payload(results, root=root, intended_version=version, offline=True)
     rendered_once = AUDIT.render_json(payload)
     rendered_twice = AUDIT.render_json(payload)
 

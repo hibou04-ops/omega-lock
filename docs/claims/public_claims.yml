@@ -7,12 +7,32 @@
       "claim": "README.md says Omega-Lock performs walk-forward validation and KC-4 train-to-test checks.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:14", "README.md:29", "README.md:118"],
-      "readme_markers": ["walk-forward validation", "Walk-forward transfer gate", "re-tests the winner on a slice the search never touched"],
+      "readme_refs": [
+        "README.md:14",
+        "README.md:140",
+        "README.md:50"
+      ],
+      "readme_markers": [
+        "walk-forward validation",
+        "Walk-forward transfer gate",
+        "re-tests the winner on a slice the search never touched"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/walk_forward.py", "note": "WalkForward implementation."},
-        {"type": "source_of_truth", "path": "src/omega_lock/orchestrator.py", "note": "run_p1 wires test_target through WalkForward and check_kc4."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_walk_forward_cache.py tests/test_integration_phantom.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/walk_forward.py",
+          "note": "WalkForward implementation."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/orchestrator.py",
+          "note": "run_p1 wires test_target through WalkForward and check_kc4."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_walk_forward_cache.py tests/test_integration_phantom.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -20,12 +40,32 @@
       "claim": "README.md says hard constraints are declared, evaluated, recorded, and can gate selection through constraint_policy.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:119", "README.md:124"],
-      "readme_markers": ["Hard-constraint feasibility", "passes your latency / cost / risk limits", "violates a constraint you declared"],
+      "readme_refs": [
+        "README.md:141",
+        "README.md:141",
+        "README.md:141"
+      ],
+      "readme_markers": [
+        "Hard-constraint feasibility",
+        "passes your latency / cost / risk limits",
+        "violates a constraint you declared"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/audit/_target.py", "note": "AuditingTarget evaluates Constraint predicates and records pass/fail metadata."},
-        {"type": "source_of_truth", "path": "src/omega_lock/orchestrator.py", "note": "P1Config.constraint_policy controls feasible selection and hard_fail status."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_constraint_aware_selection.py tests/test_constraint_uniqueness.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/audit/_target.py",
+          "note": "AuditingTarget evaluates Constraint predicates and records pass/fail metadata."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/orchestrator.py",
+          "note": "P1Config.constraint_policy controls feasible selection and hard_fail status."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_constraint_aware_selection.py tests/test_constraint_uniqueness.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -33,12 +73,32 @@
       "claim": "README.md says audit reports distinguish best_feasible from best_any / absolute best.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:48", "README.md:119"],
-      "readme_markers": ["best_feasible ≠ best_any", "best_feasible", "best_any"],
+      "readme_refs": [
+        "README.md:67",
+        "README.md:67",
+        "README.md:67"
+      ],
+      "readme_markers": [
+        "best_feasible ≠ best_any",
+        "best_feasible",
+        "best_any"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/audit/_types.py", "note": "AuditReport.best_feasible and AuditReport.best_any are computed properties."},
-        {"type": "source_of_truth", "path": "src/omega_lock/audit/_scorecard.py", "note": "render_scorecard renders best feasible and best any."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_audit.py::test_report_best_feasible_prefers_feasible_even_if_lower_fitness -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/audit/_types.py",
+          "note": "AuditReport.best_feasible and AuditReport.best_any are computed properties."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/audit/_scorecard.py",
+          "note": "render_scorecard renders best feasible and best any."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_audit.py::test_report_best_feasible_prefers_feasible_even_if_lower_fitness -q",
+          "network": false
+        }
       ]
     },
     {
@@ -46,12 +106,32 @@
       "claim": "README.md says each probed candidate is appended to a reviewable JSON audit trail with phase, role, round, and call index context.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:84", "README.md:120"],
-      "readme_markers": ["append-only audit trail", "Append-only audit trail", "records the verdict, inputs, and thresholds"],
+      "readme_refs": [
+        "README.md:192",
+        "README.md:192",
+        "README.md:192"
+      ],
+      "readme_markers": [
+        "append-only audit trail",
+        "evaluated candidates",
+        "score-array CLI only prints its verdict"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/audit/_types.py", "note": "AuditedRun and AuditReport define positional trail fields and JSON serialization."},
-        {"type": "source_of_truth", "path": "src/omega_lock/audit/_target.py", "note": "AuditingTarget appends one AuditedRun per evaluate call."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_audit.py tests/test_auto_phase_tracking.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/audit/_types.py",
+          "note": "AuditedRun and AuditReport define positional trail fields and JSON serialization."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/audit/_target.py",
+          "note": "AuditingTarget appends one AuditedRun per evaluate call."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_audit.py tests/test_auto_phase_tracking.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -59,11 +139,23 @@
       "claim": "README.md says audit JSON can include an optional SHA-256 hash chain and can verify tamper evidence on readback.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:120"],
-      "readme_markers": ["tamper-evident"],
+      "readme_refs": [
+        "README.md:192"
+      ],
+      "readme_markers": [
+        "tamper-evident"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/audit/_types.py", "note": "AuditReport.hash_chain, verify_hash_chain, and to_json(with_hash_chain=True)."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_audit_hash_chain.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/audit/_types.py",
+          "note": "AuditReport.hash_chain, verify_hash_chain, and to_json(with_hash_chain=True)."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_audit_hash_chain.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -71,14 +163,42 @@
       "claim": "README.md says the bundled demos are deterministic and require no network or API keys.",
       "classification": "deterministic_artifact",
       "status": "validated",
-      "readme_refs": ["README.md:11", "README.md:39"],
-      "readme_markers": ["60s, offline", "fully offline case study", "nothing to set up"],
+      "readme_refs": [
+        "README.md:11",
+        "README.md:60",
+        "README.md:54"
+      ],
+      "readme_markers": [
+        "60s, offline",
+        "fully offline case study",
+        "nothing to set up"
+      ],
       "proof": [
-        {"type": "deterministic_artifact", "path": "examples/_demo_output.txt", "note": "Captured phantom demo output used by demo_replay.py."},
-        {"type": "source_of_truth", "path": "examples/demo_replay.py", "note": "Replay reads the checked-in capture file."},
-        {"type": "source_of_truth", "path": "examples/demo_sram.py", "note": "Local SRAM demo entry point."},
-        {"type": "reproducible_command", "command": "python examples/demo_replay.py", "network": false},
-        {"type": "reproducible_command", "command": "python examples/demo_sram.py", "network": false}
+        {
+          "type": "deterministic_artifact",
+          "path": "examples/_demo_output.txt",
+          "note": "Captured phantom demo output used by demo_replay.py."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "examples/demo_replay.py",
+          "note": "Replay reads the checked-in capture file."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "examples/demo_sram.py",
+          "note": "Local SRAM demo entry point."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python examples/demo_replay.py",
+          "network": false
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python examples/demo_sram.py",
+          "network": false
+        }
       ]
     },
     {
@@ -86,12 +206,28 @@
       "claim": "README.md says benchmark_battery.py and run_benchmark produce an objective scorecard with mechanically computed metrics.",
       "classification": "reproducible_command",
       "status": "validated",
-      "readme_refs": ["README.md:160"],
-      "readme_markers": ["shareable dark-themed scorecard"],
+      "readme_refs": [
+        "README.md:180"
+      ],
+      "readme_markers": [
+        "shareable dark-themed scorecard"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/benchmark.py", "note": "BenchmarkReport, BenchmarkRow, and metric computations."},
-        {"type": "source_of_truth", "path": "examples/benchmark_battery.py", "note": "Example battery that prints the scorecard."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_benchmark.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/benchmark.py",
+          "note": "BenchmarkReport, BenchmarkRow, and metric computations."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "examples/benchmark_battery.py",
+          "note": "Example battery that prints the scorecard."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_benchmark.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -99,12 +235,28 @@
       "claim": "README.md says the frozen benchmark regression fixture tracks deterministic stress_rank_spearman values.",
       "classification": "deterministic_artifact",
       "status": "validated",
-      "readme_refs": ["README.md:166"],
-      "readme_markers": ["rank parameters by perturbation sensitivity"],
+      "readme_refs": [
+        "README.md:190"
+      ],
+      "readme_markers": [
+        "rank parameters by perturbation sensitivity"
+      ],
       "proof": [
-        {"type": "deterministic_artifact", "path": "tests/fixtures/benchmark_gold.json", "note": "Frozen deterministic benchmark regression fixture."},
-        {"type": "source_of_truth", "path": "tests/test_benchmark_regression.py", "note": "Regression guard compares deterministic metrics against benchmark_gold.json."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_benchmark_regression.py -q", "network": false}
+        {
+          "type": "deterministic_artifact",
+          "path": "tests/fixtures/benchmark_gold.json",
+          "note": "Frozen deterministic benchmark regression fixture."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "tests/test_benchmark_regression.py",
+          "note": "Regression guard compares deterministic metrics against benchmark_gold.json."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_benchmark_regression.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -112,13 +264,35 @@
       "claim": "README.md uses omega-lock as the PyPI distribution and omega_lock as the Python import package.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:10", "README.md:90"],
-      "readme_markers": ["pip install omega-lock", "from omega_lock.simple import gate_scores"],
+      "readme_refs": [
+        "README.md:10",
+        "README.md:110"
+      ],
+      "readme_markers": [
+        "pip install omega-lock",
+        "from omega_lock.simple import gate_scores"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "pyproject.toml", "note": "project.name is omega-lock and package-dir is src."},
-        {"type": "source_of_truth", "path": "src/omega_lock", "note": "Import package directory."},
-        {"type": "generated_doc", "path": "docs/REPO_SURFACE.md", "note": "Repository surface matrix separates GitHub repo, PyPI distribution, import package, and CLI status."},
-        {"type": "reproducible_command", "command": "python scripts/check_repo_consistency.py --check", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "pyproject.toml",
+          "note": "project.name is omega-lock and package-dir is src."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock",
+          "note": "Import package directory."
+        },
+        {
+          "type": "generated_doc",
+          "path": "docs/REPO_SURFACE.md",
+          "note": "Repository surface matrix separates GitHub repo, PyPI distribution, import package, and CLI status."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python scripts/check_repo_consistency.py --check",
+          "network": false
+        }
       ]
     },
     {
@@ -126,13 +300,33 @@
       "claim": "README.md says the installed omega-lock console command ships demo, gate, and report subcommands only, and that no omega-lock diff console command ships.",
       "classification": "generated_doc",
       "status": "validated",
-      "readme_refs": ["README.md:155"],
-      "readme_markers": ["omega-lock gate --help"],
+      "readme_refs": [
+        "README.md:177"
+      ],
+      "readme_markers": [
+        "omega-lock gate --help"
+      ],
       "proof": [
-        {"type": "generated_doc", "path": "docs/REPO_SURFACE.md", "note": "CLI executable status documents omega-lock (since 0.3.4) with demo/gate/report subcommands and no diff command."},
-        {"type": "source_of_truth", "path": "pyproject.toml", "note": "[project.scripts] defines omega-lock = omega_lock.cli:main; no diff entry point exists."},
-        {"type": "source_of_truth", "path": "src/omega_lock/cli.py", "note": "argparse subcommands are demo, gate, and report only."},
-        {"type": "reproducible_command", "command": "python scripts/check_repo_consistency.py --check", "network": false}
+        {
+          "type": "generated_doc",
+          "path": "docs/REPO_SURFACE.md",
+          "note": "CLI executable status documents omega-lock (since 0.3.4) with demo/gate/report subcommands and no diff command."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "pyproject.toml",
+          "note": "[project.scripts] defines omega-lock = omega_lock.cli:main; no diff entry point exists."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/cli.py",
+          "note": "argparse subcommands are demo, gate, and report only."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python scripts/check_repo_consistency.py --check",
+          "network": false
+        }
       ]
     },
     {
@@ -140,13 +334,35 @@
       "claim": "README.md says the package installs an omega-lock console command with demo, gate, and report subcommands backed by [project.scripts].",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:11", "README.md:154"],
-      "readme_markers": ["omega-lock demo", "omega-lock gate"],
+      "readme_refs": [
+        "README.md:11",
+        "README.md:29"
+      ],
+      "readme_markers": [
+        "omega-lock demo",
+        "omega-lock gate"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/cli.py", "note": "argparse entry point with demo/gate/report subcommands."},
-        {"type": "source_of_truth", "path": "pyproject.toml", "note": "[project.scripts] omega-lock = omega_lock.cli:main."},
-        {"type": "source_of_truth", "path": "src/omega_lock/_demo.py", "note": "Packaged case-study engine so the wheel can run omega-lock demo."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_cli.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/cli.py",
+          "note": "argparse entry point with demo/gate/report subcommands."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "pyproject.toml",
+          "note": "[project.scripts] omega-lock = omega_lock.cli:main."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/_demo.py",
+          "note": "Packaged case-study engine so the wheel can run omega-lock demo."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_cli.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -154,12 +370,30 @@
       "claim": "README.md says audit_optuna_study gates an existing Optuna study's completed trials through the walk-forward KC-4 gate and splits best_any from best_feasible via per-trial user_attrs feasibility flags, with a lazy optional optuna import.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:99", "README.md:103"],
-      "readme_markers": ["audit_optuna_study", "Already have an Optuna study?"],
+      "readme_refs": [
+        "README.md:123",
+        "README.md:118"
+      ],
+      "readme_markers": [
+        "audit_optuna_study",
+        "Already have an Optuna study?"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/integrations/optuna_bridge.py", "note": "audit_optuna_study reuses WalkForward + check_kc4; import optuna is lazy inside the function."},
-        {"type": "source_of_truth", "path": "examples/optuna_audit_demo.py", "note": "Deterministic demo using the bridge API end to end."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_optuna_bridge.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/integrations/optuna_bridge.py",
+          "note": "audit_optuna_study reuses WalkForward + check_kc4; import optuna is lazy inside the function."
+        },
+        {
+          "type": "source_of_truth",
+          "path": "examples/optuna_audit_demo.py",
+          "note": "Deterministic demo using the bridge API end to end."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_optuna_bridge.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -167,11 +401,25 @@
       "claim": "README.md says render_html produces a deterministic, stdlib-only, single-file HTML scorecard (verdict banner, best_any vs best_feasible table, stress ranking, inline SVG scatter) for audit results.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:160"],
-      "readme_markers": ["render_html", "dark-themed scorecard"],
+      "readme_refs": [
+        "README.md:180",
+        "README.md:180"
+      ],
+      "readme_markers": [
+        "render_html",
+        "dark-themed scorecard"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/report_html.py", "note": "Pure-stdlib string templating; deterministic output without caller-supplied timestamps."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_report_html.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/report_html.py",
+          "note": "Pure-stdlib string templating; deterministic output without caller-supplied timestamps."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_report_html.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -179,11 +427,25 @@
       "claim": "README.md says omega_lock.simple offers a plain-language facade: gate_scores over two score lists returning a GateVerdict, and an audit wrapper over run_p1.",
       "classification": "source_of_truth",
       "status": "validated",
-      "readme_refs": ["README.md:88", "README.md:90"],
-      "readme_markers": ["gate_scores", "omega_lock.simple"],
+      "readme_refs": [
+        "README.md:110",
+        "README.md:110"
+      ],
+      "readme_markers": [
+        "gate_scores",
+        "omega_lock.simple"
+      ],
       "proof": [
-        {"type": "source_of_truth", "path": "src/omega_lock/simple.py", "note": "gate_scores wraps check_kc4; audit wraps CallableAdapter + run_p1; render_html re-exported."},
-        {"type": "reproducible_command", "command": "python -m pytest tests/test_simple_facade.py -q", "network": false}
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/simple.py",
+          "note": "gate_scores wraps check_kc4; audit wraps CallableAdapter + run_p1; render_html re-exported."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_simple_facade.py -q",
+          "network": false
+        }
       ]
     },
     {
@@ -191,8 +453,14 @@
       "claim": "README.md positions Omega-Lock as audit-first rather than search-first.",
       "classification": "qualitative_marker",
       "status": "qualitative",
-      "readme_refs": ["README.md:31", "README.md:127"],
-      "readme_markers": ["second opinion", "gate you bolt onto the search"],
+      "readme_refs": [
+        "README.md:50",
+        "README.md:150"
+      ],
+      "readme_markers": [
+        "second opinion",
+        "gate you bolt onto the search"
+      ],
       "proof": [],
       "note": "Qualitative positioning marker; not upgraded to a quantitative proof claim."
     },
@@ -201,7 +469,11 @@
       "claim": "README.md says static badges and any download/star signals are not proof of correctness, trustworthiness, release readiness, adoption, or package quality.",
       "classification": "qualitative_marker",
       "status": "qualitative",
-      "readme_refs": ["README.md:14"],
+      "readme_refs": [
+        "README.md:188",
+        "README.md:188",
+        "README.md:188"
+      ],
       "readme_markers": [
         "Badge and download analytics boundaries",
         "Downloads or stars may indicate visibility",
@@ -215,7 +487,10 @@
       "claim": "README.md includes a qualitative \"How is this different?\" comparison table and an audit-gate-first position statement, without asserting superiority, adoption, or benchmark rank.",
       "classification": "qualitative_marker",
       "status": "qualitative",
-      "readme_refs": ["README.md:137", "README.md:145"],
+      "readme_refs": [
+        "README.md:159",
+        "README.md:167"
+      ],
       "readme_markers": [
         "Where it sits next to the tools you know",
         "output-side overfit gate"

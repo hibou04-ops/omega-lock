@@ -1,6 +1,6 @@
 # omega-lock
 
-**가장 높은 점수가 당신을 속이고 있습니다 — 그리고 당신의 옵티마이저는 그것을 잡아내지 못합니다.** omega-lock은 튜너가 끝난 *뒤에* 실행되는 게이트입니다. 튜너가 고른 "우승" 후보를 받아, 그 점수가 진짜인지 단순한 운인지를 — 배포 **전에** — 알려줍니다.
+**튜닝 후보가 선언한 감사 기준을 충족하는지 확인합니다.** omega-lock은 튜너가 끝난 *뒤에* 실행되는 게이트입니다. 튜너가 고른 "우승" 후보를 받아, 그 점수가 진짜인지 단순한 운인지를 — 배포 **전에** — 알려줍니다.
 
 [![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
@@ -14,6 +14,25 @@ omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이�
 > *키워드: hyperparameter overfitting · eval / prompt regression testing · walk-forward validation · validate an Optuna study · holdout transfer check in CI.*
 
 ---
+
+## 시작 · 단독 사용 · 도킹
+
+**Omega Aile** — Quiet precision. AI research guided by evidence.
+
+튜닝 후보의 train/holdout 점수와 선언한 기준을 검사합니다. CLI는 점수 상관 게이트이며, 라이브러리는 탐색·제약·감사 기록도 제공합니다.
+
+Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
+
+```bash
+python -m pip install omega-lock==0.3.8
+python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
+omega-lock gate --train train.json --holdout holdout.json --report gate.html
+```
+
+합성 예제는 PASS/종료 0, 상관 1.000이며 gate.html을 만듭니다. holdout 배열을 뒤집으면 FAIL/1, 입력 오류는 2입니다. 실제 일반화 성능을 증명하지 않습니다. Optuna bridge는 선택 extras [p2]의 >=3,<5 범위입니다.
+
+[실제 연결 방식과 입력·출력](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [전체 안내](README.md). 두 mini 도구의 현재 검증 조합은 omegaprompt 2.1.2이며, 별도 배포 패키지입니다.
+
 
 ## 30초 요약
 
@@ -88,8 +107,8 @@ jobs:
 ```python
 from omega_lock.simple import gate_scores
 
-result = gate_scores(train="train_scores.json", holdout="holdout_scores.json")
-assert result.passed, result.reason   # fail your test suite on a bad candidate
+result = gate_scores([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+assert result.passed, result.reasons   # fail your test suite on a bad candidate
 ```
 
 ---
@@ -117,15 +136,15 @@ print(report.passed, report.gated_best)   # False, and the candidate it WILL cer
 |---|---|---|
 | **Walk-forward transfer gate** | Does the score earned on the tuned data carry over to a held-out slice it never saw? | The held-out result decorrelates from the tuned ranking — the winner was a fluke. |
 | **Hard-constraint feasibility** | Is the highest-scoring candidate also a *valid* one (passes your latency / cost / risk limits), or did you win on a config you can't run? | `best_feasible ≠ best_any` — the top score violates a constraint you declared. |
-| **Append-only audit trail** | Can you reconstruct the decision months later? | Never blocks — always records the verdict, inputs, and thresholds, tamper-evident. |
+| **Append-only audit trail** | Can you reconstruct the decision months later? | Optional library audit API; the score-array CLI does not write an audit trail. |
 
 **핵심 통찰:** *가장 높은 점수는 당신이 가진 가장 의심스러운 숫자입니다.* 진짜 실력은 한 번도 보여준 적 없는 슬라이스에서 살아남습니다. 운은 그렇지 못합니다.
 
 ---
 
-## omega-lock은 또 다른 옵티마이저가 아닙니다
+## CLI 게이트와 라이브러리 탐색의 역할
 
-탐색하지도, 샘플링하지도, 아무것도 제안하지 않습니다. 이미 가지고 있는 탐색에 **볼트로 끼우는 게이트**입니다 — Optuna도, 당신의 스윕도, eval 루프도 그대로 두고, omega-lock이 그 출력을 판정하게 하세요.
+점수 배열 CLI는 기존 점수를 검사합니다. 라이브러리에는 GridSearch·ZoomingGridSearch·run_p1 탐색 기능도 있습니다. 이미 가지고 있는 탐색에 **볼트로 끼우는 게이트**입니다 — Optuna도, 당신의 스윕도, eval 루프도 그대로 두고, omega-lock이 그 출력을 판정하게 하세요.
 
 | | Your optimizer (Optuna / Ax / sweep) | omega-lock |
 |---|---|---|
@@ -164,3 +183,5 @@ omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)
 <sub>**배지 및 다운로드 분석 경계 (Badge and download analytics boundaries).** 위 배지들은 정적이거나 레지스트리가 제공하는 링크일 뿐, 릴리스 준비도, 정확성, 신뢰성, 채택도, 패키지 품질을 증명하지 않습니다(they do not prove release readiness, correctness, trustworthiness, adoption, or package quality). 다운로드나 별(star)은 가시성을 나타낼 뿐 실력이 아닙니다(downloads or stars may indicate visibility) — 별/다운로드는 감사 증거나 릴리스 승인에 사용되어서는 안 됩니다(stars/downloads must not be used as audit evidence or release approval). 여기서는 어떤 PyPI 또는 GitHub 다운로드 분석도 주장하지 않습니다(no PyPI or GitHub download analytics are asserted here). 오직 홀드아웃 데이터에서의 게이트 PASS/FAIL만이 증거입니다.</sub>
 
 <sub>**용어 안내.** 이 페이지는 쉬운 언어를 씁니다. 공개 파이썬 API는 하위 호환을 위해 기존 심볼을 유지합니다(다른 레포가 import합니다). 코드에서는 다음을 볼 수 있습니다: `run_p1` / `P1Config`(게이트 실행 + 설정), `check_kc4` / `KCThresholds`(walk-forward 전이 검사 + 통과 임계값, 예: 최소 전이 상관), `measure_stress`(섭동 민감도로 파라미터 순위), `ParamSpec`(튜닝 가능한 파라미터의 범위), `EvalResult`(채점된 후보 하나). `omega-lock demo`, `omega-lock gate`, 또는 `omega_lock.simple.gate_scores()`를 쓰는 데에는 이들이 전혀 필요 없습니다. 전체 레퍼런스는 [docs/API.md](docs/API.md)에 있습니다.</sub>
+
+라이브러리는 후보 평가의 append-only audit trail과 선택 SHA-256 hash chain을 제공합니다. 저장된 감사 JSON의 변경을 검사할 수 있습니다. 점수 배열 CLI는 판정과 선택 HTML 출력만 제공하며 감사 trail을 생성하지 않습니다.

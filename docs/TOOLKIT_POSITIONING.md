@@ -47,20 +47,20 @@ Use Omega-Lock when the acceptance decision depends on constraints, audit
 trail, train/test transfer, and reproducible artifacts. Do not use it as a
 claim that a search method found a global optimum.
 
-## Adjacent Tool Names
+## Current Toolkit Relationships
 
-The names below are not referenced in the current repository docs or source at
-the time this file was added. This repository therefore does not claim
-integration, compatibility, ownership, or lineage with them.
+The original version of this section recorded a historical absence of local
+references. It was not evidence that no integration existed. Current supported
+connections are described in [DOCKING.md](../DOCKING.md).
 
 | Name | Local relationship stated by this repository |
 | --- | --- |
-| `antemortem-cli` | No local reference found. If used separately, treat it as pre-mortem or risk-analysis tooling before experiment design; Omega-Lock remains a post-candidate audit gate. |
-| `mini-omega-lock` | No local reference found. This repository does not define a compatibility promise or subset relationship. |
-| `omegaprompt` | No local reference found. This repository does not claim prompt-tool integration or provider coverage. |
+| `antemortem-cli` | Source-citation CI checks a pinned omega-lock revision; no runtime import or dependency. |
+| `mini-omega-lock` | Separate empirical preflight package requiring omegaprompt types; not an omega-lock submodule. |
+| `mini-antemortem-cli` | Separate deterministic analytical preflight package requiring omegaprompt types. |
+| `omegaprompt` | Runtime consumer of omega-lock>=0.3.0,<0.4.0 with independent producer and consumer contract guards. |
 
-If future docs introduce one of these tools, add a source-backed description or
-keep the relationship qualitative.
+This repository does not claim external adapter support, live provider certification, or universal compatibility.
 
 ## When To Use Omega-Lock
 
