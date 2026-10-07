@@ -9,7 +9,7 @@ Generated from `docs/claims/public_claims.yml` by `scripts/generate_readme_claim
 
 | Claim ID | Classification | Status | README markers | Proof summary |
 | --- | --- | --- | --- | --- |
-| append_only_audit_trail | source_of_truth | validated | append-only audit trail; Append-only audit trail; records the verdict, inputs, and thresholds | source_of_truth:src/omega_lock/audit/_types.py; source_of_truth:src/omega_lock/audit/_target.py; reproducible_command:python -m pytest tests/test_audit.py tests/test_auto_phase_tracking.py -q |
+| append_only_audit_trail | source_of_truth | validated | append-only audit trail; evaluated candidates; score-array CLI only prints its verdict | source_of_truth:src/omega_lock/audit/_types.py; source_of_truth:src/omega_lock/audit/_target.py; reproducible_command:python -m pytest tests/test_audit.py tests/test_auto_phase_tracking.py -q |
 | audit_first_positioning | qualitative_marker | qualitative | second opinion; gate you bolt onto the search | none |
 | badge_download_analytics_boundaries | qualitative_marker | qualitative | Badge and download analytics boundaries; Downloads or stars may indicate visibility; No PyPI or GitHub download analytics are asserted here | none |
 | benchmark_scorecard | reproducible_command | validated | shareable dark-themed scorecard | source_of_truth:src/omega_lock/benchmark.py; source_of_truth:examples/benchmark_battery.py; reproducible_command:python -m pytest tests/test_benchmark.py -q |

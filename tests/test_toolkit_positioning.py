@@ -36,12 +36,11 @@ def test_adjacent_tool_names_are_not_invented_relationships():
     for tool_name in ("antemortem-cli", "mini-omega-lock", "omegaprompt"):
         assert f"`{tool_name}`" in text
 
-    assert "not referenced in the current repository docs or source" in normalized
-    assert (
-        "does not claim integration, compatibility, ownership, or lineage"
-        in normalized
-    )
-    assert "No local reference found" in text
+    assert "historical absence of local references" in normalized
+    assert "DOCKING.md" in text
+    assert "no runtime import or dependency" in normalized
+    assert "Runtime consumer of omega-lock>=0.3.0,<0.4.0" in normalized
+    assert "No local reference found" not in text
 
 
 def test_positioning_claim_remains_qualitative_in_claim_ledger():

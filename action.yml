@@ -3,7 +3,7 @@
 #
 # Usage in a workflow:
 #
-#   - uses: hibou04-ops/omega-lock@v0.3.7
+#   - uses: hibou04-ops/omega-lock@v0.3.8
 #     with:
 #       train: train_scores.json       # in-sample scores (JSON array)
 #       holdout: holdout_scores.json   # held-out scores (JSON array, index-aligned)
@@ -44,7 +44,7 @@ inputs:
       omega-lock version to install from PyPI. Defaults to the action's own
       pinned version. Use 'latest' to always pull the newest release.
     required: false
-    default: "0.3.7"
+    default: "0.3.8"
   python-version:
     description: Python version to set up.
     required: false
@@ -77,18 +77,22 @@ runs:
       shell: bash
       env:
         PYTHONUTF8: "1"
+        INPUT_TRAIN: ${{ inputs.train }}
+        INPUT_HOLDOUT: ${{ inputs.holdout }}
+        INPUT_PEARSON_MIN: ${{ inputs.pearson-min }}
+        INPUT_REPORT: ${{ inputs.report }}
       run: |
-        report_flag=""
-        if [ -n "${{ inputs.report }}" ]; then
-          report_flag="--report ${{ inputs.report }}"
+        report_args=()
+        if [ -n "$INPUT_REPORT" ]; then
+          report_args=(--report "$INPUT_REPORT")
         fi
 
         set +e
         omega-lock gate \
-          --train "${{ inputs.train }}" \
-          --holdout "${{ inputs.holdout }}" \
-          --pearson-min "${{ inputs.pearson-min }}" \
-          $report_flag
+          --train "$INPUT_TRAIN" \
+          --holdout "$INPUT_HOLDOUT" \
+          --pearson-min "$INPUT_PEARSON_MIN" \
+          "${report_args[@]}"
         gate_exit=$?
         set -e
 

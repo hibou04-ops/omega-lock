@@ -14,6 +14,27 @@ Read [README.md](README.md).
 
 ---
 
+## Start here · Standalone use · Integration/Docking
+
+**Omega Aile** — Quiet precision. AI research guided by evidence.
+
+Audit numeric candidate scores after tuning. The CLI correlation gate checks index-aligned train/holdout arrays; the library also provides search, constraints and audit trails.
+
+Requires Python 3.11+. Installation needs internet.
+
+```bash
+python -m pip install omega-lock==0.3.8
+python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
+omega-lock gate --train train.json --holdout holdout.json --report gate.html
+```
+
+Synthetic input: PASS and exit 0, Pearson 1.000; gate.html is the scorecard. Reverse the holdout array to exercise FAIL/exit 1. Invalid input exits 2. This checks wiring, not real-world generalization.
+
+No sibling package is needed. omegaprompt requires omega-lock>=0.3.0,<0.4.0 at runtime. antemortem only cites a pinned source revision in CI. Optuna is a native optional bridge: install omega-lock[p2] (Optuna >=3,<5); other optimizers can supply score arrays through an explicit export.
+
+[Docking contracts and runnable data handoff](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [Full guide](README.md).
+
+
 ## Start with a story
 
 Imagine you are trying to find the best setting for something — maybe a recipe, a
