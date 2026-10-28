@@ -14,8 +14,9 @@ straight from the source (`src/omega_lock/kill_criteria.py`,
 
 When you try many candidates and keep the single best one, the winning score is
 the **most likely candidate to be inflated by luck**, because selecting-the-max is
-exactly the operation that concentrates noise. omega-lock measures how much of that
-score was luck by re-testing the winner on data it was never selected against.
+exactly the operation that can concentrate noise. omega-lock re-evaluates
+candidates on caller-supplied holdout data and checks the declared criteria.
+It does not identify how much of a score was caused by luck.
 
 ---
 
@@ -32,12 +33,11 @@ set of candidates:
 
 omega-lock looks at the top-ranked candidates (by default the top 10,
 `walk_forward_top_n = 10`) and computes the **Pearson correlation between the train
-ranking and the holdout ranking**.
+and holdout score columns**. The score-array facade uses all supplied candidates.
 
-- **If the correlation is high**, the candidates that won on tuned data also win on
-  fresh data — the ranking is real, and the gate **PASSes**.
-- **If the correlation collapses**, the winner's lead was noise that did not
-  reappear on fresh data — the gate **FAILs** and blocks the deploy.
+- **If correlation clears the threshold**, the correlation sub-gate passes.
+- **If correlation is too low or uncomputable**, the gate fails. This does not
+  establish a particular cause of the disagreement.
 
 **The threshold.** The default minimum transfer correlation is
 **`pearson_min = 0.3`** (`KCThresholds.pearson_min`). A run whose top-N
@@ -46,10 +46,12 @@ train↔holdout Pearson falls below `0.3` fails the transfer gate. In the bundle
 `0.179`, which is below `0.3`, so the gate stamps FAIL — while the
 constraint-feasible candidate scores `0.909` and PASSes.
 
-**Why Pearson on a ranking.** A real edge keeps the same candidates near the top on
-both slices, so their two score columns move together (high correlation). Pure
-selection luck reshuffles the top on the unseen slice, so the columns decorrelate.
-The correlation is the signal-vs-luck meter.
+**What Pearson establishes.** It measures linear association of the score columns,
+not rank correlation, absolute quality, dataset independence or generalization.
+`holdout = train - 100` still has correlation 1.0 even when every holdout score is
+unacceptable. Use separately declared absolute quality constraints when needed.
+The caller owns data separation and candidate correspondence; `gate_scores`
+accepts optional `train_ids` / `holdout_ids` to validate candidate ordering.
 
 For non-action objectives (plain math / ML / simulation scores that have no "number
 of actions" concept), use `KCThresholds.pure_objective()`. It keeps the transfer

@@ -9,8 +9,8 @@
       "status": "validated",
       "readme_refs": [
         "README.md:14",
-        "README.md:140",
-        "README.md:50"
+        "README.md:142",
+        "README.md:52"
       ],
       "readme_markers": [
         "walk-forward validation",
@@ -41,9 +41,9 @@
       "classification": "source_of_truth",
       "status": "validated",
       "readme_refs": [
-        "README.md:141",
-        "README.md:141",
-        "README.md:141"
+        "README.md:143",
+        "README.md:143",
+        "README.md:143"
       ],
       "readme_markers": [
         "Hard-constraint feasibility",
@@ -74,9 +74,9 @@
       "classification": "source_of_truth",
       "status": "validated",
       "readme_refs": [
-        "README.md:67",
-        "README.md:67",
-        "README.md:67"
+        "README.md:69",
+        "README.md:69",
+        "README.md:69"
       ],
       "readme_markers": [
         "best_feasible ≠ best_any",
@@ -107,9 +107,9 @@
       "classification": "source_of_truth",
       "status": "validated",
       "readme_refs": [
-        "README.md:192",
-        "README.md:192",
-        "README.md:192"
+        "README.md:194",
+        "README.md:194",
+        "README.md:194"
       ],
       "readme_markers": [
         "append-only audit trail",
@@ -140,7 +140,7 @@
       "classification": "source_of_truth",
       "status": "validated",
       "readme_refs": [
-        "README.md:192"
+        "README.md:194"
       ],
       "readme_markers": [
         "tamper-evident"
@@ -165,8 +165,8 @@
       "status": "validated",
       "readme_refs": [
         "README.md:11",
-        "README.md:60",
-        "README.md:54"
+        "README.md:62",
+        "README.md:56"
       ],
       "readme_markers": [
         "60s, offline",
@@ -207,7 +207,7 @@
       "classification": "reproducible_command",
       "status": "validated",
       "readme_refs": [
-        "README.md:180"
+        "README.md:182"
       ],
       "readme_markers": [
         "shareable dark-themed scorecard"
@@ -236,7 +236,7 @@
       "classification": "deterministic_artifact",
       "status": "validated",
       "readme_refs": [
-        "README.md:190"
+        "README.md:192"
       ],
       "readme_markers": [
         "rank parameters by perturbation sensitivity"
@@ -266,7 +266,7 @@
       "status": "validated",
       "readme_refs": [
         "README.md:10",
-        "README.md:110"
+        "README.md:112"
       ],
       "readme_markers": [
         "pip install omega-lock",
@@ -301,7 +301,7 @@
       "classification": "generated_doc",
       "status": "validated",
       "readme_refs": [
-        "README.md:177"
+        "README.md:179"
       ],
       "readme_markers": [
         "omega-lock gate --help"
@@ -371,8 +371,8 @@
       "classification": "source_of_truth",
       "status": "validated",
       "readme_refs": [
-        "README.md:123",
-        "README.md:118"
+        "README.md:125",
+        "README.md:120"
       ],
       "readme_markers": [
         "audit_optuna_study",
@@ -402,8 +402,8 @@
       "classification": "source_of_truth",
       "status": "validated",
       "readme_refs": [
-        "README.md:180",
-        "README.md:180"
+        "README.md:182",
+        "README.md:182"
       ],
       "readme_markers": [
         "render_html",
@@ -428,8 +428,8 @@
       "classification": "source_of_truth",
       "status": "validated",
       "readme_refs": [
-        "README.md:110",
-        "README.md:110"
+        "README.md:38",
+        "README.md:112"
       ],
       "readme_markers": [
         "gate_scores",
@@ -454,8 +454,8 @@
       "classification": "qualitative_marker",
       "status": "qualitative",
       "readme_refs": [
-        "README.md:50",
-        "README.md:150"
+        "README.md:52",
+        "README.md:152"
       ],
       "readme_markers": [
         "second opinion",
@@ -470,9 +470,9 @@
       "classification": "qualitative_marker",
       "status": "qualitative",
       "readme_refs": [
-        "README.md:188",
-        "README.md:188",
-        "README.md:188"
+        "README.md:190",
+        "README.md:190",
+        "README.md:190"
       ],
       "readme_markers": [
         "Badge and download analytics boundaries",
@@ -488,8 +488,8 @@
       "classification": "qualitative_marker",
       "status": "qualitative",
       "readme_refs": [
-        "README.md:159",
-        "README.md:167"
+        "README.md:161",
+        "README.md:169"
       ],
       "readme_markers": [
         "Where it sits next to the tools you know",
@@ -497,6 +497,54 @@
       ],
       "proof": [],
       "note": "Qualitative role-differentiation and positioning marker; not promoted to a quantitative or superiority claim."
+    },
+    {
+      "id": "stable_extreme_pearson",
+      "claim": "README.md says 0.3.9 computes extreme-scale Pearson and rejects nonfinite inputs explicitly.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": [
+        "README.md:38"
+      ],
+      "readme_markers": [
+        "stable Pearson computation at extreme scales"
+      ],
+      "proof": [
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/walk_forward.py",
+          "note": "Finite checks and centered/scaled Pearson."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_numerical_boundaries.py -q",
+          "network": false
+        }
+      ]
+    },
+    {
+      "id": "bounded_parallel_futures",
+      "claim": "README.md says optional parallel evaluation retains at most 64 unconsumed Futures; this is not a runtime speedup claim.",
+      "classification": "source_of_truth",
+      "status": "validated",
+      "readme_refs": [
+        "README.md:38"
+      ],
+      "readme_markers": [
+        "a 64-Future window for optional parallel evaluation"
+      ],
+      "proof": [
+        {
+          "type": "source_of_truth",
+          "path": "src/omega_lock/_parallel.py",
+          "note": "The ordered map bounds its pending Future window."
+        },
+        {
+          "type": "reproducible_command",
+          "command": "python -m pytest tests/test_parallel_executor_seam.py -q",
+          "network": false
+        }
+      ]
     }
   ]
 }

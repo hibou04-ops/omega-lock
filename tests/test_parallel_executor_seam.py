@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from typing import Any
+
+import pytest
 
 from omega_lock._parallel import _ordered_eval_map
 from omega_lock.grid import GridPoint, GridSearch, ZoomingGridSearch
@@ -80,6 +82,53 @@ def test_executor_result_equals_serial_result():
     with ThreadPoolExecutor(max_workers=4) as ex:
         parallel = _ordered_eval_map(ex, items, fn)
     assert parallel == serial
+
+
+class TrackingFuture(Future[int]):
+    def __init__(self, owner: "TrackingExecutor"):
+        super().__init__()
+        self.owner = owner
+
+    def result(self, timeout: float | None = None) -> int:
+        self.owner.retained -= 1
+        return super().result(timeout)
+
+
+class TrackingExecutor(Executor):
+    def __init__(self, fail_at: int | None = None):
+        self.retained = 0
+        self.peak = 0
+        self.calls: list[int] = []
+        self.futures: list[TrackingFuture] = []
+        self.fail_at = fail_at
+
+    def submit(self, fn, /, *args, **kwargs):
+        self.retained += 1
+        self.peak = max(self.peak, self.retained)
+        self.calls.append(args[0])
+        future = TrackingFuture(self)
+        self.futures.append(future)
+        if args[0] == self.fail_at:
+            future.set_exception(RuntimeError("evaluation failed"))
+        else:
+            future.set_result(fn(*args, **kwargs))
+        return future
+
+
+def test_large_grid_bounds_future_retention_without_reducing_evaluations():
+    executor = TrackingExecutor()
+    items = list(range(10_000))
+    assert _ordered_eval_map(executor, items, lambda x: x * x) == [x * x for x in items]
+    assert executor.calls == items
+    assert executor.peak == 64
+    assert executor.retained == 0
+
+
+def test_failure_stops_refilling_and_preserves_original_exception():
+    executor = TrackingExecutor(fail_at=0)
+    with pytest.raises(RuntimeError, match="evaluation failed"):
+        _ordered_eval_map(executor, list(range(10_000)), lambda x: x)
+    assert len(executor.calls) == 64
 
 
 # --------------------------------------------------------------------------- #
@@ -177,3 +226,10 @@ def test_walk_forward_executor_matches_serial():
     assert parallel["test_fitnesses"] == serial["test_fitnesses"]
     assert parallel["pearson"] == serial["pearson"]
     assert parallel == serial
+
+
+@pytest.mark.parametrize("top_n", [0, -1, True, 1.5])
+def test_walk_forward_rejects_invalid_candidate_count(top_n):
+    target = QuadraticTarget()
+    with pytest.raises(ValueError, match="top_n must be a positive integer"):
+        WalkForward(test_target=target).run(_make_train_grid(target), top_n=top_n)

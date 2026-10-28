@@ -1,6 +1,6 @@
 # omega-lock
 
-**가장 높은 점수가 당신을 속이고 있습니다. 이 도구는 그 거짓말이 배포되기 전에 잡아냅니다.**
+**튜닝 점수를 공개 전에 선언한 홀드아웃·제약 기준으로 검사합니다.**
 
 [![pip install omega-lock](https://img.shields.io/badge/pip%20install-omega--lock-3775A9.svg)](https://pypi.org/project/omega-lock/)
 
@@ -23,12 +23,14 @@ CI 예제, 탐색 도구 연결, 전체 API가 담긴 기술 버전을 원하시
 Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
 
 ```bash
-python -m pip install omega-lock==0.3.8
+python -m pip install omega-lock==0.3.9
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
 
 합성 예제는 PASS/종료 0, 상관 1.000이며 gate.html을 만듭니다. holdout 배열을 뒤집으면 FAIL/1, 입력 오류는 2입니다. 실제 일반화 성능을 증명하지 않습니다. Optuna bridge는 선택 extras [p2]의 >=3,<5 범위입니다.
+
+0.3.9: 큰 수·작은 수에서도 Pearson을 안정적으로 계산하고 NaN/Inf를 명시적으로 거부합니다. 선택적 병렬 평가의 미소비 Future는 64개로 제한하며 실제 평가 수와 결과 순서를 유지합니다. `gate_scores`의 선택적 `train_ids`/`holdout_ids`로 후보 대응을 검사할 수 있습니다. Pearson은 점수의 선형 상관이며 순위상관·절대 품질·일반화 보장이 아닙니다. `holdout = train - 100`도 통과할 수 있습니다. [변경 근거와 한계](docs/UPGRADE_0_3_9.md)를 확인하세요.
 
 [실제 연결 방식과 입력·출력](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [전체 안내](README.md). 두 mini 도구의 현재 검증 조합은 omegaprompt 2.1.2이며, 별도 배포 패키지입니다.
 
@@ -107,7 +109,7 @@ omega-lock gate --train searched.json --holdout fresh.json
 예 또는 아니오로 간단하게 답합니다:
 
 ```
-PASS  ->  exit 0    the win held up on fresh data — safe to ship
+PASS  ->  exit 0    the declared correlation threshold passed
 FAIL  ->  exit 1    the win did not hold up — stop, do not ship
 ```
 
@@ -120,8 +122,8 @@ FAIL  ->  exit 1    the win did not hold up — stop, do not ship
 omega-lock은 몇 가지 단순한 검사를 실행합니다. 그중 어느 하나라도 멈추라고 말할 수 있습니다.
 
 **1. 새 데이터에서도 그 우승이 유지되는가?**
-우승자를 한 번도 본 적 없는 데이터에서 다시 테스트하고, 그 둘이 얼마나 강하게 맞아떨어지는지
-측정합니다. 새 데이터 결과가 무너지면 그 우승은 운이었고, omega-lock은 멈추라고 말합니다.
+같은 후보의 train/holdout 점수를 Pearson 선형 상관으로 비교합니다. 기준보다 낮거나
+계산할 수 없으면 게이트가 실패합니다. 결과 차이의 원인, 순위 일치나 절대 품질을 증명하지는 않습니다.
 
 **2. 이 우승자가 애초에 허용되는 것인가?**
 때로는 가장 높은 점수가 실제로는 쓸 수 없는 설정에서 나옵니다 — 너무 느리거나, 너무 비싸거나,
@@ -129,16 +131,17 @@ omega-lock은 몇 가지 단순한 검사를 실행합니다. 그중 어느 하�
 omega-lock이 버려야 할 우승자를 응원하는 대신 그 규칙을 지키는 최고의 우승자를 찾아 줍니다.
 
 **3. 무엇을 결정했는지 나중에 증명할 수 있는가?**
-모든 실행은 사후에 편집할 수 없는 기록 장부에 적힙니다. 몇 달 뒤 누군가 어떤 후보가 왜
-통과했거나 떨어졌는지 묻는다면, 그 답이 일어난 그대로 거기에 있습니다.
+라이브러리의 선택적 감사 API는 평가한 후보를 기록하며, 선택적 hash chain으로 기록 변경을
+탐지할 수 있습니다. 파일 자체가 불변인 것은 아닙니다. 점수 배열 CLI는 판정 출력과 HTML만
+제공하며 평가 추적 기록을 만들지 않습니다.
 
 ---
 
 ## 기억할 단 한 가지
 
-가장 높은 점수는 당신이 가진 가장 의심스러운 숫자입니다. 진짜 우승자는 한 번도 본 적 없는
-새 데이터에서 살아남습니다. 운은 그렇지 못합니다. omega-lock은 그 둘을 가려내는 빠르고
-정직한 검사입니다 — 당신이 잘못된 것을 배포하기 전에 말입니다.
+튜닝 점수에 의존하기 전에 홀드아웃 동작을 확인하세요. `holdout = train - 100`은 상관 1.0으로
+통과하므로 상관 통과만으로 절대 품질을 보장할 수 없습니다. 데이터 독립성과 절대 품질 기준은
+각각 별도로 확인해야 합니다.
 
 ---
 

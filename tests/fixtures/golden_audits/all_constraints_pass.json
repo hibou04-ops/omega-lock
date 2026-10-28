@@ -28,7 +28,7 @@
       }
     ],
     "method": "golden:all_constraints_pass",
-    "omega_lock_version": "0.3.8",
+    "omega_lock_version": "0.3.9",
     "runs": [
       {
         "call_index": 0,

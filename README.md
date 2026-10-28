@@ -1,6 +1,6 @@
 # omega-lock
 
-**Check whether a tuned candidate survives your declared audit gates.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and tells you whether that score is real or just luck — **before** it ships.
+**Check whether a tuned candidate survives your declared audit gates.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and checks the declared constraints and train/holdout score correlation **before** it ships.
 
 [![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
@@ -24,7 +24,7 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install omega-lock==0.3.8
+python -m pip install omega-lock==0.3.9
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
@@ -34,6 +34,8 @@ Synthetic input: PASS and exit 0, Pearson 1.000; gate.html is the scorecard. Rev
 No sibling package is needed. omegaprompt requires omega-lock>=0.3.0,<0.4.0 at runtime. antemortem only cites a pinned source revision in CI. Optuna is a native optional bridge: install omega-lock[p2] (Optuna >=3,<5); other optimizers can supply score arrays through an explicit export.
 
 [Docking contracts and runnable data handoff](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [Full guide](README.md).
+
+0.3.9 adds stable Pearson computation at extreme scales, explicit NaN/Inf rejection, a 64-Future window for optional parallel evaluation, and optional candidate-ID validation in `gate_scores`. Pearson is score linear association, not rank correlation, absolute quality or generalization: `holdout = train - 100` can pass. See [measured changes and limits](docs/UPGRADE_0_3_9.md).
 
 
 ## The 30-second version
@@ -47,7 +49,7 @@ on the data it was picked from   →   5.967   (real skill  +  a lucky streak)
 on brand-new, held-out data      →   1.527   (only the real skill that was left)   ▼ -74.4%
 ```
 
-This illustrates **overfitting from selection**. Optimizers and evaluation frameworks can include their own validation; check the actual configuration rather than assuming they lack it. omega-lock is your second opinion. It re-tests the winner on a slice the search never touched and returns a flat verdict: **PASS** (ship it) or **FAIL** (block it).
+This illustrates **overfitting from selection**. Optimizers and evaluation frameworks can include their own validation; check the actual configuration rather than assuming they lack it. omega-lock is your second opinion. It re-tests the winner on a slice the search never touched and returns a flat verdict: **PASS** (declared gates passed) or **FAIL** (a gate failed).
 
 ---
 
@@ -102,7 +104,7 @@ jobs:
       - run: omega-lock gate --train train_scores.json --holdout holdout_scores.json
 ```
 
-When the held-out score doesn't track the tuned score, the step fails red and the PR can't merge. The CLI prints the verdict and can write an HTML scorecard. The library audit API separately supports append-only trails; the score-array CLI does not create that trail.
+When score correlation is below threshold or uncomputable, the step fails. Blocking a PR merge depends on the repository's required-check settings. The CLI prints the verdict and can write an HTML scorecard. The library audit API separately supports append-only trails; the score-array CLI does not create that trail.
 
 Prefer Python? The same decision is one call:
 
@@ -137,7 +139,7 @@ Three independent checks on the candidate your search already chose. Any one can
 
 | Check | Plain English | Blocks when |
 |---|---|---|
-| **Walk-forward transfer gate** | Does the score earned on the tuned data carry over to a held-out slice it never saw? | The held-out result decorrelates from the tuned ranking — the winner was a fluke. |
+| **Walk-forward transfer gate** | Does the score earned on the tuned data carry over to a held-out slice it never saw? | Score correlation is below the declared threshold or cannot be computed; the cause is not established. |
 | **Hard-constraint feasibility** | Is the highest-scoring candidate also a *valid* one (passes your latency / cost / risk limits), or did you win on a config you can't run? | `best_feasible ≠ best_any` — the top score violates a constraint you declared. |
 | **Library audit trail (optional)** | Can you inspect recorded decisions? | An append-only trail is available through the library audit API; the score-array CLI does not write one. |
 

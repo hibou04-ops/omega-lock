@@ -3,7 +3,7 @@
 #
 # Usage in a workflow:
 #
-#   - uses: hibou04-ops/omega-lock@v0.3.8
+#   - uses: hibou04-ops/omega-lock@v0.3.9
 #     with:
 #       train: train_scores.json       # in-sample scores (JSON array)
 #       holdout: holdout_scores.json   # held-out scores (JSON array, index-aligned)
@@ -12,7 +12,7 @@
 # default), then runs `omega-lock gate`, which applies the walk-forward
 # transfer (Pearson) gate to the two score arrays. The gate exits non-zero —
 # failing the job — when the held-out scores do not track the in-sample
-# ranking (i.e. the winner was selection luck, not transferable skill).
+# score association. A failed gate does not establish the cause of disagreement.
 # An optional HTML scorecard is written for the PR.
 name: omega-lock overfit gate
 description: Re-test your optimizer's winning candidate on a held-out slice and fail the build when the score doesn't transfer.
@@ -44,7 +44,7 @@ inputs:
       omega-lock version to install from PyPI. Defaults to the action's own
       pinned version. Use 'latest' to always pull the newest release.
     required: false
-    default: "0.3.8"
+    default: "0.3.9"
   python-version:
     description: Python version to set up.
     required: false

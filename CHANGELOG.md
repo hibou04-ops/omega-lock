@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.9 - 2026-10-28
+
+- Stabilize Pearson for very large, subnormal and offset score arrays. NaN/Inf
+  yield explicit `NON_FINITE_X` / `NON_FINITE_Y` statuses and fail the API gate.
+- Bound optional parallel evaluation to 64 unconsumed Futures, preserving each
+  candidate evaluation and result order. Queued work is cancelled best-effort
+  after failures; running tasks may complete. Serial behavior is unchanged.
+- Add optional `gate_scores(train_ids=..., holdout_ids=...)` validation of
+  candidate identity/order; existing index-only calls remain supported.
+- Invalid correlation/action-ratio thresholds raise `ValueError`; nonfinite
+  scores and invalid correlation thresholds are CLI input errors (exit 2).
+  Enabled action-ratio checks reject nonfinite measurements. `WalkForward.run`
+  requires a positive integer `top_n`.
+- Correct the distinction between Pearson linear score association, rank
+  correlation, absolute holdout quality and generalization in the README family.
+
+The 10,000-item deterministic resource probe retains 64 rather than 10,000
+unconsumed Futures with 10,000 evaluations in both versions. This is not a
+runtime speedup or live-model quality claim. See [evidence and compatibility
+notes](docs/UPGRADE_0_3_9.md). Existing schema identifiers and audit hashes remain
+unchanged; new status values require exhaustive readers to accept these cases.
+
 ## 0.3.8 - 2026-10-08
 
 Correct the standalone score-array/API examples and CLI-versus-search/audit scope; update current docking guidance and citation pin. Handle unreadable/invalid-encoding inputs as exit 2. Bound optional Optuna to >=3,<5 after reproducing 5.x demo failures.

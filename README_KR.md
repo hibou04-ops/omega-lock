@@ -1,6 +1,6 @@
 # omega-lock
 
-**튜닝 후보가 선언한 감사 기준을 충족하는지 확인합니다.** omega-lock은 튜너가 끝난 *뒤에* 실행되는 게이트입니다. 튜너가 고른 "우승" 후보를 받아, 그 점수가 진짜인지 단순한 운인지를 — 배포 **전에** — 알려줍니다.
+**튜닝 후보가 선언한 감사 기준을 충족하는지 확인합니다.** omega-lock은 튜너가 끝난 뒤 후보 점수의 train/holdout 선형 상관과 선언한 제약을 검사합니다. 상관 통과가 절대 품질이나 배포 안전성을 보장하지는 않습니다.
 
 [![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
@@ -24,12 +24,14 @@ omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이�
 Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
 
 ```bash
-python -m pip install omega-lock==0.3.8
+python -m pip install omega-lock==0.3.9
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
 
 합성 예제는 PASS/종료 0, 상관 1.000이며 gate.html을 만듭니다. holdout 배열을 뒤집으면 FAIL/1, 입력 오류는 2입니다. 실제 일반화 성능을 증명하지 않습니다. Optuna bridge는 선택 extras [p2]의 >=3,<5 범위입니다.
+
+0.3.9: 큰 수·작은 수에서도 Pearson을 안정적으로 계산하고 NaN/Inf를 명시적으로 거부합니다. 선택적 병렬 평가의 미소비 Future는 64개로 제한하며 실제 평가 수와 결과 순서를 유지합니다. `gate_scores`의 선택적 `train_ids`/`holdout_ids`로 후보 대응을 검사할 수 있습니다. Pearson은 점수의 선형 상관이며 순위상관·절대 품질·일반화 보장이 아닙니다. `holdout = train - 100`도 통과할 수 있습니다. [변경 근거와 한계](docs/UPGRADE_0_3_9.md)를 확인하세요.
 
 [실제 연결 방식과 입력·출력](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [전체 안내](README.md). 두 mini 도구의 현재 검증 조합은 omegaprompt 2.1.2이며, 별도 배포 패키지입니다.
 
@@ -45,7 +47,7 @@ on the data it was picked from   →   5.967   (real skill  +  a lucky streak)
 on brand-new, held-out data      →   1.527   (only the real skill that was left)   ▼ -74.4%
 ```
 
-이것이 **선택에서 비롯된 과적합(overfitting from selection)** 이며, 어떤 옵티마이저도 이로부터 당신을 보호하지 않습니다 — 최댓값을 찾는 것이 옵티마이저의 본업이기 때문입니다. omega-lock은 당신의 두 번째 의견입니다. 탐색이 한 번도 건드리지 않은 슬라이스에서 우승자를 다시 테스트하고, 단호한 판정을 돌려줍니다: **PASS**(배포) 또는 **FAIL**(차단).
+이 합성 예제는 **선택에서 비롯된 과적합(overfitting from selection)** 을 보여줍니다. 다른 평가 도구에도 검증 기능이 있으므로 실제 설정을 확인하세요. omega-lock은 사용자가 제공한 홀드아웃 슬라이스에서 후보를 다시 평가하고 **PASS**(선언한 기준 통과) 또는 **FAIL**(기준 미달)을 반환합니다. 데이터 독립성은 호출자가 확보해야 합니다.
 
 ---
 
@@ -100,7 +102,7 @@ jobs:
       - run: omega-lock gate --train train_scores.json --holdout holdout_scores.json
 ```
 
-홀드아웃 점수가 튜닝된 점수를 따라가지 못하면, 그 단계는 빨갛게 실패하고 PR은 머지될 수 없습니다. 모든 실행은 **추가 전용(append-only) 감사 추적**도 함께 기록하므로, 나중에 무엇이, 언제, 왜 게이트를 통과했는지 정확히 증명할 수 있습니다.
+상관이 선언한 기준보다 낮거나 계산할 수 없으면 CI 단계가 실패합니다. PR 병합 차단은 저장소의 필수 검사 설정에 달려 있습니다. 점수 배열 CLI는 판정만 출력하며, 라이브러리의 `AuditingTarget`으로 감싼 실행은 **추가 전용(append-only) 감사 추적**을 기록할 수 있습니다. 이 기록은 관측과 판정을 검토하는 자료이며 주장이나 프로그램의 진실·안전성 증명이 아닙니다.
 
 파이썬을 선호하나요? 같은 판단을 한 번의 호출로:
 
@@ -134,7 +136,7 @@ print(report.passed, report.gated_best)   # False, and the candidate it WILL cer
 
 | Check | Plain English | Blocks when |
 |---|---|---|
-| **Walk-forward transfer gate** | Does the score earned on the tuned data carry over to a held-out slice it never saw? | The held-out result decorrelates from the tuned ranking — the winner was a fluke. |
+| **Walk-forward transfer gate** | Does the score earned on the tuned data carry over to a held-out slice it never saw? | Score correlation is below the declared threshold or cannot be computed; the cause is not established. |
 | **Hard-constraint feasibility** | Is the highest-scoring candidate also a *valid* one (passes your latency / cost / risk limits), or did you win on a config you can't run? | `best_feasible ≠ best_any` — the top score violates a constraint you declared. |
 | **Append-only audit trail** | Can you reconstruct the decision months later? | Optional library audit API; the score-array CLI does not write an audit trail. |
 
