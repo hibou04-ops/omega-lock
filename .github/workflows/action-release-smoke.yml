@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v0.3.8
+          ref: v0.3.9
           persist-credentials: false
       - name: Synthetic aligned and reversed scores
         run: |
@@ -25,7 +25,7 @@ jobs:
           PY
       - name: Passing tagged Action
         id: pass
-        uses: hibou04-ops/omega-lock@v0.3.8
+        uses: hibou04-ops/omega-lock@v0.3.9
         with:
           train: train.json
           holdout: holdout.json
@@ -33,7 +33,7 @@ jobs:
       - name: Blocking tagged Action
         id: block
         continue-on-error: true
-        uses: hibou04-ops/omega-lock@v0.3.8
+        uses: hibou04-ops/omega-lock@v0.3.9
         with:
           train: train.json
           holdout: reverse.json
@@ -43,7 +43,7 @@ jobs:
           BLOCK: ${{ steps.block.outputs.passed }}
           BLOCK_OUTCOME: ${{ steps.block.outcome }}
         run: |
-          python -c "import omega_lock; assert omega_lock.__version__=='0.3.8'"
+          python -c "import omega_lock; assert omega_lock.__version__=='0.3.9'"
           python -m pip check
           test "$BLOCK_OUTCOME" = failure
           test "$PASS" = true
