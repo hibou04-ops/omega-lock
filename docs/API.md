@@ -55,6 +55,8 @@ def gate_scores(
     holdout_scores: Iterable[float],
     *,
     thresholds: KCThresholds | None = None,
+    train_ids: Sequence[str] | None = None,
+    holdout_ids: Sequence[str] | None = None,
 ) -> GateVerdict
 ```
 
@@ -63,6 +65,26 @@ Pass the per-candidate scores measured on the data the search consumed
 (`holdout_scores`), **index-aligned**. It applies the walk-forward Pearson transfer
 gate (`check_kc4`). `thresholds` defaults to `KCThresholds.pure_objective()` because
 plain score lists carry no action counts.
+
+Pass both optional ID lists to validate unique nonempty candidate IDs and their
+score order. Missing, duplicated, reordered or different IDs raise `ValueError`;
+without IDs the caller is responsible for index alignment. IDs identify
+candidates, not dataset independence.
+
+Pearson measures **linear association between scores**, not rank correlation or
+absolute holdout quality. For example, `[1,2,3]` and `[-99,-98,-97]` pass the
+default correlation gate. Declare absolute quality requirements separately.
+NaN/Inf return an uncomputable `NON_FINITE_X` / `NON_FINITE_Y` result and fail
+the API gate; the CLI treats nonfinite JSON scores as input errors (exit 2).
+`pearson_min` must be finite within `[-1,1]`; an enabled `trade_ratio_min` must
+be finite and nonnegative. Invalid thresholds now raise `ValueError`.
+
+```python
+from omega_lock import gate_scores
+verdict = gate_scores([1, 2, 3], [1.1, 2.1, 3.1],
+                      train_ids=["a", "b", "c"], holdout_ids=["a", "b", "c"])
+assert verdict.passed
+```
 
 > Note: `train_scores` / `holdout_scores` are **sequences of numbers**, not file
 > paths. If you have JSON files, load them first (`json.load(...)`) or use the
@@ -74,7 +96,7 @@ plain score lists carry no action counts.
 ```python
 @dataclass(frozen=True)
 class GateVerdict:
-    passed: bool                       # True when the ranking transferred
+    passed: bool                       # True when the declared correlation gate passed
     pearson: float | None             # measured correlation, or None if not computable
     reasons: tuple[str, ...]          # human-readable failure reasons; empty when passed
     kc_report: KCReport               # the underlying KC-4 report (full detail dict)

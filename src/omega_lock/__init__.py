@@ -6,7 +6,7 @@ Methodology:
     1. Measure perturbation sensitivity (stress) of each parameter
     2. Select top-K stress params (unlock set), fix the rest (lock)
     3. Grid search on K-dim subspace
-    4. Walk-forward validation with Pearson rank gate
+    4. Walk-forward validation with Pearson score-correlation gate
 
 Designed for any parameterized system via the CalibrableTarget protocol.
 
@@ -64,7 +64,7 @@ from omega_lock.integrations.optuna_bridge import (
     StudyAuditReport, TrialCandidate, audit_optuna_study,
 )
 
-__version__ = "0.3.8"
+__version__ = "0.3.9"
 
 __all__ = [
     "CalibrableTarget", "ParamSpec", "EvalResult",

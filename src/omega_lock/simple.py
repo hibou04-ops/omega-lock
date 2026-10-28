@@ -41,8 +41,8 @@ class GateVerdict:
     """Outcome of ``gate_scores``.
 
     Attributes:
-        passed: True when the train-to-holdout ranking transfer cleared
-            the gate.
+        passed: True when the declared train-to-holdout score-correlation
+            gate passed; this does not establish absolute holdout quality.
         pearson: measured Pearson correlation, or None when it could not
             be computed (empty input, length mismatch, zero variance —
             see ``reasons`` for which).
@@ -81,6 +81,8 @@ _PEARSON_STATUS_EXPLANATIONS = {
     "LENGTH_MISMATCH": "train and holdout score lists have different lengths",
     "ZERO_VARIANCE_X": "all train scores are identical (zero variance)",
     "ZERO_VARIANCE_Y": "all holdout scores are identical (zero variance)",
+    "NON_FINITE_X": "train scores contain NaN or infinity",
+    "NON_FINITE_Y": "holdout scores contain NaN or infinity",
 }
 
 
@@ -89,8 +91,10 @@ def gate_scores(
     holdout_scores: Iterable[float],
     *,
     thresholds: KCThresholds | None = None,
+    train_ids: Sequence[str] | None = None,
+    holdout_ids: Sequence[str] | None = None,
 ) -> GateVerdict:
-    """Gate a candidate ranking: do in-sample scores transfer out-of-sample?
+    """Gate linear score association across index-aligned candidates.
 
     Pass the per-candidate scores measured on the data the search consumed
     (``train_scores``) and the same candidates re-scored on data it never
@@ -104,6 +108,10 @@ def gate_scores(
             carry no action counts. If you pass thresholds with
             ``trade_ratio_min`` set, that sub-gate is evaluated against a
             neutral ratio of 1.0 (there is no action-count concept here).
+        train_ids / holdout_ids: optional, unique nonempty candidate IDs in
+            score order. Supply both to validate length, identity and ordering;
+            mismatches raise ValueError before evaluating the gate. Without
+            IDs, index alignment remains the caller's responsibility.
 
     Returns:
         GateVerdict — ``passed``, measured ``pearson`` (None when not
@@ -112,6 +120,20 @@ def gate_scores(
     thr = thresholds if thresholds is not None else KCThresholds.pure_objective()
     train = [float(v) for v in train_scores]
     holdout = [float(v) for v in holdout_scores]
+    if train_ids is not None or holdout_ids is not None:
+        if train_ids is None or holdout_ids is None:
+            raise ValueError("train_ids and holdout_ids must be supplied together")
+        for label, ids, scores in (
+            ("train_ids", train_ids, train), ("holdout_ids", holdout_ids, holdout)
+        ):
+            if len(ids) != len(scores):
+                raise ValueError(f"{label} must have one ID per score")
+            if any(not isinstance(candidate_id, str) or not candidate_id for candidate_id in ids):
+                raise ValueError(f"{label} must contain nonempty string IDs")
+            if len(set(ids)) != len(ids):
+                raise ValueError(f"{label} contains duplicate candidate IDs")
+        if list(train_ids) != list(holdout_ids):
+            raise ValueError("train_ids and holdout_ids must match in the same order")
 
     kc = check_kc4(
         train_fitnesses=train,

@@ -1,6 +1,6 @@
 # omega-lock
 
-**The best score is lying to you. This tool catches the lie before it ships.**
+**Check tuned scores against declared holdout and constraint gates before release.**
 
 [![pip install omega-lock](https://img.shields.io/badge/pip%20install-omega--lock-3775A9.svg)](https://pypi.org/project/omega-lock/)
 
@@ -23,7 +23,7 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install omega-lock==0.3.8
+python -m pip install omega-lock==0.3.9
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
@@ -33,6 +33,8 @@ Synthetic input: PASS and exit 0, Pearson 1.000; gate.html is the scorecard. Rev
 No sibling package is needed. omegaprompt requires omega-lock>=0.3.0,<0.4.0 at runtime. antemortem only cites a pinned source revision in CI. Optuna is a native optional bridge: install omega-lock[p2] (Optuna >=3,<5); other optimizers can supply score arrays through an explicit export.
 
 [Docking contracts and runnable data handoff](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [Full guide](README.md).
+
+0.3.9 adds stable Pearson computation at extreme scales, explicit NaN/Inf rejection, a 64-Future window for optional parallel evaluation, and optional candidate-ID validation in `gate_scores`. Pearson is score linear association, not rank correlation, absolute quality or generalization: `holdout = train - 100` can pass. See [measured changes and limits](docs/UPGRADE_0_3_9.md).
 
 
 ## Start with a story
@@ -110,7 +112,7 @@ omega-lock gate --train searched.json --holdout fresh.json
 It answers with a simple yes or no:
 
 ```
-PASS  ->  exit 0    the win held up on fresh data — safe to ship
+PASS  ->  exit 0    the declared correlation threshold passed
 FAIL  ->  exit 1    the win did not hold up — stop, do not ship
 ```
 
@@ -123,9 +125,9 @@ That is it. One command, one clear answer.
 omega-lock runs a few plain checks. Any one of them can tell you to stop.
 
 **1. Does the win hold up on fresh data?**
-It re-tests the winner on data it has never seen and measures how strongly the two
-match. If the fresh-data result falls apart, the win was luck, and omega-lock says
-stop.
+It compares the same candidates' train and holdout scores with Pearson linear
+correlation. Below-threshold or uncomputable correlation fails the gate. This
+does not establish why the scores differed, rank agreement or absolute quality.
 
 **2. Is this winner even allowed?**
 Sometimes the highest score comes from a setting you can't actually use — too slow,
@@ -134,17 +136,18 @@ budget or a speed cap, and omega-lock finds the best winner that obeys it, inste
 of cheering for one you'd have to throw away.
 
 **3. Can you prove later what you decided?**
-Every run is written down in a paper trail that can't be edited after the fact. If
-someone asks months later why a candidate passed or failed, the answer is right
-there, exactly as it happened.
+The library's optional audit API records evaluated candidates. Its optional hash
+chain can detect changed records; the file is not immutable. The score-array CLI
+prints a verdict and can write HTML, but does not create an evaluation trail.
 
 ---
 
 ## The one thing to remember
 
-The highest score is the most suspicious number you own. A real winner survives
-fresh data it has never seen. Luck does not. omega-lock is the quick, honest check
-that tells the two apart — before you ship the wrong one.
+Check held-out behavior before relying on a tuned score. A passing correlation
+gate still allows uniformly bad holdout scores: `holdout = train - 100` has
+correlation 1.0. Data separation and absolute quality requirements need their
+own checks.
 
 ---
 

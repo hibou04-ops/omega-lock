@@ -22,11 +22,15 @@ Correctness contract (why this exists):
 """
 from __future__ import annotations
 
-from concurrent.futures import Executor
+from collections import deque
+from concurrent.futures import Executor, Future
 from typing import Callable, TypeVar
 
 T = TypeVar("T")
 R = TypeVar("R")
+
+# Bound submitted-but-not-consumed work independently of the grid size.
+_MAX_PENDING_EVALUATIONS = 64
 
 
 def _ordered_eval_map(
@@ -50,11 +54,31 @@ def _ordered_eval_map(
     serial path is preserved verbatim so default behavior never changes.
     Empty and single-item inputs are handled by both branches without
     special-casing.
+
+    Parallel mode keeps at most 64 submitted, unconsumed futures. Targets
+    must be safe for concurrent calls; shared/global RNG or mutable state
+    can make serial and parallel observations differ. Public call sites use
+    local closures, so use a ThreadPoolExecutor (or a compatible in-process
+    executor), not a process pool requiring picklable callables.
     """
     if executor is None:
         return [fn(x) for x in items]
-    # Submit in input order; index is implicit in the list position.
-    futures = [executor.submit(fn, x) for x in items]
-    # Read back in submission order -- NOT as_completed -- so the returned
-    # list is input-ordered even when tasks finish out of order.
-    return [f.result() for f in futures]
+    pending: deque[Future[R]] = deque()
+    results: list[R] = []
+    source = iter(items)
+    try:
+        for _ in range(min(len(items), _MAX_PENDING_EVALUATIONS)):
+            pending.append(executor.submit(fn, next(source)))
+        # Consume in input order, refilling only after one result is consumed.
+        # Results remain O(N), but the live Future queue is at most 64.
+        for item in source:
+            results.append(pending.popleft().result())
+            pending.append(executor.submit(fn, item))
+        results.extend(future.result() for future in pending)
+        return results
+    except BaseException:
+        # Do not own/shut down the caller's executor. Cancel queued work on a
+        # best-effort basis; tasks already running may still finish.
+        for future in pending:
+            future.cancel()
+        raise
