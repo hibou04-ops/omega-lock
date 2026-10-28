@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from concurrent.futures import Executor
 from dataclasses import dataclass
+from math import fsum, isfinite, sqrt
 from typing import Any, Literal
 
 from omega_lock._parallel import _ordered_eval_map
@@ -27,6 +28,8 @@ PearsonStatus = Literal[
     "LENGTH_MISMATCH",
     "ZERO_VARIANCE_X",
     "ZERO_VARIANCE_Y",
+    "NON_FINITE_X",
+    "NON_FINITE_Y",
 ]
 
 
@@ -52,23 +55,49 @@ class PearsonResult:
         return self.status == "OK"
 
 
+def _center_scaled(values: list[float]) -> list[float]:
+    """Translate before scaling to preserve representable small differences."""
+    origin = values[0]
+    shifted = [value - origin for value in values]
+    if not all(isfinite(value) for value in shifted):
+        # Opposite-sign finite extremes can overflow during subtraction.
+        scale = max(abs(value) for value in values)
+        shifted = [value / scale for value in values]
+    scale = max(abs(value) for value in shifted)
+    if scale == 0:
+        return [0.0] * len(values)
+    normalized = [value / scale for value in shifted]
+    mean = fsum(normalized) / len(values)
+    return [value - mean for value in normalized]
+
+
 def pearson_result(xs: list[float], ys: list[float]) -> PearsonResult:
-    """Structured Pearson with explicit degeneracy categories."""
+    """Pearson with finite-input checks and overflow/underflow-safe scaling.
+
+    This measures linear association, not rank correlation or absolute quality.
+    Constant inputs remain uncomputable; nonconstant representable differences
+    are retained even with large offsets or subnormal magnitudes.
+    """
     n = len(xs)
     if n == 0:
         return PearsonResult(value=None, status="EMPTY")
     if n != len(ys):
         return PearsonResult(value=None, status="LENGTH_MISMATCH")
-    mx = sum(xs) / n
-    my = sum(ys) / n
-    num = sum((xs[i] - mx) * (ys[i] - my) for i in range(n))
-    dx = (sum((x - mx) ** 2 for x in xs)) ** 0.5
-    dy = (sum((y - my) ** 2 for y in ys)) ** 0.5
-    if dx == 0:
+    if not all(isfinite(value) for value in xs):
+        return PearsonResult(value=None, status="NON_FINITE_X")
+    if not all(isfinite(value) for value in ys):
+        return PearsonResult(value=None, status="NON_FINITE_Y")
+    centered_x = _center_scaled(xs)
+    centered_y = _center_scaled(ys)
+    sum_x2 = fsum(x * x for x in centered_x)
+    sum_y2 = fsum(y * y for y in centered_y)
+    if sum_x2 == 0:
         return PearsonResult(value=None, status="ZERO_VARIANCE_X")
-    if dy == 0:
+    if sum_y2 == 0:
         return PearsonResult(value=None, status="ZERO_VARIANCE_Y")
-    return PearsonResult(value=num / (dx * dy), status="OK")
+    num = fsum(x * y for x, y in zip(centered_x, centered_y))
+    # Roundoff can otherwise put a perfect association just outside [-1, 1].
+    return PearsonResult(value=max(-1.0, min(1.0, num / sqrt(sum_x2 * sum_y2))), status="OK")
 
 
 def pearson(xs: list[float], ys: list[float]) -> float:
@@ -153,6 +182,8 @@ class WalkForward:
         """
         if not train_grid:
             raise ValueError("train_grid is empty")
+        if isinstance(top_n, bool) or not isinstance(top_n, int) or top_n < 1:
+            raise ValueError("top_n must be a positive integer")
         ranked = sorted(train_grid, key=lambda p: p.result.fitness, reverse=True)
         top = ranked[:top_n]
 

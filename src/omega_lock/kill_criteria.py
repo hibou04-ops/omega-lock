@@ -10,6 +10,7 @@ thresholds post-hoc.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 from typing import Any, Literal
 
 
@@ -35,6 +36,14 @@ class KCThresholds:
     trade_count_min: int | None = 50              # KC-3: per best-config action floor (None -> SKIP)
     pearson_min: float = 0.3                      # KC-4a: walk-forward correlation
     trade_ratio_min: float | None = 0.5           # KC-4b: test/train action ratio (None -> SKIP)
+
+    def __post_init__(self) -> None:
+        if not isfinite(self.pearson_min) or not -1.0 <= self.pearson_min <= 1.0:
+            raise ValueError("pearson_min must be finite and between -1 and 1")
+        if self.trade_ratio_min is not None and (
+            not isfinite(self.trade_ratio_min) or self.trade_ratio_min < 0
+        ):
+            raise ValueError("trade_ratio_min must be finite and nonnegative, or None")
 
     @classmethod
     def pure_objective(cls, **overrides: Any) -> "KCThresholds":
@@ -211,7 +220,8 @@ def check_kc4(
     if thresholds.trade_ratio_min is None:
         ratio_skipped, ratio_ok = True, True
     else:
-        ratio_skipped, ratio_ok = False, trade_ratio >= thresholds.trade_ratio_min
+        ratio_skipped = False
+        ratio_ok = isfinite(trade_ratio) and trade_ratio >= thresholds.trade_ratio_min
     passed = corr_ok and ratio_ok
     detail = {
         "pearson": corr,

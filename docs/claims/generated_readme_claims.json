@@ -1,5 +1,5 @@
 {
-  "claim_count": 17,
+  "claim_count": 19,
   "claims": [
     {
       "claim": "README.md says each probed candidate is appended to a reviewable JSON audit trail with phase, role, round, and call index context.",
@@ -28,9 +28,9 @@
         "score-array CLI only prints its verdict"
       ],
       "readme_refs": [
-        "README.md:192",
-        "README.md:192",
-        "README.md:192"
+        "README.md:194",
+        "README.md:194",
+        "README.md:194"
       ],
       "status": "validated"
     },
@@ -45,8 +45,8 @@
         "gate you bolt onto the search"
       ],
       "readme_refs": [
-        "README.md:50",
-        "README.md:150"
+        "README.md:52",
+        "README.md:152"
       ],
       "status": "qualitative"
     },
@@ -62,9 +62,9 @@
         "No PyPI or GitHub download analytics are asserted here"
       ],
       "readme_refs": [
-        "README.md:188",
-        "README.md:188",
-        "README.md:188"
+        "README.md:190",
+        "README.md:190",
+        "README.md:190"
       ],
       "status": "qualitative"
     },
@@ -93,7 +93,31 @@
         "shareable dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:180"
+        "README.md:182"
+      ],
+      "status": "validated"
+    },
+    {
+      "claim": "README.md says optional parallel evaluation retains at most 64 unconsumed Futures; this is not a runtime speedup claim.",
+      "classification": "source_of_truth",
+      "id": "bounded_parallel_futures",
+      "proof": [
+        {
+          "note": "The ordered map bounds its pending Future window.",
+          "path": "src/omega_lock/_parallel.py",
+          "type": "source_of_truth"
+        },
+        {
+          "command": "python -m pytest tests/test_parallel_executor_seam.py -q",
+          "network": false,
+          "type": "reproducible_command"
+        }
+      ],
+      "readme_markers": [
+        "a 64-Future window for optional parallel evaluation"
+      ],
+      "readme_refs": [
+        "README.md:38"
       ],
       "status": "validated"
     },
@@ -144,8 +168,8 @@
         "output-side overfit gate"
       ],
       "readme_refs": [
-        "README.md:159",
-        "README.md:167"
+        "README.md:161",
+        "README.md:169"
       ],
       "status": "qualitative"
     },
@@ -187,8 +211,8 @@
       ],
       "readme_refs": [
         "README.md:11",
-        "README.md:60",
-        "README.md:54"
+        "README.md:62",
+        "README.md:56"
       ],
       "status": "validated"
     },
@@ -219,9 +243,9 @@
         "best_any"
       ],
       "readme_refs": [
-        "README.md:67",
-        "README.md:67",
-        "README.md:67"
+        "README.md:69",
+        "README.md:69",
+        "README.md:69"
       ],
       "status": "validated"
     },
@@ -252,9 +276,9 @@
         "violates a constraint you declared"
       ],
       "readme_refs": [
-        "README.md:141",
-        "README.md:141",
-        "README.md:141"
+        "README.md:143",
+        "README.md:143",
+        "README.md:143"
       ],
       "status": "validated"
     },
@@ -279,8 +303,8 @@
         "dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:180",
-        "README.md:180"
+        "README.md:182",
+        "README.md:182"
       ],
       "status": "validated"
     },
@@ -314,7 +338,7 @@
         "omega-lock gate --help"
       ],
       "readme_refs": [
-        "README.md:177"
+        "README.md:179"
       ],
       "status": "validated"
     },
@@ -344,8 +368,8 @@
         "Already have an Optuna study?"
       ],
       "readme_refs": [
-        "README.md:123",
-        "README.md:118"
+        "README.md:125",
+        "README.md:120"
       ],
       "status": "validated"
     },
@@ -381,7 +405,7 @@
       ],
       "readme_refs": [
         "README.md:10",
-        "README.md:110"
+        "README.md:112"
       ],
       "status": "validated"
     },
@@ -405,7 +429,7 @@
         "tamper-evident"
       ],
       "readme_refs": [
-        "README.md:192"
+        "README.md:194"
       ],
       "status": "validated"
     },
@@ -430,8 +454,32 @@
         "omega_lock.simple"
       ],
       "readme_refs": [
-        "README.md:110",
-        "README.md:110"
+        "README.md:38",
+        "README.md:112"
+      ],
+      "status": "validated"
+    },
+    {
+      "claim": "README.md says 0.3.9 computes extreme-scale Pearson and rejects nonfinite inputs explicitly.",
+      "classification": "source_of_truth",
+      "id": "stable_extreme_pearson",
+      "proof": [
+        {
+          "note": "Finite checks and centered/scaled Pearson.",
+          "path": "src/omega_lock/walk_forward.py",
+          "type": "source_of_truth"
+        },
+        {
+          "command": "python -m pytest tests/test_numerical_boundaries.py -q",
+          "network": false,
+          "type": "reproducible_command"
+        }
+      ],
+      "readme_markers": [
+        "stable Pearson computation at extreme scales"
+      ],
+      "readme_refs": [
+        "README.md:38"
       ],
       "status": "validated"
     },
@@ -460,7 +508,7 @@
         "rank parameters by perturbation sensitivity"
       ],
       "readme_refs": [
-        "README.md:190"
+        "README.md:192"
       ],
       "status": "validated"
     },
@@ -492,8 +540,8 @@
       ],
       "readme_refs": [
         "README.md:14",
-        "README.md:140",
-        "README.md:50"
+        "README.md:142",
+        "README.md:52"
       ],
       "status": "validated"
     }
@@ -503,7 +551,7 @@
     "generated_doc": 1,
     "qualitative_marker": 3,
     "reproducible_command": 1,
-    "source_of_truth": 10
+    "source_of_truth": 12
   },
   "readme": "README.md",
   "schema_version": 1,
@@ -511,6 +559,6 @@
   "status_counts": {
     "qualitative": 3,
     "todo": 0,
-    "validated": 14
+    "validated": 16
   }
 }
