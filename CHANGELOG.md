@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.10] - 2026-11-01
+
+Adds the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold()` applies `base + MDE * sqrt(1 + ln(max(1, trials)))`; `classify_calibration_verdict()` returns `M0_HOLD` for a failed holdout, `ESTABLISHED` only for a passed holdout with `delta > MDE`, and `NOT_ESTABLISHED` otherwise. Existing orchestration APIs are unchanged. These input-based rules do not measure holdout independence, statistical power, or generalization.
+
 ## 0.3.9 - 2026-10-28
 
 - Stabilize Pearson for very large, subnormal and offset score arrays. NaN/Inf

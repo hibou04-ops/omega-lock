@@ -1,5 +1,7 @@
 # omega-lock
 
+[![Release](https://img.shields.io/badge/release-0.3.10-blue.svg)](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.10)
+
 **튜닝 후보가 선언한 감사 기준을 충족하는지 확인합니다.** omega-lock은 튜너가 끝난 뒤 후보 점수의 train/holdout 선형 상관과 선언한 제약을 검사합니다. 상관 통과가 절대 품질이나 배포 안전성을 보장하지는 않습니다.
 
 [![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
@@ -15,6 +17,10 @@ omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이�
 
 ---
 
+## v0.3.10 — 이번 변경
+
+순수 함수 모듈 `omega_lock.holdout_defense`를 추가했습니다. `compute_deflated_threshold()`는 `base + MDE * sqrt(1 + ln(max(1, trials)))`를 계산합니다. `classify_calibration_verdict()`는 holdout 실패 시 `M0_HOLD`, 통과하면서 `delta > MDE`일 때만 `ESTABLISHED`, 나머지는 `NOT_ESTABLISHED`를 반환합니다. 기존 orchestration API는 보존했습니다. 입력 기반 규칙이며 holdout 독립성·통계적 검정력·일반화를 측정하지 않습니다.
+
 ## 시작 · 단독 사용 · 도킹
 
 **Omega Verification Suite** — Quiet precision. AI research guided by evidence.
@@ -24,7 +30,7 @@ omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이�
 Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
 
 ```bash
-python -m pip install omega-lock==0.3.9
+python -m pip install omega-lock==0.3.10
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```

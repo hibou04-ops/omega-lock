@@ -1,5 +1,7 @@
 # omega-lock
 
+[![Release](https://img.shields.io/badge/release-0.3.10-blue.svg)](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.10)
+
 **Check whether a tuned candidate survives your declared audit gates.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and checks the declared constraints and train/holdout score correlation **before** it ships.
 
 [![PyPI](https://img.shields.io/pypi/v/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
@@ -15,6 +17,10 @@ omega-lock demo   # 60s, offline: watch a "winning" score collapse -74% on held-
 
 ---
 
+## v0.3.10 — Release changes
+
+Adds the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold()` applies `base + MDE * sqrt(1 + ln(max(1, trials)))`; `classify_calibration_verdict()` returns `M0_HOLD` for a failed holdout, `ESTABLISHED` only for a passed holdout with `delta > MDE`, and `NOT_ESTABLISHED` otherwise. Existing orchestration APIs are unchanged. These input-based rules do not measure holdout independence, statistical power, or generalization.
+
 ## Start here · Standalone use · Integration/Docking
 
 **Omega Verification Suite** — Quiet precision. AI research guided by evidence.
@@ -24,7 +30,7 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install omega-lock==0.3.9
+python -m pip install omega-lock==0.3.10
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
