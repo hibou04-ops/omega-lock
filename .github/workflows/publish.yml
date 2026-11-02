@@ -27,7 +27,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install build backend
-        run: python -m pip install --upgrade build twine
+        run: python -m pip install --upgrade build twine "setuptools>=61.0"
 
       - name: Verify version
         run: |
@@ -42,7 +42,7 @@ jobs:
           echo "PKG_VER=$PKG_VER" >> "$GITHUB_ENV"
 
       - name: Run tests
-        run: python -m pip install -e ".[dev]" && python -m pytest tests
+        run: python -m pip install -e ".[dev,p2]" && python -m pytest tests
 
       - name: Build package
         run: |

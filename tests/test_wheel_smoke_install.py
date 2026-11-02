@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -34,7 +37,37 @@ def test_build_and_install_commands_are_local_only(tmp_path: Path):
     assert "--no-isolation" in build_cmd
     assert "--no-index" in install_cmd
     assert "--no-deps" in install_cmd
+    assert "--system-site-packages" not in SMOKE.create_venv_command(tmp_path / "venv")
     assert not any("pypi.org" in part or part.startswith("http") for part in build_cmd + install_cmd)
+
+
+def test_dependency_reuse_excludes_source_and_does_not_execute_nested_pth(tmp_path: Path, monkeypatch):
+    project = tmp_path / "project"
+    source = project / "src"
+    dependencies = tmp_path / "dependencies"
+    source.mkdir(parents=True)
+    dependencies.mkdir()
+    marker = tmp_path / "nested-pth-executed.txt"
+    (dependencies / "should_not_execute.pth").write_text(
+        f"import pathlib; pathlib.Path({str(marker)!r}).write_text('executed', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    (dependencies / "external_smoke_fixture.py").write_text("value = 42\n", encoding="utf-8")
+    monkeypatch.setattr(SMOKE.site, "getsitepackages", lambda: [str(project), str(source), str(dependencies)])
+    venv_dir = tmp_path / "venv"
+    paths = SMOKE.expose_installed_dependencies(venv_dir, project)
+    assert paths == (str(dependencies.resolve()),)
+    site_dir = venv_dir / ("Lib/site-packages" if os.name == "nt" else f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages")
+    code = (
+        f"import site; site.addsitedir({str(site_dir)!r}); "
+        "import external_smoke_fixture; import json; "
+        "print(json.dumps({'value': external_smoke_fixture.value}))"
+    )
+    result = subprocess.run([sys.executable, "-S", "-c", code], cwd=tmp_path,
+                            capture_output=True, text=True, encoding="utf-8", check=False)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {"value": 42}
+    assert not marker.exists()
 
 
 def test_load_pyproject_reads_expected_console_scripts(tmp_path: Path):

@@ -106,8 +106,8 @@ def test_manually_forced_approval_cannot_override_a_failed_verdict():
 
 def test_cli_gap_threshold_controls_exit_and_exposes_authorization(tmp_path: Path, capsys):
     train, holdout = tmp_path / "train.json", tmp_path / "holdout.json"
-    train.write_text(json.dumps([1, 2, 3]))
-    holdout.write_text(json.dumps([-100, -99, -98]))
+    train.write_text(json.dumps([1, 2, 3]), encoding="utf-8")
+    holdout.write_text(json.dumps([-100, -99, -98]), encoding="utf-8")
     args = ["gate", "--train", str(train), "--holdout", str(holdout)]
     assert main(args) == 1
     assert "deployment_authorized: False" in capsys.readouterr().out

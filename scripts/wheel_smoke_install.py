@@ -8,6 +8,7 @@ import argparse
 import json
 import os
 import re
+import site
 import subprocess
 import sys
 import tempfile
@@ -145,7 +146,6 @@ def create_venv_command(venv_dir: Path) -> list[str]:
         sys.executable,
         "-m",
         "venv",
-        "--system-site-packages",
         str(venv_dir),
     ]
 
@@ -159,6 +159,8 @@ def venv_python_path(venv_dir: Path) -> Path:
 def run_command(args: Sequence[str], *, cwd: Path, timeout: int = 120) -> CommandResult | CheckResult:
     env = os.environ.copy()
     env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+    env["PYTHONNOUSERSITE"] = "1"
+    env.pop("PYTHONPATH", None)
     try:
         completed = subprocess.run(
             list(args),
@@ -166,6 +168,8 @@ def run_command(args: Sequence[str], *, cwd: Path, timeout: int = 120) -> Comman
             check=False,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
             env=env,
         )
@@ -329,6 +333,28 @@ def install_local_wheel(venv_python: Path, wheel_path: Path, root: Path) -> Chec
     )
 
 
+def expose_installed_dependencies(venv_dir: Path, root: Path) -> tuple[str, ...]:
+    """Reuse CI dependencies without executing the source env's editable .pth files."""
+    if os.name == "nt":
+        target = venv_dir / "Lib" / "site-packages"
+    else:
+        target = venv_dir / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+    target.mkdir(parents=True, exist_ok=True)
+    project = root.resolve()
+    source = (project / "src").resolve()
+    paths = tuple(
+        str(path)
+        for raw in site.getsitepackages()
+        if (path := Path(raw).resolve()).is_dir()
+        and path != target.resolve()
+        and path != project
+        and not path.is_relative_to(source)
+    )
+    payload = "".join(path + "\n" for path in paths)
+    (target / "zz-omega-lock-smoke-deps.pth").write_text(payload, encoding="utf-8", newline="\n")
+    return paths
+
+
 def metadata_probe_code() -> str:
     return r'''
 import json
@@ -352,12 +378,18 @@ print(json.dumps(payload, sort_keys=True))
 def runtime_probe_code() -> str:
     return r'''
 import json
+from pathlib import Path
+import sys
 
 payload = {}
 try:
     import omega_lock
+    location = Path(omega_lock.__file__).resolve()
+    if not location.is_relative_to(Path(sys.prefix).resolve()):
+        raise RuntimeError(f"package imported outside installed-wheel environment: {location}")
     payload["import_package"] = "omega_lock"
     payload["import_version"] = getattr(omega_lock, "__version__", None)
+    payload["import_file"] = str(location)
 except Exception as exc:
     payload["import_error"] = f"{type(exc).__name__}: {exc}"
 
@@ -389,7 +421,7 @@ def read_json_probe(
     code: str,
     fail_message: str,
 ) -> tuple[CheckResult, dict[str, Any] | None]:
-    completed = run_command([str(venv_python), "-c", code], cwd=root, timeout=60)
+    completed = run_command([str(venv_python), "-c", code], cwd=venv_python.parent.parent, timeout=60)
     if isinstance(completed, CheckResult):
         return completed, None
     if completed.returncode != 0:
@@ -570,35 +602,26 @@ def validate_probe_payload(
 
 
 def run_demo_smoke(venv_python: Path, root: Path) -> CheckResult:
-    demo = root / "examples" / "demo_replay.py"
-    if not demo.exists():
-        return CheckResult("demo-smoke", "WARN", "Cheap deterministic demo smoke is unavailable.")
-
-    completed = run_command([str(venv_python), str(demo), "--check"], cwd=root, timeout=30)
+    # Exercise packaged runtime code; examples/ and source checkout are absent here.
+    completed = run_command(
+        [str(venv_python), "-m", "omega_lock.cli", "demo"],
+        cwd=venv_python.parent.parent, timeout=30,
+    )
     if isinstance(completed, CheckResult):
         return completed
     if completed.returncode != 0:
         return nonzero_result(
             "demo-smoke",
             completed,
-            fail_message="Deterministic demo smoke failed.",
+            fail_message="Installed CLI demo smoke failed.",
         )
-    try:
-        payload = json.loads(completed.stdout.strip())
-    except json.JSONDecodeError as exc:
-        return CheckResult(
-            "demo-smoke",
-            "FAIL",
-            "Deterministic demo smoke emitted invalid JSON.",
-            (str(exc), completed.stdout.strip()[:500]),
-        )
-    if payload.get("status") == "PASS":
-        return CheckResult("demo-smoke", "PASS", "Deterministic demo replay smoke passed.")
+    if "Walk-forward gate demo PASSED." in completed.stdout:
+        return CheckResult("demo-smoke", "PASS", "Installed CLI demo smoke passed outside the checkout.")
     return CheckResult(
         "demo-smoke",
         "FAIL",
-        "Deterministic demo replay smoke reported failure.",
-        (json.dumps(payload, sort_keys=True),),
+        "Installed CLI demo smoke did not emit its success receipt.",
+        (completed.stdout[-500:],),
     )
 
 
@@ -663,6 +686,13 @@ def run_wheel_smoke(root: Path, dist_dir: Path, intended_version: str) -> list[C
         if venv_result.status in {"FAIL", "TOOLING_MISSING", "ENVIRONMENT_BLOCKED"}:
             return results
 
+        dependency_paths = expose_installed_dependencies(venv_dir, root)
+        results.append(CheckResult(
+            "dependency-reuse", "PASS",
+            "Offline CI dependency paths reused; source roots excluded and nested .pth files not executed.",
+            dependency_paths,
+        ))
+
         venv_python = venv_python_path(venv_dir)
         install_result = install_local_wheel(venv_python, wheel_path, root)
         results.append(install_result)
@@ -698,9 +728,9 @@ def run_wheel_smoke(root: Path, dist_dir: Path, intended_version: str) -> list[C
         if any(result.status == "WARN" for result in runtime_results):
             results.append(
                 CheckResult(
-                    "demo-smoke",
-                    "WARN",
-                    "Deterministic demo smoke skipped because runtime import dependencies are unavailable.",
+                    "runtime-required",
+                    "FAIL",
+                    "Wheel smoke cannot pass when installed runtime verification was skipped.",
                 )
             )
         else:

@@ -19,6 +19,7 @@ def test_quality_ci_runs_all_default_offline_gates():
     assert "pull_request:" in text
     assert "branches: [main]" in text
     for command in (
+        'python -m pip install -e ".[dev,p2]"',
         "python scripts/check_encoding.py",
         "python scripts/check_repo_consistency.py --check",
         "python scripts/generate_readme_claims.py --check",
@@ -60,6 +61,8 @@ def test_release_readiness_workflow_is_manual_and_non_publishing():
     assert "scripts/wheel_smoke_install.py" in text
     assert "scripts/publish_readiness.py" in text
     assert "python -m pip install build twine" in text
+    assert '"setuptools>=61.0"' in text
+    assert 'python -m pip install -e ".[dev,p2]"' in text
 
     forbidden = (
         "pypa/gh-action-pypi-publish",
@@ -83,3 +86,4 @@ def test_publish_workflow_trigger_and_publish_action_remain_explicit():
     assert "pull_request:" not in text
     assert "push:" not in text
     assert "pypa/gh-action-pypi-publish@release/v1" in text
+    assert 'python -m pip install -e ".[dev,p2]"' in text

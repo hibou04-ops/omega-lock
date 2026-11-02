@@ -118,14 +118,14 @@ def test_candidate_ids_fail_before_wrong_pairing(train_ids, holdout_ids):
 @pytest.mark.parametrize("payload", ["[1, NaN, 3]", "[1, Infinity, 3]", "[1, 1e999, 3]"])
 def test_cli_nonfinite_scores_are_input_errors(tmp_path, payload, capsys):
     scores = tmp_path / "scores.json"
-    scores.write_text(payload)
+    scores.write_text(payload, encoding="utf-8")
     assert main(["gate", "--train", str(scores), "--holdout", str(scores)]) == 2
     assert "finite" in capsys.readouterr().err
 
 
 def test_cli_invalid_threshold_is_input_error(tmp_path, capsys):
     scores = tmp_path / "scores.json"
-    scores.write_text("[1, 2, 3]")
+    scores.write_text("[1, 2, 3]", encoding="utf-8")
     assert main(["gate", "--train", str(scores), "--holdout", str(scores),
                  "--pearson-min", "nan"]) == 2
     assert "pearson_min" in capsys.readouterr().err

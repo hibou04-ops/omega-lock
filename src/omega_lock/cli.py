@@ -23,7 +23,25 @@ import json
 from math import isfinite
 import sys
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Protocol, Sequence
+
+
+class _TextWriter(Protocol):
+    def write(self, text: str, /) -> object: ...
+
+
+def _ascii_text(message: str) -> str:
+    return message.encode("ascii", errors="backslashreplace").decode("ascii")
+
+
+def _print_ascii(message: str, *, file: _TextWriter | None = None) -> None:
+    print(_ascii_text(message), file=file)
+
+
+class _AsciiArgumentParser(argparse.ArgumentParser):
+    def _print_message(self, message: str | None, file: _TextWriter | None = None) -> None:
+        if message:
+            super()._print_message(_ascii_text(message), file)
 
 
 class SystemExit2(Exception):
@@ -86,18 +104,18 @@ def _cmd_gate(args: argparse.Namespace) -> int:
     except ValueError as exc:
         raise SystemExit2(str(exc)) from exc
 
-    print(f"gate     : {'PASS' if verdict.passed else 'FAIL'}")
+    _print_ascii(f"gate     : {'PASS' if verdict.passed else 'FAIL'}")
     pearson_text = "n/a" if verdict.pearson is None else f"{verdict.pearson:.3f}"
-    print(f"pearson  : {pearson_text}")
-    print(f"degradation_gap: {verdict.degradation_gap}")
-    print(f"deployment_authorized: {verdict.deployment_authorized}")
-    print(f"scores   : {len(train)} candidate(s)")
+    _print_ascii(f"pearson  : {pearson_text}")
+    _print_ascii(f"degradation_gap: {verdict.degradation_gap}")
+    _print_ascii(f"deployment_authorized: {verdict.deployment_authorized}")
+    _print_ascii(f"scores   : {len(train)} candidate(s)")
     for reason in verdict.reasons:
-        print(f"reason   : {reason}")
+        _print_ascii(f"reason   : {reason}")
 
     if args.report is not None:
         render_html(verdict, args.report)
-        print(f"report   : wrote {args.report}")
+        _print_ascii(f"report   : wrote {args.report}")
 
     return 0 if verdict.passed else 1
 
@@ -115,14 +133,14 @@ def _cmd_report(args: argparse.Namespace) -> int:
         render_html(payload, args.output)
     except (TypeError, ValueError) as exc:
         raise SystemExit2(str(exc))
-    print(f"report   : wrote {args.output}")
+    _print_ascii(f"report   : wrote {args.output}")
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
     from omega_lock import __version__
 
-    parser = argparse.ArgumentParser(
+    parser = _AsciiArgumentParser(
         prog="omega-lock",
         description=(
             "Audit tuned candidates before they ship: walk-forward gate, "
@@ -203,7 +221,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         return int(args.func(args))
     except SystemExit2 as exc:
-        print(f"omega-lock: error: {exc}", file=sys.stderr)
+        _print_ascii(f"omega-lock: error: {exc}", file=sys.stderr)
         return 2
 
 
