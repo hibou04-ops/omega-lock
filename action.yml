@@ -3,13 +3,13 @@
 #
 # Usage in a workflow:
 #
-#   - uses: hibou04-ops/omega-lock@v0.3.10
+#   - uses: hibou04-ops/omega-lock@v0.3.11
 #     with:
 #       train: train_scores.json       # in-sample scores (JSON array)
 #       holdout: holdout_scores.json   # held-out scores (JSON array, index-aligned)
 #
-# This installs omega-lock from PyPI (pinned to the action's version by
-# default), then runs `omega-lock gate`, which applies the walk-forward
+# The default version installs this checked-out Action source. An explicitly
+# different version or 'latest' retains the PyPI override. The Action runs the
 # transfer (Pearson) gate to the two score arrays. The gate exits non-zero —
 # failing the job — when the held-out scores do not track the in-sample
 # score association. A failed gate does not establish the cause of disagreement.
@@ -41,10 +41,10 @@ inputs:
     default: ""
   version:
     description: >-
-      omega-lock version to install from PyPI. Defaults to the action's own
-      pinned version. Use 'latest' to always pull the newest release.
+      The default version installs this Action's source. A different explicit
+      version or 'latest' selects the existing PyPI override.
     required: false
-    default: "0.3.10"
+    default: "0.3.11"
   python-version:
     description: Python version to set up.
     required: false
@@ -65,11 +65,16 @@ runs:
 
     - name: Install omega-lock
       shell: bash
+      env:
+        INPUT_PACKAGE_VERSION: ${{ inputs.version }}
+        ACTION_SOURCE: ${{ github.action_path }}
       run: |
-        if [ "${{ inputs.version }}" = "latest" ]; then
+        if [ "$INPUT_PACKAGE_VERSION" = "0.3.11" ]; then
+          python -m pip install "$ACTION_SOURCE"
+        elif [ "$INPUT_PACKAGE_VERSION" = "latest" ]; then
           python -m pip install --upgrade omega-lock
         else
-          python -m pip install "omega-lock==${{ inputs.version }}"
+          python -m pip install "omega-lock==$INPUT_PACKAGE_VERSION"
         fi
 
     - name: Run omega-lock gate

@@ -1,6 +1,8 @@
 # omega-lock
 
-[![Release](https://img.shields.io/badge/release-0.3.10-blue.svg)](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.10)
+[English](README.md) · [한국어](README.ko.md) · [한국어 별칭](README_KR.md)
+
+[![Source version](https://img.shields.io/badge/version-0.3.11-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.11)
 
 **Check whether a tuned candidate survives your declared audit gates.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and checks the declared constraints and train/holdout score correlation **before** it ships.
 
@@ -8,8 +10,10 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
+**Source version 0.3.11.** This update publishes Git source/tag identity only; it does not claim a GitHub Release object or a PyPI upload. The pinned install below uses the source tag.
+
 ```bash
-pip install omega-lock
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 omega-lock demo   # 60s, offline: watch a "winning" score collapse -74% on held-out data
 ```
 
@@ -17,9 +21,63 @@ omega-lock demo   # 60s, offline: watch a "winning" score collapse -74% on held-
 
 ---
 
-## v0.3.10 — Release changes
+## Reproduce deployment traps in 30 seconds
 
-Adds the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold()` applies `base + MDE * sqrt(1 + ln(max(1, trials)))`; `classify_calibration_verdict()` returns `M0_HOLD` for a failed holdout, `ESTABLISHED` only for a passed holdout with `delta > MDE`, and `NOT_ESTABLISHED` otherwise. Existing orchestration APIs are unchanged. These input-based rules do not measure holdout independence, statistical power, or generalization.
+From this checkout, install the optional Optuna bridge and run the keyless, offline assertions:
+
+```bash
+python -m pip install -e ".[p2]"
+python examples/reproduce_optuna_traps.py
+```
+
+Actual stdout from the command above (local offline execution, 2026-11-02):
+
+```text
+[
+  {
+    "case": "no_holdout",
+    "passed": true,
+    "status": "SKIP",
+    "holdout_evaluated": false,
+    "deployment_authorized": false,
+    "pearson": null,
+    "degradation_gap": null
+  },
+  {
+    "case": "location_shift",
+    "passed": false,
+    "status": "FAIL",
+    "holdout_evaluated": true,
+    "deployment_authorized": false,
+    "pearson": 1.0,
+    "degradation_gap": 101.0
+  },
+  {
+    "case": "normal",
+    "passed": true,
+    "status": "PASS",
+    "holdout_evaluated": true,
+    "deployment_authorized": true,
+    "pearson": 1.0,
+    "degradation_gap": 0.0
+  }
+]
+All three deployment-gate cases reproduced without API keys or network calls.
+```
+
+The script checks three cases: no holdout keeps legacy `passed=True` / `status="SKIP"` while `holdout_evaluated=False` and `deployment_authorized=False`; `[1,2,3]` versus `[-100,-99,-98]` has Pearson 1 but degradation gap 101 and is blocked; unchanged held-out scores authorize under the declared gates. No API keys, paid calls or external service configuration are used.
+
+CI consumers must read `deployment_authorized`, not audit-completion `passed` alone. `gate_scores()` and `audit_optuna_study()` now combine correlation with `max_degradation_gap=1.0` by default. The gap is `mean(train)-mean(holdout)` in maximize orientation (sign-reversed for minimize): holdout mean must be at least train mean minus the configured limit. The Optuna bridge additionally checks the selected candidate itself, including a feasible candidate outside the top-N. The finite nonnegative score-unit limit cannot be disabled with None; predeclare a domain-appropriate value. CLI uses `--max-degradation-gap` and `--direction maximize|minimize`.
+
+The decision compares exact finite-input arithmetic against the bound; displayed gaps are floats. Nonfinite, degenerate, overflow or underflow evidence cannot authorize deployment. These local policy checks do not establish data independence, statistical significance or external generalization. The lower-level `check_kc4()` and existing P1 orchestration retain their separate contracts.
+
+The Optuna report exposes both `degradation_gap` (top-N mean) and `selected_degradation_gap` (the selected candidate). A favorable mean cannot waive the selected candidate check.
+
+## v0.3.11 — Release changes
+
+Separates audit completion from deployment authorization and adds declared mean/selected-candidate degradation bounds. The pure helpers below are retained features.
+
+Retains the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold()` applies `base + MDE * sqrt(1 + ln(max(1, trials)))`; `classify_calibration_verdict()` returns `M0_HOLD` for a failed holdout, `ESTABLISHED` only for a passed holdout with `delta > MDE`, and `NOT_ESTABLISHED` otherwise. Existing orchestration APIs are unchanged. These input-based rules do not measure holdout independence, statistical power, or generalization.
 
 ## Start here · Standalone use · Integration/Docking
 
@@ -30,7 +88,7 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install omega-lock==0.3.10
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
@@ -41,7 +99,7 @@ No sibling package is needed. omegaprompt requires omega-lock>=0.3.0,<0.4.0 at r
 
 [Docking contracts and runnable data handoff](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [Full guide](README.md).
 
-0.3.9 adds stable Pearson computation at extreme scales, explicit NaN/Inf rejection, a 64-Future window for optional parallel evaluation, and optional candidate-ID validation in `gate_scores`. Pearson is score linear association, not rank correlation, absolute quality or generalization: `holdout = train - 100` can pass. See [measured changes and limits](docs/UPGRADE_0_3_9.md).
+0.3.9 adds stable Pearson computation at extreme scales, explicit NaN/Inf rejection, a 64-Future window for optional parallel evaluation, and optional candidate-ID validation in `gate_scores`. Pearson alone is score linear association, not rank correlation or absolute quality. The old correlation-only path could pass `holdout = train - 100`; current gate_scores/Optuna deployment checks additionally enforce the mean degradation bound. See [measured changes and limits](docs/UPGRADE_0_3_9.md).
 
 
 ## The 30-second version
@@ -101,7 +159,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install omega-lock
+      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 
       # your tuner runs here and writes train_scores.json + holdout_scores.json
       - run: python tune.py
@@ -132,7 +190,7 @@ from omega_lock import audit_optuna_study
 
 study  = optuna.load_study(study_name="my-sweep", storage="sqlite:///sweep.db")
 report = audit_optuna_study(study, holdout_evaluate=score_on_holdout)  # walk-forward + feasibility on study.best_trial
-print(report.passed, report.gated_best)   # False, and the candidate it WILL certify (or None)
+print(report.deployment_authorized, report.gated_best)   # check explicit deployment authority
 ```
 
 No new study, no rewrite of your objective, no config DSL. It also works on bare lists (Ax, Ray Tune, Hyperopt, `GridSearchCV`, or a hand-rolled sweep) — any leaderboard is enough.
@@ -179,7 +237,7 @@ The empty seat omega-lock fills: an **output-side overfit gate**. The rule of th
 ## Install
 
 ```bash
-pip install omega-lock
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 
 omega-lock demo                 # 60s offline walkthrough — watch a lucky winner collapse
 omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)

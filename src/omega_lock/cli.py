@@ -79,13 +79,18 @@ def _cmd_gate(args: argparse.Namespace) -> int:
             if args.pearson_min is not None
             else None
         )
+        verdict = gate_scores(
+            train, holdout, thresholds=thresholds,
+            max_degradation_gap=args.max_degradation_gap, direction=args.direction,
+        )
     except ValueError as exc:
         raise SystemExit2(str(exc)) from exc
-    verdict = gate_scores(train, holdout, thresholds=thresholds)
 
     print(f"gate     : {'PASS' if verdict.passed else 'FAIL'}")
     pearson_text = "n/a" if verdict.pearson is None else f"{verdict.pearson:.3f}"
     print(f"pearson  : {pearson_text}")
+    print(f"degradation_gap: {verdict.degradation_gap}")
+    print(f"deployment_authorized: {verdict.deployment_authorized}")
     print(f"scores   : {len(train)} candidate(s)")
     for reason in verdict.reasons:
         print(f"reason   : {reason}")
@@ -142,10 +147,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     gate = sub.add_parser(
         "gate",
-        help="gate train vs holdout score arrays (KC-4 Pearson transfer)",
+        help="gate train vs holdout score arrays (Pearson and score degradation)",
         description=(
             "Reads two JSON arrays of numbers (index-aligned per candidate) "
-            "and applies the KC-4 walk-forward Pearson gate. Exit code 0 = "
+            "and applies the KC-4 Pearson and mean score-degradation gates. Exit code 0 = "
             "gate passed, 1 = gate failed."
         ),
     )
@@ -161,6 +166,14 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         help="override the Pearson gate threshold (default 0.3)",
+    )
+    gate.add_argument(
+        "--max-degradation-gap", type=float, default=1.0,
+        help="maximum score-unit mean degradation (finite, nonnegative; default 1.0)",
+    )
+    gate.add_argument(
+        "--direction", choices=("maximize", "minimize"), default="maximize",
+        help="objective orientation (default maximize)",
     )
     gate.set_defaults(func=_cmd_gate)
 

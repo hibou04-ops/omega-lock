@@ -28,9 +28,9 @@
         "score-array CLI only prints its verdict"
       ],
       "readme_refs": [
-        "README.md:194",
-        "README.md:194",
-        "README.md:194"
+        "README.md:258",
+        "README.md:258",
+        "README.md:258"
       ],
       "status": "validated"
     },
@@ -45,8 +45,8 @@
         "gate you bolt onto the search"
       ],
       "readme_refs": [
-        "README.md:52",
-        "README.md:152"
+        "README.md:116",
+        "README.md:216"
       ],
       "status": "qualitative"
     },
@@ -62,9 +62,9 @@
         "No PyPI or GitHub download analytics are asserted here"
       ],
       "readme_refs": [
-        "README.md:190",
-        "README.md:190",
-        "README.md:190"
+        "README.md:254",
+        "README.md:254",
+        "README.md:254"
       ],
       "status": "qualitative"
     },
@@ -93,7 +93,7 @@
         "shareable dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:182"
+        "README.md:246"
       ],
       "status": "validated"
     },
@@ -117,7 +117,7 @@
         "a 64-Future window for optional parallel evaluation"
       ],
       "readme_refs": [
-        "README.md:38"
+        "README.md:102"
       ],
       "status": "validated"
     },
@@ -152,8 +152,8 @@
         "omega-lock gate"
       ],
       "readme_refs": [
-        "README.md:11",
-        "README.md:29"
+        "README.md:17",
+        "README.md:93"
       ],
       "status": "validated"
     },
@@ -168,8 +168,8 @@
         "output-side overfit gate"
       ],
       "readme_refs": [
-        "README.md:161",
-        "README.md:169"
+        "README.md:225",
+        "README.md:233"
       ],
       "status": "qualitative"
     },
@@ -210,9 +210,9 @@
         "nothing to set up"
       ],
       "readme_refs": [
-        "README.md:11",
-        "README.md:62",
-        "README.md:56"
+        "README.md:17",
+        "README.md:126",
+        "README.md:120"
       ],
       "status": "validated"
     },
@@ -243,9 +243,9 @@
         "best_any"
       ],
       "readme_refs": [
-        "README.md:69",
-        "README.md:69",
-        "README.md:69"
+        "README.md:133",
+        "README.md:133",
+        "README.md:133"
       ],
       "status": "validated"
     },
@@ -276,9 +276,9 @@
         "violates a constraint you declared"
       ],
       "readme_refs": [
-        "README.md:143",
-        "README.md:143",
-        "README.md:143"
+        "README.md:207",
+        "README.md:207",
+        "README.md:207"
       ],
       "status": "validated"
     },
@@ -303,8 +303,8 @@
         "dark-themed scorecard"
       ],
       "readme_refs": [
-        "README.md:182",
-        "README.md:182"
+        "README.md:246",
+        "README.md:246"
       ],
       "status": "validated"
     },
@@ -338,7 +338,7 @@
         "omega-lock gate --help"
       ],
       "readme_refs": [
-        "README.md:179"
+        "README.md:243"
       ],
       "status": "validated"
     },
@@ -368,8 +368,8 @@
         "Already have an Optuna study?"
       ],
       "readme_refs": [
-        "README.md:125",
-        "README.md:120"
+        "README.md:189",
+        "README.md:184"
       ],
       "status": "validated"
     },
@@ -400,12 +400,12 @@
         }
       ],
       "readme_markers": [
-        "pip install omega-lock",
+        "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v",
         "from omega_lock.simple import gate_scores"
       ],
       "readme_refs": [
-        "README.md:10",
-        "README.md:112"
+        "README.md:16",
+        "README.md:176"
       ],
       "status": "validated"
     },
@@ -429,7 +429,7 @@
         "tamper-evident"
       ],
       "readme_refs": [
-        "README.md:194"
+        "README.md:258"
       ],
       "status": "validated"
     },
@@ -454,8 +454,8 @@
         "omega_lock.simple"
       ],
       "readme_refs": [
-        "README.md:38",
-        "README.md:112"
+        "README.md:102",
+        "README.md:176"
       ],
       "status": "validated"
     },
@@ -479,7 +479,7 @@
         "stable Pearson computation at extreme scales"
       ],
       "readme_refs": [
-        "README.md:38"
+        "README.md:102"
       ],
       "status": "validated"
     },
@@ -508,7 +508,7 @@
         "rank parameters by perturbation sensitivity"
       ],
       "readme_refs": [
-        "README.md:192"
+        "README.md:256"
       ],
       "status": "validated"
     },
@@ -539,9 +539,9 @@
         "re-tests the winner on a slice the search never touched"
       ],
       "readme_refs": [
-        "README.md:14",
-        "README.md:142",
-        "README.md:52"
+        "README.md:20",
+        "README.md:206",
+        "README.md:116"
       ],
       "status": "validated"
     }

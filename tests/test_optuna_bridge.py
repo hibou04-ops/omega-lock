@@ -188,6 +188,10 @@ def test_no_holdout_reports_skip_not_pass():
     assert report.kc_report.status == "SKIP"
     assert "no holdout_evaluate" in report.kc_report.message
     assert report.passed is True  # not failed — but carries no transfer evidence
+    assert report.deployment_authorized is False
+    assert report.to_dict()["deployment_authorized"] is False
+    from dataclasses import replace
+    assert replace(report, deployment_authorized=True).deployment_authorized is False
     assert report.pearson is None
     assert report.pearson_status == "NOT_RUN"
     assert report.holdout_evaluated is False
@@ -304,6 +308,7 @@ def test_minimize_direction_ranks_and_reports_in_study_orientation():
         # Holdout in the SAME (minimize) orientation, rank-consistent.
         holdout_evaluate=lambda p: 10.0 - float(p["x"]),
         top_n=5,
+        max_degradation_gap=5.0,  # this direction test deliberately allows a 5-unit drop
     )
 
     assert report.best_any.train_value == 1.0
@@ -312,6 +317,102 @@ def test_minimize_direction_ranks_and_reports_in_study_orientation():
     assert report.pearson == pytest.approx(1.0)
     # Reported holdout values keep the study's own orientation.
     assert report.best_any.holdout_value == pytest.approx(6.0)
+    assert report.degradation_gap == 5.0
+    assert report.deployment_authorized is True
+
+
+@requires_optuna
+def test_exact_location_shift_has_perfect_pearson_but_no_deployment_authority():
+    study = _study_with_values([1.0, 2.0, 3.0])
+    report = audit_optuna_study(study, holdout_evaluate=lambda p: p["x"] - 100.0, top_n=3)
+    assert report.pearson == pytest.approx(1.0)
+    assert report.degradation_gap == 101.0
+    assert report.passed is False
+    assert report.kc_report.status == "FAIL"
+    assert report.gated_best is None
+    assert report.deployment_authorized is False
+    assert report.to_dict()["degradation_gap"] == 101.0
+
+
+@requires_optuna
+@pytest.mark.parametrize("direction,values,holdout,authorized,gap", [
+    ("maximize", [1.0, 2.0, 3.0], [0.0, 1.0, 2.0], True, 1.0),
+    ("maximize", [1.0, 2.0, 3.0], [-0.01, 0.99, 1.99], False, 1.01),
+    ("minimize", [1.0, 2.0, 3.0], [2.0, 3.0, 4.0], True, 1.0),
+    ("minimize", [1.0, 2.0, 3.0], [102.0, 103.0, 104.0], False, 101.0),
+    ("minimize", [1.0, 2.0, 3.0], [0.0, 1.0, 2.0], True, -1.0),
+])
+def test_deployment_gap_respects_direction_and_inclusive_boundary(
+    direction, values, holdout, authorized, gap,
+):
+    study = _study_with_values(values, direction=direction)
+    report = audit_optuna_study(
+        study, holdout_evaluate=lambda p: holdout[int(p["x"])], top_n=3
+    )
+    assert report.degradation_gap == pytest.approx(gap)
+    assert report.deployment_authorized is authorized
+    assert report.to_dict()["direction"] == direction
+
+
+@requires_optuna
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf"), -1.0, None, True])
+def test_optuna_degradation_limit_cannot_be_invalid_or_disabled(bad):
+    with pytest.raises(ValueError, match="max_degradation_gap"):
+        audit_optuna_study(_study_with_values([1.0, 2.0, 3.0]), max_degradation_gap=bad)
+
+
+@requires_optuna
+@pytest.mark.parametrize("score", [-100.0, float("nan"), float("inf")])
+def test_selected_feasible_outside_top_n_cannot_bypass_degradation(score):
+    study = _study_with_values([9.0, 8.0, 2.0], feasible_flags=[False, False, True])
+    report = audit_optuna_study(
+        study, holdout_evaluate=lambda p: 9.0 - p["x"] if p["x"] < 2 else score,
+        top_n=2,
+    )
+    assert report.pearson == pytest.approx(1.0)
+    assert report.degradation_gap == 0.0
+    assert report.best_feasible is not None
+    assert report.gated_best is None
+    assert report.kc_report.status == "FAIL"
+    assert report.deployment_authorized is False
+
+
+@requires_optuna
+def test_a_passing_top_n_mean_cannot_hide_the_actual_winners_drop():
+    study = _study_with_values([1.0, 2.0, 3.0])
+    report = audit_optuna_study(
+        study, holdout_evaluate=lambda p: [2.0, 3.0, 1.0][int(p["x"])],
+        thresholds=KCThresholds.pure_objective(pearson_min=-1.0), top_n=3,
+    )
+    assert report.degradation_gap == 0.0
+    assert report.selected_degradation_gap == 2.0
+    assert report.deployment_authorized is False
+    assert report.gated_best is None
+
+
+@requires_optuna
+@pytest.mark.parametrize("holdout", [
+    [float("nan"), 2.0, 3.0], [float("inf"), 2.0, 3.0], [1.0, 1.0, 1.0],
+])
+def test_optuna_invalid_or_degenerate_holdout_cannot_authorize(holdout):
+    report = audit_optuna_study(
+        _study_with_values([1.0, 2.0, 3.0]),
+        holdout_evaluate=lambda p: holdout[int(p["x"])], top_n=3,
+    )
+    assert not report.passed and not report.deployment_authorized
+    assert report.gated_best is None
+
+
+@requires_optuna
+def test_optuna_gap_overflow_fails_closed_with_measured_pearson():
+    report = audit_optuna_study(
+        _study_with_values([1e308, 1.1e308, 1.2e308]),
+        holdout_evaluate=lambda p: [-1.2e308, -1.1e308, -1e308][int(p["x"])], top_n=3,
+    )
+    assert report.pearson == pytest.approx(1.0)
+    assert report.degradation_gap is None
+    assert report.kc_report.detail["degradation_status"] == "NON_FINITE_GAP"
+    assert not report.deployment_authorized
 
 
 # ── Report shape ───────────────────────────────────────────────────────────

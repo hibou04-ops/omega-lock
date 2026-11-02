@@ -19,7 +19,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from omega_lock import EvalResult, KCThresholds, P1Config, ParamSpec, __version__, run_p1
+from omega_lock import EvalResult, KCThresholds, P1Config, ParamSpec, run_p1
 from omega_lock.audit._types import (
     AUDIT_REPORT_SCHEMA_VERSION,
     AuditedRun,
@@ -31,6 +31,10 @@ from omega_lock.audit._types import (
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "golden_audits"
 GOLDEN_SCHEMA_VERSION = 1
 FIXED_STARTED = "2026-01-01T00:00:00+00:00"
+# These manually authored reports replay the frozen fixture's historical
+# metadata. They are not runtime receipts for the currently installed package.
+# Current pyproject/runtime/installed versions are checked separately.
+FROZEN_AUDIT_PROVENANCE_VERSION = "0.3.10"
 
 
 @dataclass(frozen=True)
@@ -126,7 +130,7 @@ def _report(case_id: str, runs: tuple[AuditedRun, ...], constraints: tuple[Const
     ended = f"2026-01-01T00:00:{max(len(runs) - 1, 0):02d}+00:00"
     return AuditReport(
         method=f"golden:{case_id}",
-        omega_lock_version=__version__,
+        omega_lock_version=FROZEN_AUDIT_PROVENANCE_VERSION,
         seed=101,
         started_iso=FIXED_STARTED,
         ended_iso=ended,

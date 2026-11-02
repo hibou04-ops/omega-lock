@@ -1,6 +1,8 @@
 # omega-lock
 
-[![Release](https://img.shields.io/badge/release-0.3.10-blue.svg)](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.10)
+[English](README.md) · [한국어](README.ko.md) · [한국어 별칭](README_KR.md)
+
+[![Source version](https://img.shields.io/badge/version-0.3.11-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.11)
 
 **튜닝 후보가 선언한 감사 기준을 충족하는지 확인합니다.** omega-lock은 튜너가 끝난 뒤 후보 점수의 train/holdout 선형 상관과 선언한 제약을 검사합니다. 상관 통과가 절대 품질이나 배포 안전성을 보장하지는 않습니다.
 
@@ -8,8 +10,10 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
+**소스 버전 0.3.11.** 이번 변경은 Git 소스·태그 식별자를 대상으로 하며 GitHub Release 객체나 PyPI 업로드를 완료했다는 주장이 아닙니다. 아래 고정 설치 명령은 소스 태그를 사용합니다.
+
 ```bash
-pip install omega-lock
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이터에서 -74% 무너지는 것을 직접 보세요
 ```
 
@@ -17,9 +21,63 @@ omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이�
 
 ---
 
-## v0.3.10 — 이번 변경
+## 30초 배포 승인 함정 재현
 
-순수 함수 모듈 `omega_lock.holdout_defense`를 추가했습니다. `compute_deflated_threshold()`는 `base + MDE * sqrt(1 + ln(max(1, trials)))`를 계산합니다. `classify_calibration_verdict()`는 holdout 실패 시 `M0_HOLD`, 통과하면서 `delta > MDE`일 때만 `ESTABLISHED`, 나머지는 `NOT_ESTABLISHED`를 반환합니다. 기존 orchestration API는 보존했습니다. 입력 기반 규칙이며 holdout 독립성·통계적 검정력·일반화를 측정하지 않습니다.
+이 checkout에서 선택적인 Optuna bridge를 설치한 뒤 API 키 없이 오프라인 검증을 실행합니다.
+
+```bash
+python -m pip install -e ".[p2]"
+python examples/reproduce_optuna_traps.py
+```
+
+위 명령의 실제 stdout(2026-11-02 로컬 오프라인 실행):
+
+```text
+[
+  {
+    "case": "no_holdout",
+    "passed": true,
+    "status": "SKIP",
+    "holdout_evaluated": false,
+    "deployment_authorized": false,
+    "pearson": null,
+    "degradation_gap": null
+  },
+  {
+    "case": "location_shift",
+    "passed": false,
+    "status": "FAIL",
+    "holdout_evaluated": true,
+    "deployment_authorized": false,
+    "pearson": 1.0,
+    "degradation_gap": 101.0
+  },
+  {
+    "case": "normal",
+    "passed": true,
+    "status": "PASS",
+    "holdout_evaluated": true,
+    "deployment_authorized": true,
+    "pearson": 1.0,
+    "degradation_gap": 0.0
+  }
+]
+All three deployment-gate cases reproduced without API keys or network calls.
+```
+
+스크립트가 세 경우를 자체 검증합니다. Holdout이 없으면 기존 `passed=True` / `status="SKIP"`를 유지하되 `holdout_evaluated=False`, `deployment_authorized=False`입니다. `[1,2,3]`과 `[-100,-99,-98]`은 Pearson 1이어도 하락폭 101로 차단합니다. 동일한 holdout 점수는 선언한 게이트 조건 아래 승인합니다. API 키·유료 호출·외부 서비스 설정은 사용하지 않습니다.
+
+CI는 감사 완료 의미의 `passed`만 읽지 말고 `deployment_authorized`를 확인해야 합니다. `gate_scores()`와 `audit_optuna_study()`는 상관 검사에 기본 `max_degradation_gap=1.0`을 결합합니다. 하락폭은 maximize 방향의 `mean(train)-mean(holdout)`이며 minimize는 부호를 반전합니다. 즉 holdout 평균이 train 평균에서 설정한 한도를 뺀 하한 이상이어야 합니다. Optuna bridge는 top-N 밖의 feasible 후보를 포함한 실제 선택 후보 자체의 하락폭도 검사합니다. 점수 단위의 유한·비음수 한도는 None으로 끌 수 없으며 도메인에 맞게 사전에 정합니다. CLI는 `--max-degradation-gap`, `--direction maximize|minimize`를 사용합니다.
+
+경계 판정은 유한 입력의 정확한 산술값으로 비교하고 표시값은 float입니다. 비유한·퇴화·overflow·underflow 증거는 승인을 허용하지 않습니다. 이 로컬 정책 검사는 데이터 독립성·통계적 유의성·외부 일반화를 입증하지 않습니다. 하위 `check_kc4()`와 기존 P1 orchestration은 별도 계약을 유지합니다.
+
+Optuna report는 `degradation_gap`(top-N 평균)과 `selected_degradation_gap`(선택 후보)을 모두 노출합니다. 평균이 양호해도 선택 후보의 하락 검사를 생략할 수 없습니다.
+
+## v0.3.11 — 이번 변경
+
+감사 완료와 배포 승인을 분리하고, 평균 및 선택 후보의 선언된 점수 하락 한도를 추가합니다. 아래 순수 helper는 유지되는 기존 기능입니다.
+
+기존 순수 함수 모듈 `omega_lock.holdout_defense`를 유지합니다. `compute_deflated_threshold()`는 `base + MDE * sqrt(1 + ln(max(1, trials)))`를 계산합니다. `classify_calibration_verdict()`는 holdout 실패 시 `M0_HOLD`, 통과하면서 `delta > MDE`일 때만 `ESTABLISHED`, 나머지는 `NOT_ESTABLISHED`를 반환합니다. 기존 orchestration API는 보존했습니다. 입력 기반 규칙이며 holdout 독립성·통계적 검정력·일반화를 측정하지 않습니다.
 
 ## 시작 · 단독 사용 · 도킹
 
@@ -30,16 +88,16 @@ omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이�
 Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
 
 ```bash
-python -m pip install omega-lock==0.3.10
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
 
 합성 예제는 PASS/종료 0, 상관 1.000이며 gate.html을 만듭니다. holdout 배열을 뒤집으면 FAIL/1, 입력 오류는 2입니다. 실제 일반화 성능을 증명하지 않습니다. Optuna bridge는 선택 extras [p2]의 >=3,<5 범위입니다.
 
-0.3.9: 큰 수·작은 수에서도 Pearson을 안정적으로 계산하고 NaN/Inf를 명시적으로 거부합니다. 선택적 병렬 평가의 미소비 Future는 64개로 제한하며 실제 평가 수와 결과 순서를 유지합니다. `gate_scores`의 선택적 `train_ids`/`holdout_ids`로 후보 대응을 검사할 수 있습니다. Pearson은 점수의 선형 상관이며 순위상관·절대 품질·일반화 보장이 아닙니다. `holdout = train - 100`도 통과할 수 있습니다. [변경 근거와 한계](docs/UPGRADE_0_3_9.md)를 확인하세요.
+0.3.9: 큰 수·작은 수에서도 Pearson을 안정적으로 계산하고 NaN/Inf를 명시적으로 거부합니다. 선택적 병렬 평가의 미소비 Future는 64개로 제한하며 실제 평가 수와 결과 순서를 유지합니다. `gate_scores`의 선택적 `train_ids`/`holdout_ids`로 후보 대응을 검사할 수 있습니다. Pearson 자체는 점수의 선형 상관이며 순위상관·절대 품질·일반화 보장이 아닙니다. 과거 상관 전용 경로는 `holdout = train - 100`도 통과했지만 현재 gate_scores/Optuna 배포 승인은 평균 하락폭 한도도 검사합니다. [변경 근거와 한계](docs/UPGRADE_0_3_9.md)를 확인하세요.
 
-[실제 연결 방식과 입력·출력](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [전체 안내](README.md). 두 mini 도구의 현재 검증 조합은 omegaprompt 2.1.2이며, 별도 배포 패키지입니다.
+[실제 연결 방식과 입력·출력](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [전체 안내](README.md). 두 mini 도구는 별도 배포 패키지입니다. 추가 형제 패키지는 필요하지 않으며, antemortem과의 관계는 CI 소스 인용이지 런타임 의존성이 아닙니다.
 
 
 ## 30초 요약
@@ -99,7 +157,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install omega-lock
+      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 
       # your tuner runs here and writes train_scores.json + holdout_scores.json
       - run: python tune.py
@@ -129,7 +187,7 @@ from omega_lock import audit_optuna_study
 
 study  = optuna.load_study(study_name="my-sweep", storage="sqlite:///sweep.db")
 report = audit_optuna_study(study, holdout_evaluate=score_on_holdout)  # walk-forward + feasibility on study.best_trial
-print(report.passed, report.gated_best)   # False, and the candidate it WILL certify (or None)
+print(report.deployment_authorized, report.gated_best)   # check explicit deployment authority
 ```
 
 새 study도, objective 재작성도, config DSL도 필요 없습니다. 평범한 리스트에서도 동작합니다(Ax, Ray Tune, Hyperopt, `GridSearchCV`, 또는 직접 만든 스윕) — 리더보드 하나면 충분합니다.
@@ -176,7 +234,7 @@ omega-lock이 채우는 빈자리: **출력 측 과적합 게이트(output-side 
 ## 설치
 
 ```bash
-pip install omega-lock
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
 
 omega-lock demo                 # 60s offline walkthrough — watch a lucky winner collapse
 omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)

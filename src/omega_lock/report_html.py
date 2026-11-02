@@ -230,6 +230,9 @@ def _from_study_audit_payload(d: Mapping[str, Any]) -> _Scorecard:
     card.meta.append(("gated top-N", _fmt(d.get("top_n"))))
     card.meta.append(("feasibility source", str(d.get("feasibility_source", "?"))))
     card.meta.append(("pearson", _fmt(_as_float(d.get("pearson")))))
+    card.meta.append(("deployment authorized", str(bool(d.get("deployment_authorized", False)))))
+    card.meta.append(("degradation gap", _fmt(_as_float(d.get("degradation_gap")))))
+    card.meta.append(("max degradation gap", _fmt(_as_float(d.get("max_degradation_gap")))))
     card.kc_rows.append(
         (str(kc.get("name", "KC-4")), status, str(kc.get("message", "")))
     )
@@ -258,7 +261,8 @@ def _from_study_audit_payload(d: Mapping[str, Any]) -> _Scorecard:
     )
     card.best_rows.append(_row("best_feasible", d.get("best_feasible"), feas_note))
     gated_note = (
-        "certified by the gate"
+        ("authorized under declared gates" if d.get("deployment_authorized") else
+         "retained audit candidate; deployment not authorized")
         if d.get("gated_best") is not None
         else "none - the gate refused to certify a candidate"
     )
@@ -281,6 +285,9 @@ def _from_gate_verdict(verdict: Any) -> _Scorecard:
         verdict_kind="pass" if passed else "fail",
     )
     card.meta.append(("pearson", _fmt(verdict.pearson)))
+    card.meta.append(("deployment authorized", str(verdict.deployment_authorized)))
+    card.meta.append(("degradation gap", _fmt(verdict.degradation_gap)))
+    card.meta.append(("max degradation gap", _fmt(verdict.max_degradation_gap)))
     card.meta.append(("n scores", _fmt(len(verdict.train_scores))))
     card.kc_rows.append((kc.name, kc.status, kc.message))
     card.reasons = [str(r) for r in verdict.reasons]

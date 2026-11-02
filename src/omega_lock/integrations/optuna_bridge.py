@@ -46,10 +46,12 @@ from __future__ import annotations
 from importlib import import_module
 
 from dataclasses import asdict, dataclass, field
+from math import isfinite
 from typing import Any, Callable, cast
 
 from omega_lock.grid import GridPoint
 from omega_lock.kill_criteria import KCReport, KCThresholds, check_kc4
+from omega_lock.holdout_defense import score_degradation, validate_max_degradation_gap
 from omega_lock.target import EvalResult, ParamSpec
 from omega_lock.walk_forward import WalkForward
 
@@ -105,7 +107,8 @@ class StudyAuditReport:
         best_feasible: highest-value trial whose ``user_attrs["feasible"]``
             flag is True; None when no feasible trial exists or when
             feasibility is not inferable (``feasibility_source="absent"``).
-        gated_best: the candidate the gate is willing to certify — None
+        gated_best: retained audit selection; deployment_authorized is the
+            separate approval field. None
             when the gate FAILed, or when feasibility is inferable but no
             trial is feasible; otherwise ``best_feasible`` when available,
             else ``best_any``.
@@ -114,6 +117,12 @@ class StudyAuditReport:
         pearson: walk-forward Pearson over the top-N (None when the gate
             did not run or the correlation was not computable).
         feasibility_source: "user_attrs" or "absent".
+        deployment_authorized: True only when holdout was evaluated, both
+            aggregate and selected-candidate degradation bounds passed, and
+            an eligible candidate exists. SKIP never authorizes deployment.
+        degradation_gap: Top-N direction-adjusted mean score degradation.
+        selected_degradation_gap: The selected candidate's own degradation,
+            including an on-demand feasible candidate outside top-N.
     """
 
     passed: bool
@@ -131,11 +140,36 @@ class StudyAuditReport:
     top_n: int
     thresholds: KCThresholds = field(default_factory=KCThresholds.pure_objective)
     schema_version: str = STUDY_AUDIT_SCHEMA_VERSION
+    deployment_authorized: bool = False
+    degradation_gap: float | None = None
+    selected_degradation_gap: float | None = None
+    max_degradation_gap: float = 1.0
+    direction: str = "maximize"
+
+    def __post_init__(self) -> None:
+        validate_max_degradation_gap(self.max_degradation_gap)
+        if not (
+            self.holdout_evaluated and self.passed and self.kc_report.status == "PASS"
+            and self.kc_report.detail.get("degradation_ok") is True
+            and self.kc_report.detail.get("selected_degradation_ok") is True
+            and self.gated_best is not None
+            and self.degradation_gap is not None and isfinite(self.degradation_gap)
+            and self.degradation_gap <= self.max_degradation_gap
+            and self.selected_degradation_gap is not None
+            and isfinite(self.selected_degradation_gap)
+            and self.selected_degradation_gap <= self.max_degradation_gap
+        ):
+            self.deployment_authorized = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version,
             "passed": self.passed,
+            "deployment_authorized": self.deployment_authorized,
+            "degradation_gap": self.degradation_gap,
+            "selected_degradation_gap": self.selected_degradation_gap,
+            "max_degradation_gap": self.max_degradation_gap,
+            "direction": self.direction,
             "kc_report": {
                 "name": self.kc_report.name,
                 "status": self.kc_report.status,
@@ -195,6 +229,7 @@ def audit_optuna_study(
     holdout_evaluate: HoldoutEvaluate | None = None,
     thresholds: KCThresholds | None = None,
     top_n: int = 10,
+    max_degradation_gap: float = 1.0,
 ) -> StudyAuditReport:
     """Gate an existing Optuna study's completed trials.
 
@@ -213,6 +248,10 @@ def audit_optuna_study(
             which makes the KC-4b action-ratio sub-gate vacuous here).
         top_n: how many train-best trials the gate re-evaluates. Pearson
             over very few points is high-variance; prefer 10-20.
+        max_degradation_gap: finite nonnegative score-unit limit, default 1.0,
+            for both the top-N mean and selected candidate. Positive gap means
+            worse holdout performance in either study direction. None cannot
+            disable this gate. Declare the limit before inspecting holdout.
 
     Returns:
         StudyAuditReport — see the dataclass docstring for field semantics.
@@ -222,6 +261,7 @@ def audit_optuna_study(
         ValueError: the study is multi-objective, has no completed trials
             with values, or ``top_n`` < 2.
     """
+    limit = validate_max_degradation_gap(max_degradation_gap)
     try:
         # importlib indirection mirrors p2_tpe.py: optuna is an optional
         # extra, and a static ``import optuna`` fails pyright in environments
@@ -283,6 +323,8 @@ def audit_optuna_study(
     top = ranked[: min(top_n, len(ranked))]
 
     holdout_by_number: dict[int, float] = {}
+    degradation_gap: float | None = None
+    selected_degradation_gap: float | None = None
     if holdout_evaluate is not None:
         # Reuse the exact walk-forward + KC-4 machinery (no duplicated math).
         wf = WalkForward(test_target=_HoldoutTarget(holdout_evaluate, sign))
@@ -293,6 +335,19 @@ def audit_optuna_study(
             trade_ratio=wf_result.trade_ratio_scaled,
             thresholds=thr,
         )
+        degradation = score_degradation(
+            wf_result.train_fitnesses, wf_result.test_fitnesses, limit
+        )
+        degradation_gap = degradation["degradation_gap"]
+        kc_report.detail.update(degradation)
+        if not degradation["degradation_ok"]:
+            kc_report.status = "FAIL"
+            kc_report.message = (
+                "FAIL: degradation gap not computable"
+                if not degradation["degradation_computable"]
+                else f"FAIL: exact mean degradation exceeds max_degradation_gap={limit} "
+                f"(reported rounded degradation_gap={degradation_gap})"
+            )
         pearson: float | None = (
             wf_result.pearson if wf_result.pearson_computable else None
         )
@@ -311,6 +366,9 @@ def audit_optuna_study(
                 "reason": "holdout_evaluate_absent",
                 "n_completed": len(completed),
                 "top_n": top_n,
+                "degradation_gap": None,
+                "degradation_status": "NOT_RUN",
+                "max_degradation_gap": limit,
             },
         )
         pearson = None
@@ -354,6 +412,34 @@ def audit_optuna_study(
     else:
         gated_best = best_any
 
+    # The certified candidate can be outside top-N when feasibility is supplied.
+    # Check its own score drop as well: a passing group mean cannot excuse a
+    # catastrophic result for the actual selected candidate.
+    if holdout_evaluate is not None and gated_best is not None:
+        selected = score_degradation(
+            [sign * gated_best.train_value],
+            [sign * gated_best.holdout_value] if gated_best.holdout_value is not None else [],
+            limit,
+        )
+        selected_degradation_gap = selected["degradation_gap"]
+        kc_report.detail.update({
+            "selected_degradation_gap": selected_degradation_gap,
+            "selected_degradation_status": selected["degradation_status"],
+            "selected_degradation_ok": selected["degradation_ok"],
+        })
+        if not selected["degradation_ok"]:
+            kc_report.status = "FAIL"
+            kc_report.message = (
+                "FAIL: selected candidate degradation gap not computable"
+                if not selected["degradation_computable"]
+                else f"FAIL: selected candidate exact degradation exceeds max_degradation_gap={limit} "
+                f"(reported rounded degradation_gap={selected_degradation_gap})"
+            )
+            gated_best = None
+    authorized = (
+        holdout_evaluate is not None and kc_report.status == "PASS" and gated_best is not None
+    )
+
     return StudyAuditReport(
         passed=kc_report.status != "FAIL",
         kc_report=kc_report,
@@ -369,4 +455,9 @@ def audit_optuna_study(
         n_trials_completed=len(completed),
         top_n=top_n,
         thresholds=thr,
+        deployment_authorized=authorized,
+        degradation_gap=degradation_gap,
+        selected_degradation_gap=selected_degradation_gap,
+        max_degradation_gap=limit,
+        direction="minimize" if sign < 0 else "maximize",
     )

@@ -51,10 +51,12 @@ def test_existing_degeneracy_categories_remain_explicit(xs, ys, status):
     assert pearson_result(xs, ys).status == status
 
 
-def test_linear_association_does_not_guarantee_absolute_quality():
+def test_linear_association_alone_cannot_authorize_a_large_location_shift():
     verdict = gate_scores([1.0, 2.0, 3.0], [-99.0, -98.0, -97.0])
-    assert verdict.passed is True
+    assert verdict.passed is False
     assert verdict.pearson == pytest.approx(1.0)
+    assert verdict.degradation_gap == 100.0
+    assert verdict.deployment_authorized is False
 
 
 @pytest.mark.parametrize("exponent", [-310, -150, 0, 150, 300])

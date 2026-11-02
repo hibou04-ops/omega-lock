@@ -22,6 +22,7 @@
 graft scripts
 graft tests
 graft examples
+include README.md README.ko.md README_KR.md EASY_README.md EASY_README_KR.md RELEASE.md
 
 # Keep the sdist deterministic and clean: never ship compiled bytecode.
 global-exclude *.py[cod]

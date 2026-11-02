@@ -57,6 +57,8 @@ def gate_scores(
     thresholds: KCThresholds | None = None,
     train_ids: Sequence[str] | None = None,
     holdout_ids: Sequence[str] | None = None,
+    max_degradation_gap: float = 1.0,
+    direction: str = "maximize",
 ) -> GateVerdict
 ```
 
@@ -72,8 +74,16 @@ without IDs the caller is responsible for index alignment. IDs identify
 candidates, not dataset independence.
 
 Pearson measures **linear association between scores**, not rank correlation or
-absolute holdout quality. For example, `[1,2,3]` and `[-99,-98,-97]` pass the
-default correlation gate. Declare absolute quality requirements separately.
+absolute holdout quality. The lower-level correlation gate alone accepts location shifts.
+The facade additionally requires direction-adjusted mean degradation not to exceed
+`max_degradation_gap` (default 1.0 score unit), so `[1,2,3]` versus
+`[-100,-99,-98]` fails with gap 101 despite Pearson 1. The equivalent bound is
+`holdout_mean >= train_mean - max_degradation_gap` in maximize orientation.
+Use `direction="minimize"` for costs/losses. Declare the finite nonnegative
+limit before holdout inspection; None cannot disable it. The exact rational
+gap is compared against the limit, while the exposed gap is a rounded float.
+An overflow or underflow gap returns None and fails closed. These checks do
+not establish holdout independence, uncertainty coverage or generalization.
 NaN/Inf return an uncomputable `NON_FINITE_X` / `NON_FINITE_Y` result and fail
 the API gate; the CLI treats nonfinite JSON scores as input errors (exit 2).
 `pearson_min` must be finite within `[-1,1]`; an enabled `trade_ratio_min` must
@@ -96,17 +106,21 @@ assert verdict.passed
 ```python
 @dataclass(frozen=True)
 class GateVerdict:
-    passed: bool                       # True when the declared correlation gate passed
+    passed: bool                       # correlation and mean degradation passed
     pearson: float | None             # measured correlation, or None if not computable
     reasons: tuple[str, ...]          # human-readable failure reasons; empty when passed
     kc_report: KCReport               # the underlying KC-4 report (full detail dict)
     train_scores: tuple[float, ...]   # the gated inputs (for render_html)
     holdout_scores: tuple[float, ...]
+    deployment_authorized: bool = False
+    degradation_gap: float | None = None
+    max_degradation_gap: float = 1.0
+    direction: str = "maximize"
     def to_dict(self) -> dict[str, Any]: ...
 ```
 
 > The README's marketing snippet shows `result.reason`; the real attribute is the
-> plural `result.reasons` (a tuple). Use `result.passed` for the boolean decision.
+> plural `result.reasons` (a tuple). Use `result.deployment_authorized` for the explicit deployment decision.
 
 ### `audit` — audit a scoring function over a parameter space
 
@@ -242,6 +256,7 @@ def audit_optuna_study(
     holdout_evaluate: HoldoutEvaluate | None = None,
     thresholds: KCThresholds | None = None,
     top_n: int = 10,
+    max_degradation_gap: float = 1.0,
 ) -> StudyAuditReport
 ```
 
@@ -254,6 +269,20 @@ extra to use it). Minimize-direction studies are handled; multi-objective studie
 are rejected. Works conceptually on any leaderboard — for Ax / Ray Tune / Hyperopt
 / `GridSearchCV` / hand-rolled sweeps, feed the train and holdout score lists to
 `gate_scores` instead.
+
+The report separates completion from approval. No callback preserves legacy
+`passed=True`, KC status SKIP and `holdout_evaluated=False`, but forces
+`deployment_authorized=False`. With a callback, authorization requires PASS,
+a selected eligible candidate, finite top-N mean degradation within the limit,
+and the selected candidate's own degradation within the same limit. A feasible
+candidate outside top-N is scored and checked separately.
+
+New serialized fields are `deployment_authorized`, `degradation_gap`,
+`selected_degradation_gap`, `max_degradation_gap`, and `direction`. Directly
+constructed legacy dataclasses default to no deployment authority.
+`gated_best` retained during SKIP is audit context and cannot grant approval.
+Run `python examples/reproduce_optuna_traps.py` for three self-asserting offline
+cases (requires the optional Optuna dependency).
 
 ---
 

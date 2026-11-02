@@ -24,11 +24,13 @@ deliberately NOT re-exported at the package root because the name
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from omega_lock.adapters import CallableAdapter
 from omega_lock.kill_criteria import KCReport, KCThresholds, check_kc4
+from omega_lock.holdout_defense import score_degradation, validate_max_degradation_gap
 from omega_lock.orchestrator import P1Config, P1Result, run_p1
 from omega_lock.report_html import render_html
 from omega_lock.target import ParamSpec
@@ -41,8 +43,11 @@ class GateVerdict:
     """Outcome of ``gate_scores``.
 
     Attributes:
-        passed: True when the declared train-to-holdout score-correlation
-            gate passed; this does not establish absolute holdout quality.
+        passed: True when correlation and the score-unit degradation bound pass.
+        deployment_authorized: Explicit local policy decision; defaults False
+            for directly constructed legacy records. Does not prove data independence.
+        degradation_gap: Direction-adjusted mean(train)-mean(holdout), or None
+            when invalid inputs or overflow prevent a finite measurement.
         pearson: measured Pearson correlation, or None when it could not
             be computed (empty input, length mismatch, zero variance —
             see ``reasons`` for which).
@@ -59,10 +64,31 @@ class GateVerdict:
     kc_report: KCReport
     train_scores: tuple[float, ...] = ()
     holdout_scores: tuple[float, ...] = ()
+    deployment_authorized: bool = False
+    degradation_gap: float | None = None
+    max_degradation_gap: float = 1.0
+    direction: str = "maximize"
+
+    def __post_init__(self) -> None:
+        validate_max_degradation_gap(self.max_degradation_gap)
+        if self.direction not in ("maximize", "minimize"):
+            raise ValueError("direction must be maximize or minimize")
+        if not (
+            self.passed and self.kc_report.status == "PASS"
+            and self.kc_report.detail.get("degradation_ok") is True
+            and self.degradation_gap is not None
+            and isfinite(self.degradation_gap)
+            and self.degradation_gap <= self.max_degradation_gap
+        ):
+            object.__setattr__(self, "deployment_authorized", False)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "passed": self.passed,
+            "deployment_authorized": self.deployment_authorized,
+            "degradation_gap": self.degradation_gap,
+            "max_degradation_gap": self.max_degradation_gap,
+            "direction": self.direction,
             "pearson": self.pearson,
             "reasons": list(self.reasons),
             "kc_report": {
@@ -93,13 +119,15 @@ def gate_scores(
     thresholds: KCThresholds | None = None,
     train_ids: Sequence[str] | None = None,
     holdout_ids: Sequence[str] | None = None,
+    max_degradation_gap: float = 1.0,
+    direction: str = "maximize",
 ) -> GateVerdict:
-    """Gate linear score association across index-aligned candidates.
+    """Gate linear score association and mean degradation across aligned candidates.
 
     Pass the per-candidate scores measured on the data the search consumed
     (``train_scores``) and the same candidates re-scored on data it never
     saw (``holdout_scores``), index-aligned. The verdict applies the KC-4
-    walk-forward Pearson gate (``check_kc4``) over the pair.
+    walk-forward Pearson gate (``check_kc4``) and a mean degradation bound.
 
     Args:
         train_scores / holdout_scores: index-aligned numeric sequences.
@@ -112,11 +140,20 @@ def gate_scores(
             score order. Supply both to validate length, identity and ordering;
             mismatches raise ValueError before evaluating the gate. Without
             IDs, index alignment remains the caller's responsibility.
+        max_degradation_gap: finite nonnegative score-unit bound, default 1.0.
+            Holdout mean must be at least train mean minus this limit after
+            mapping the objective to maximize orientation. This is a policy
+            threshold, not a confidence interval or an inferred noise floor.
+        direction: maximize (default) or minimize. Positive gap means degradation.
 
     Returns:
         GateVerdict — ``passed``, measured ``pearson`` (None when not
         computable), and explicit ``reasons`` on failure.
     """
+    limit = validate_max_degradation_gap(max_degradation_gap)
+    if direction not in ("maximize", "minimize"):
+        raise ValueError("direction must be 'maximize' or 'minimize'")
+    sign = -1.0 if direction == "minimize" else 1.0
     thr = thresholds if thresholds is not None else KCThresholds.pure_objective()
     train = [float(v) for v in train_scores]
     holdout = [float(v) for v in holdout_scores]
@@ -166,13 +203,34 @@ def gate_scores(
                 "has no real action counts; ratio is fixed at 1.0)"
             )
 
+    degradation = score_degradation(
+        [sign * value for value in train], [sign * value for value in holdout], limit
+    )
+    detail.update(degradation)
+    if not degradation["degradation_ok"]:
+        if not degradation["degradation_computable"]:
+            reason = f"degradation gap not computable ({degradation['degradation_status']})"
+        else:
+            reason = (
+                f"exact mean degradation exceeds max_degradation_gap={limit} "
+                f"(reported rounded degradation_gap={degradation['degradation_gap']})"
+            )
+        reasons.append(reason)
+        kc.status = "FAIL"
+        kc.message = "FAIL: " + "; ".join(reasons)
+    passed = kc.status == "PASS"
+
     return GateVerdict(
-        passed=kc.status == "PASS",
+        passed=passed,
         pearson=pearson,
         reasons=tuple(reasons),
         kc_report=kc,
         train_scores=tuple(train),
         holdout_scores=tuple(holdout),
+        deployment_authorized=passed,
+        degradation_gap=degradation["degradation_gap"],
+        max_degradation_gap=limit,
+        direction=direction,
     )
 
 
