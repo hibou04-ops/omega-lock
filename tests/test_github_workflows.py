@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,8 +53,11 @@ def test_quality_ci_is_release_safe_and_has_no_publish_actions():
 def test_release_readiness_workflow_is_manual_and_non_publishing():
     text = _text("release-readiness.yml")
     lower = text.lower()
+    version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 
     assert "workflow_dispatch:" in text
+    assert f'default: "{version}"' in text
+    assert '--intended-version "${{ inputs.intended-version }}"' in text
     assert "pull_request:" not in text
     assert "push:" not in text
     assert "--offline" in text
