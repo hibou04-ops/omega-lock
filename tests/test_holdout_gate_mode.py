@@ -67,7 +67,7 @@ class _LinearTrainTarget:
 
 
 class _AntiCorrelatedWalkForwardTarget(_LinearTrainTarget):
-    """Test target that rejects the train ranking while keeping trade count valid."""
+    """Test target that rejects the train ranking while keeping the `test_best_trades` sample count valid."""
 
     def evaluate(self, params: dict[str, Any]) -> EvalResult:
         return EvalResult(

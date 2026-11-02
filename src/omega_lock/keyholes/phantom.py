@@ -28,8 +28,8 @@ Hidden structure (the calibrator must rediscover via stress measurement):
 
 Strategy (parametric):
     val[t] = mean(obs[t-window : t])
-    if long_mode:  fire if val > alpha       (trend following)
-    else:          fire if val < -alpha      (reversion — the wrong sign here)
+    if long_mode:  fire if val > alpha       (positive-threshold selection)
+    else:          fire if val < -alpha      (negative-threshold selection — the wrong sign here)
     reward += label[t] per fire
 
 Neutral placement is deliberately "wrong" on all three effective axes so
@@ -113,7 +113,7 @@ class PhantomKeyhole:
         labels = self._labels
         n = obs.shape[0]
 
-        # val[t] = mean of obs over the preceding `window` bars (pure backward-looking).
+        # val[t] = mean of obs over the preceding `window` observations (pure backward-looking).
         if window < 1 or window >= n:
             return EvalResult(fitness=-999.0, sample_count=0, metadata={"error": "bad_window"})
         cs = np.concatenate(([0.0], np.cumsum(obs, dtype=float)))
@@ -121,8 +121,8 @@ class PhantomKeyhole:
         # Align so val[t] uses obs[t-window : t], for t in [window, n).
         val_at = val[:-1]                                     # indices correspond to t = window..n-1
 
-        # Direction flip: trend (long) vs reversion (short). labels favor
-        # upside, so `long_mode=True` is the correct direction at any alpha.
+        # Direction flip: select positive or negative thresholds. Labels favor
+        # positive latent values, so `long_mode=True` is correct at any alpha.
         fires = (val_at > alpha) if long_mode else (val_at < -alpha)
 
         fire_idx = np.nonzero(fires)[0] + window              # absolute t-indices

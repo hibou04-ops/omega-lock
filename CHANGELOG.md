@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.13 - 2026-11-03
+
+- Clarify public documentation and examples for general AI/ML verification and software quality engineering.
+- Preserve the verification contracts, SDK interfaces and license notices.
+
 ## [0.3.12] - 2026-11-02
 
 Adds `max_relative_degradation=0.50` alongside the existing absolute score-unit bound. Relative ratios use exact `Fraction(str(value))` means and the original positive TRAIN baseline with the objective direction applied only to the gap. Exact 50% is inclusive; rounded float displays cannot approve larger exact ratios. Nonpositive TRAIN baselines are explicitly undefined for relative comparison and retain the absolute defense. `gate_scores` checks means; the Optuna bridge also checks the actual selected candidate, including one outside top-N. The offline demo includes normalized score collapse with Pearson 1.0, absolute gap 0.78 and relative drop 0.975. CLI/HTML and bilingual docs expose both policy limits.

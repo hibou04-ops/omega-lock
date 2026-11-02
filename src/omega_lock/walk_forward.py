@@ -149,7 +149,7 @@ class WalkForward:
     """Re-evaluate train-best N grid points on a test target.
 
     Each top-N candidate is evaluated on ``test_target`` exactly once;
-    the train-best candidate's metrics (fitness AND trade count) come
+    the train-best candidate's metrics (fitness AND sample count, exposed as `test_best_trades`) come
     from the same evaluation, so a stochastic test_target cannot produce
     an internally inconsistent ``WalkForwardResult`` where
     ``test_fitnesses[0]`` and ``test_best_trades`` come from different

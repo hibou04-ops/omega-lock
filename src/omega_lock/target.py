@@ -3,7 +3,7 @@
 """CalibrableTarget Protocol + core types.
 
 Any system that implements param_space() + evaluate() can be calibrated
-by the Omega-Lock pipeline. Examples: a sequential policy, a selector
+by the Omega-Lock pipeline. Examples: a model runner, a selector
 pipeline, a prompt template, a hyperparameter search.
 """
 from __future__ import annotations

@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_current_source_runtime_and_installed_versions_agree():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
-    assert importlib.import_module("omega_lock").__version__ == project["version"] == "0.3.12"
+    assert importlib.import_module("omega_lock").__version__ == project["version"] == "0.3.13"
     assert importlib.metadata.version(project["name"]) == project["version"]
 
 

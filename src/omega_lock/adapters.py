@@ -25,7 +25,7 @@ Example:
 
 External integration pattern (typical for wrapping a real system):
     Write a thin wrapper class that:
-      1. Holds a reference to your external system (e.g. a strategy engine,
+      1. Holds a reference to your external system (e.g. an ML evaluation engine,
          a scoring service, a trained model).
       2. Translates `params: dict[str, Any]` into that system's native call.
       3. Returns EvalResult with `fitness`, `n_trials` (action count for

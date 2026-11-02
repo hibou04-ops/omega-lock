@@ -1,6 +1,6 @@
-# Omega Verification Suite docking — current user guide and guarded contracts
+# Omega-Lock docking — current user guide and guarded contracts
 
-Omega Verification Suite — Quiet precision. AI research guided by evidence.
+Omega-Lock — Quiet precision. AI research guided by evidence.
 
 ## Start here: choose a standalone tool or a supported connection
 

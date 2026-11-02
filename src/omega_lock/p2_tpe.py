@@ -8,7 +8,7 @@ Pipeline (same gates as run_p1):
     3. Top-K unlock selection
     4. Optuna TPE sampling over K-dim unlocked subspace
     5. If test_target: walk-forward on top-N by train fitness -> KC-4 gate
-    6. KC-1 (time box) + KC-3 (trade counts) at the end
+    6. KC-1 (time box) + KC-3 (sample counts; `trade_counts` API) at the end
     7. Emit P2Result (JSON-serializable)
 
 Motivation: grid search costs grow as g^K (e.g. 5^3 = 125) and cannot refine
@@ -333,7 +333,7 @@ def run_p2_tpe(
         )
         kc_reports.append(kc4)
 
-    # 6. KC-1 (time box) + KC-3 (trade counts)
+    # 6. KC-1 (time box) + KC-3 (sample counts; `trade_counts` API)
     elapsed = time.time() - t_start
     kc1 = check_kc1(elapsed, cfg.kc_thresholds)
     trade_counts: dict[str, int] = {"baseline": baseline.sample_count}

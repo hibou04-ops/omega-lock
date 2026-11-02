@@ -220,7 +220,7 @@ def test_walk_forward_executor_matches_serial():
     serial = wf.run(grid, top_n=6).to_dict()
     with ThreadPoolExecutor(max_workers=4) as ex:
         parallel = wf.run(grid, top_n=6, executor=ex).to_dict()
-    # Pearson, the paired fitness vectors, trade counts, and every other field
+    # Pearson, the paired fitness vectors, sample counts (`test_best_trades`), and every other field
     # must be byte-equal to the serial computation.
     assert parallel["train_fitnesses"] == serial["train_fitnesses"]
     assert parallel["test_fitnesses"] == serial["test_fitnesses"]

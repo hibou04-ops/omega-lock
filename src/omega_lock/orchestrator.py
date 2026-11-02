@@ -9,7 +9,7 @@ Pipeline:
     4. Grid search on train_target
     5. If test_target: walk-forward → KC-4 gate
     6. If hybrid: re-rank top-K with validation_target
-    7. KC-1 (time box) + KC-3 (trade counts) at the end
+    7. KC-1 (time box) + KC-3 (sample counts; `trade_counts` API) at the end
     8. Emit P1Result (JSON-serializable)
 
 Aborts soft on KC fails — pipeline still returns P1Result with status flags
@@ -503,7 +503,7 @@ def run_p1(
             detail=sc2,
         ))
 
-    # 8. KC-1 (time box) + KC-3 (trade counts)
+    # 8. KC-1 (time box) + KC-3 (sample counts; `trade_counts` API)
     elapsed = time.time() - t_start
     kc1 = check_kc1(elapsed, cfg.kc_thresholds)
     trade_counts = {"baseline": baseline.sample_count, "train_best": grid_best.result.sample_count}

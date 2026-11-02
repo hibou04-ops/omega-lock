@@ -157,7 +157,7 @@ def run_demo() -> int:
         unlock_k=2,                  # stress should pick gain+bias, lock the decoy
         grid_points_per_axis=21,     # 21x21 = 441 candidates
         walk_forward_top_n=10,
-        kc_thresholds=KCThresholds.pure_objective(),  # no "trade count" concept here
+        kc_thresholds=KCThresholds.pure_objective(),  # no sample-count floor (`trade_count_min=None`) here
         constraint_policy="prefer_feasible",
         stress_verbose=False,
         grid_verbose=False,

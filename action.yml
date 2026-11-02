@@ -3,7 +3,7 @@
 #
 # Usage in a workflow:
 #
-#   - uses: hibou04-ops/omega-lock@v0.3.12
+#   - uses: hibou04-ops/omega-lock@v0.3.13
 #     with:
 #       train: train_scores.json       # in-sample scores (JSON array)
 #       holdout: holdout_scores.json   # held-out scores (JSON array, index-aligned)
@@ -44,7 +44,7 @@ inputs:
       The default version installs this Action's source. A different explicit
       version or 'latest' selects the existing PyPI override.
     required: false
-    default: "0.3.12"
+    default: "0.3.13"
   python-version:
     description: Python version to set up.
     required: false
@@ -69,7 +69,7 @@ runs:
         INPUT_PACKAGE_VERSION: ${{ inputs.version }}
         ACTION_SOURCE: ${{ github.action_path }}
       run: |
-        if [ "$INPUT_PACKAGE_VERSION" = "0.3.12" ]; then
+        if [ "$INPUT_PACKAGE_VERSION" = "0.3.13" ]; then
           python -m pip install "$ACTION_SOURCE"
         elif [ "$INPUT_PACKAGE_VERSION" = "latest" ]; then
           python -m pip install --upgrade omega-lock

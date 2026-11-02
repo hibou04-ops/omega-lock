@@ -2,7 +2,7 @@
 
 [English](README.md) · [한국어](README.ko.md) · [한국어 별칭](README_KR.md)
 
-[![Source version](https://img.shields.io/badge/version-0.3.12-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.12)
+[![Source version](https://img.shields.io/badge/version-0.3.13-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.13)
 
 **Check whether a tuned candidate survives your declared audit gates.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and checks the declared constraints and train/holdout score correlation **before** it ships.
 
@@ -10,10 +10,10 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
-**Source version 0.3.12.** Verify publication by version: [PyPI 0.3.12](https://pypi.org/project/omega-lock/0.3.12/), [GitHub v0.3.12](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.12), and [publication runs](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml). Source metadata alone is not publication proof. The pinned install below selects the source tag.
+**Source version 0.3.13.** Verify publication by version: [PyPI 0.3.13](https://pypi.org/project/omega-lock/0.3.13/), [GitHub v0.3.13](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.13), and [publication runs](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml). Source metadata alone is not publication proof. The pinned install below selects the source tag.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 omega-lock demo   # 60s, offline: watch a "winning" score collapse -74% on held-out data
 ```
 
@@ -82,7 +82,7 @@ Actual stdout from the command above (local offline execution, 2026-11-02):
 All four deployment-gate cases reproduced without API keys or network calls.
 ```
 
-The script checks four cases: no holdout keeps legacy `passed=True` / `status="SKIP"` while `holdout_evaluated=False` and `deployment_authorized=False`; `[1,2,3]` versus `[-100,-99,-98]` has Pearson 1 but degradation gap 101 and is blocked; normalized `[0.7,0.8,0.9]` versus `[0.01,0.02,0.03]` is blocked by relative degradation 0.975 despite gap 0.78; unchanged held-out scores authorize under the declared gates. No API keys, paid calls or external service configuration are used.
+The script checks four cases: no holdout keeps legacy `passed=True` / `status="SKIP"` while `holdout_evaluated=False` and `deployment_authorized=False`; `[1,2,3]` versus `[-100,-99,-98]` has Pearson 1 but degradation gap 101 and is blocked; normalized `[0.7,0.8,0.9]` versus `[0.01,0.02,0.03]` is blocked by relative degradation 0.975 despite gap 0.78; unchanged held-out scores authorize under the declared gates. No API keys, provider calls or external service configuration are used.
 
 CI consumers must read `deployment_authorized`, not audit-completion `passed` alone. `gate_scores()` and `audit_optuna_study()` combine correlation with both `max_degradation_gap=1.0` and `max_relative_degradation=0.50` by default. The gap is `mean(train)-mean(holdout)` in maximize orientation (sign-reversed for minimize): holdout mean must be at least train mean minus the configured limit. The Optuna bridge additionally checks the selected candidate itself, including a feasible candidate outside the top-N. The finite nonnegative score-unit limit cannot be disabled with None; predeclare a domain-appropriate value. CLI uses `--max-degradation-gap`, `--max-relative-degradation` and `--direction maximize|minimize`.
 
@@ -90,7 +90,7 @@ The absolute decision retains exact binary-float rational arithmetic. The relati
 
 The Optuna report exposes both `degradation_gap` (top-N mean) and `selected_degradation_gap` (the selected candidate). A favorable mean cannot waive the selected candidate check.
 
-## v0.3.12 — Release changes
+## v0.3.13 — Release changes
 
 Adds the default 50% relative-degradation bound alongside the absolute 1.0 score-unit bound, using exact decimal comparisons for mean and selected-candidate ratios. The keyless demo now includes normalized score collapse. Existing no-holdout fail-closed and correlation checks remain. The pure helpers below are retained features.
 
@@ -98,14 +98,14 @@ Retains the pure `omega_lock.holdout_defense` helpers: `compute_deflated_thresho
 
 ## Start here · Standalone use · Integration/Docking
 
-**Omega Verification Suite** — Quiet precision. AI research guided by evidence.
+**Omega-Lock** — Quiet precision. AI research guided by evidence.
 
 Audit numeric candidate scores after tuning. The CLI correlation gate checks index-aligned train/holdout arrays; the library also provides search, constraints and audit trails.
 
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
@@ -176,7 +176,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 
       # your tuner runs here and writes train_scores.json + holdout_scores.json
       - run: python tune.py
@@ -254,7 +254,7 @@ The empty seat omega-lock fills: an **output-side overfit gate**. The rule of th
 ## Install
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 
 omega-lock demo                 # 60s offline walkthrough — watch a lucky winner collapse
 omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)
@@ -266,7 +266,7 @@ Generate a shareable dark-themed scorecard from any gate run with `render_html` 
 
 **READMEs:** [Easy / plain-English README](EASY_README.md) · [한국어 README](README_KR.md) · [쉬운 한국어 README](EASY_README_KR.md) — **Docs:** [How the transfer gate works](docs/HOW_IT_WORKS.md) · [Power API for integrators](docs/API.md) · [Trust & audit model](docs/TRUST_MODEL.md) · [Toolkit positioning](docs/TOOLKIT_POSITIONING.md) · [CHANGELOG](CHANGELOG.md)
 
-**Same idea, other surfaces** (the [Omega Verification Suite](https://github.com/hibou04-ops) — a held-out gate where AI workflows skip one): [omegaprompt](https://github.com/hibou04-ops/omegaprompt) gates an overfit *prompt* · [antemortem](https://github.com/hibou04-ops/antemortem-cli) gates an AI agent's *code plan* with verified `file:line` citations.
+**Same idea, other surfaces** (the [related Python tools](https://github.com/hibou04-ops) — a held-out gate where AI workflows skip one): [omegaprompt](https://github.com/hibou04-ops/omegaprompt) gates an overfit *prompt* · [antemortem](https://github.com/hibou04-ops/antemortem-cli) gates an AI agent's *code plan* with verified `file:line` citations.
 
 <sub>**Badge and download analytics boundaries.** The badges above are static or registry-served links; they do not prove release readiness, correctness, trustworthiness, adoption, or package quality. Downloads or stars may indicate visibility, not skill — stars/downloads must not be used as audit evidence or release approval. No PyPI or GitHub download analytics are asserted here. Only the gate's PASS/FAIL on held-out data is evidence.</sub>
 

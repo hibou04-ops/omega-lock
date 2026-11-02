@@ -2,7 +2,7 @@
 
 [English](README.md) · [한국어](README.ko.md) · [한국어 별칭](README_KR.md)
 
-[![Source version](https://img.shields.io/badge/version-0.3.12-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.12)
+[![Source version](https://img.shields.io/badge/version-0.3.13-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.13)
 
 **튜닝 후보가 선언한 감사 기준을 충족하는지 확인합니다.** omega-lock은 튜너가 끝난 뒤 후보 점수의 train/holdout 선형 상관과 선언한 제약을 검사합니다. 상관 통과가 절대 품질이나 배포 안전성을 보장하지는 않습니다.
 
@@ -10,10 +10,10 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
-**소스 버전 0.3.12.** 버전별 발행 상태는 [PyPI 0.3.12](https://pypi.org/project/omega-lock/0.3.12/), [GitHub v0.3.12](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.12), [발행 실행 기록](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml)에서 확인합니다. 소스 메타데이터만으로 발행 완료를 주장하지 않습니다. 아래 고정 설치는 소스 태그를 선택합니다.
+**소스 버전 0.3.13.** 버전별 발행 상태는 [PyPI 0.3.13](https://pypi.org/project/omega-lock/0.3.13/), [GitHub v0.3.13](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.13), [발행 실행 기록](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml)에서 확인합니다. 소스 메타데이터만으로 발행 완료를 주장하지 않습니다. 아래 고정 설치는 소스 태그를 선택합니다.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이터에서 -74% 무너지는 것을 직접 보세요
 ```
 
@@ -90,7 +90,7 @@ CI는 감사 완료 의미의 `passed`만 읽지 말고 `deployment_authorized`�
 
 Optuna report는 `degradation_gap`(top-N 평균)과 `selected_degradation_gap`(선택 후보)을 모두 노출합니다. 평균이 양호해도 선택 후보의 하락 검사를 생략할 수 없습니다.
 
-## v0.3.12 — 이번 변경
+## v0.3.13 — 이번 변경
 
 기존 절대 1.0 점수 단위 한도에 기본 상대 50% 하락 한도를 추가하고 평균·선택 후보 비율을 정확한 decimal 연산으로 비교합니다. API 키 없는 데모에 정규화 점수 붕괴를 추가했습니다. 기존 No-Holdout Fail-Closed와 상관 검사는 유지합니다. 아래 순수 helper는 유지되는 기존 기능입니다.
 
@@ -98,14 +98,14 @@ Optuna report는 `degradation_gap`(top-N 평균)과 `selected_degradation_gap`(�
 
 ## 시작 · 단독 사용 · 도킹
 
-**Omega Verification Suite** — Quiet precision. AI research guided by evidence.
+**Omega-Lock** — Quiet precision. AI research guided by evidence.
 
 튜닝 후보의 train/holdout 점수와 선언한 기준을 검사합니다. CLI는 점수 상관 게이트이며, 라이브러리는 탐색·제약·감사 기록도 제공합니다.
 
 Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
@@ -174,7 +174,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 
       # your tuner runs here and writes train_scores.json + holdout_scores.json
       - run: python tune.py
@@ -251,7 +251,7 @@ omega-lock이 채우는 빈자리: **출력 측 과적합 게이트(output-side 
 ## 설치
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
 
 omega-lock demo                 # 60s offline walkthrough — watch a lucky winner collapse
 omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)

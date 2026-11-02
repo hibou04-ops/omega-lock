@@ -6,7 +6,7 @@ test target exactly once.
 Pre-fix: the train-best candidate (top[0]) was evaluated twice — once
 inside the top-N loop for the fitness vector, then again as
 ``test_best = self.test_target.evaluate(best_on_train.params)`` to
-extract a trade count. Stochastic test targets produced an artifact
+extract a sample count (`test_best_trades`). Stochastic test targets produced an artifact
 where ``test_fitnesses[0]`` and ``test_best_trades`` came from
 different evaluations of the same params — internally inconsistent.
 
@@ -30,7 +30,7 @@ from omega_lock.walk_forward import WalkForward
 class _CountingTestTarget:
     """Test target that returns a different EvalResult on each call.
 
-    Mimics a stochastic historical replay: same params, fresh evaluation, fresh
+    Mimics a stochastic model evaluation: same params, fresh evaluation, fresh
     fitness number. Lets us assert exactly how many times each candidate
     was evaluated.
     """

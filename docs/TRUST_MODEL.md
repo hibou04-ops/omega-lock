@@ -42,7 +42,7 @@ model.
 - It does not prove the caller's objective function measures the right outcome.
 - It does not prove a hard constraint is complete, correct, or legally
   sufficient.
-- It does not guarantee future production performance, market behavior,
+- It does not guarantee future production performance, behavior on unseen data,
   provider behavior, data quality, or causal correctness.
 - It does not prevent someone from editing JSON artifacts after they are
   written.

@@ -1,6 +1,6 @@
 1
 00:00:00,000 --> 00:00:03,000
-Train 0.92. Production: -40%. Why?
+Strong training score. Weak held-out score. Why?
 
 2
 00:00:03,200 --> 00:00:07,500
@@ -46,7 +46,7 @@ alpha 0.5 → 0.4375. Same discipline, finer grid.
 11
 00:00:49,000 --> 00:00:55,500
 Works for any CalibrableTarget.
-Simulations. Prompts. Any hyperparameter.
+Model evaluation. Prompts. Any hyperparameter.
 
 12
 00:00:56,000 --> 00:01:00,000

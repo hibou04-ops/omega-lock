@@ -107,7 +107,7 @@ def test_final_wheel_and_sdist_must_match_the_requested_git_commit(tmp_path: Pat
         _git(tmp_path, "commit", "--quiet", "-m", "different source")
         env["REQUESTED_RELEASE_COMMIT"] = _git(tmp_path, "rev-parse", "HEAD")
     elif case == "version_mismatch":
-        env["PKG_VER"] = "0.3.12"
+        env["PKG_VER"] = "0.3.13"
     result = _execute_guard(tmp_path, "RELEASE_ARTIFACT_VERIFICATION", env)
     if case == "valid":
         assert result.returncode == 0, result.stderr
