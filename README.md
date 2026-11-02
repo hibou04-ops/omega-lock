@@ -2,7 +2,7 @@
 
 [English](README.md) · [한국어](README.ko.md) · [한국어 별칭](README_KR.md)
 
-[![Source version](https://img.shields.io/badge/version-0.3.11-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.11)
+[![Source version](https://img.shields.io/badge/version-0.3.12-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.12)
 
 **Check whether a tuned candidate survives your declared audit gates.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and checks the declared constraints and train/holdout score correlation **before** it ships.
 
@@ -10,10 +10,10 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
-**Source version 0.3.11.** This update publishes Git source/tag identity only; it does not claim a GitHub Release object or a PyPI upload. The pinned install below uses the source tag.
+**Source version 0.3.12.** Verify publication by version: [PyPI 0.3.12](https://pypi.org/project/omega-lock/0.3.12/), [GitHub v0.3.12](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.12), and [publication runs](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml). Source metadata alone is not publication proof. The pinned install below selects the source tag.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 omega-lock demo   # 60s, offline: watch a "winning" score collapse -74% on held-out data
 ```
 
@@ -41,7 +41,9 @@ Actual stdout from the command above (local offline execution, 2026-11-02):
     "holdout_evaluated": false,
     "deployment_authorized": false,
     "pearson": null,
-    "degradation_gap": null
+    "degradation_gap": null,
+    "relative_degradation": null,
+    "relative_degradation_status": "NOT_RUN"
   },
   {
     "case": "location_shift",
@@ -50,7 +52,20 @@ Actual stdout from the command above (local offline execution, 2026-11-02):
     "holdout_evaluated": true,
     "deployment_authorized": false,
     "pearson": 1.0,
-    "degradation_gap": 101.0
+    "degradation_gap": 101.0,
+    "relative_degradation": 50.5,
+    "relative_degradation_status": "OK"
+  },
+  {
+    "case": "normalized_collapse",
+    "passed": false,
+    "status": "FAIL",
+    "holdout_evaluated": true,
+    "deployment_authorized": false,
+    "pearson": 1.0,
+    "degradation_gap": 0.78,
+    "relative_degradation": 0.975,
+    "relative_degradation_status": "OK"
   },
   {
     "case": "normal",
@@ -59,23 +74,25 @@ Actual stdout from the command above (local offline execution, 2026-11-02):
     "holdout_evaluated": true,
     "deployment_authorized": true,
     "pearson": 1.0,
-    "degradation_gap": 0.0
+    "degradation_gap": 0.0,
+    "relative_degradation": 0.0,
+    "relative_degradation_status": "OK"
   }
 ]
-All three deployment-gate cases reproduced without API keys or network calls.
+All four deployment-gate cases reproduced without API keys or network calls.
 ```
 
-The script checks three cases: no holdout keeps legacy `passed=True` / `status="SKIP"` while `holdout_evaluated=False` and `deployment_authorized=False`; `[1,2,3]` versus `[-100,-99,-98]` has Pearson 1 but degradation gap 101 and is blocked; unchanged held-out scores authorize under the declared gates. No API keys, paid calls or external service configuration are used.
+The script checks four cases: no holdout keeps legacy `passed=True` / `status="SKIP"` while `holdout_evaluated=False` and `deployment_authorized=False`; `[1,2,3]` versus `[-100,-99,-98]` has Pearson 1 but degradation gap 101 and is blocked; normalized `[0.7,0.8,0.9]` versus `[0.01,0.02,0.03]` is blocked by relative degradation 0.975 despite gap 0.78; unchanged held-out scores authorize under the declared gates. No API keys, paid calls or external service configuration are used.
 
-CI consumers must read `deployment_authorized`, not audit-completion `passed` alone. `gate_scores()` and `audit_optuna_study()` now combine correlation with `max_degradation_gap=1.0` by default. The gap is `mean(train)-mean(holdout)` in maximize orientation (sign-reversed for minimize): holdout mean must be at least train mean minus the configured limit. The Optuna bridge additionally checks the selected candidate itself, including a feasible candidate outside the top-N. The finite nonnegative score-unit limit cannot be disabled with None; predeclare a domain-appropriate value. CLI uses `--max-degradation-gap` and `--direction maximize|minimize`.
+CI consumers must read `deployment_authorized`, not audit-completion `passed` alone. `gate_scores()` and `audit_optuna_study()` combine correlation with both `max_degradation_gap=1.0` and `max_relative_degradation=0.50` by default. The gap is `mean(train)-mean(holdout)` in maximize orientation (sign-reversed for minimize): holdout mean must be at least train mean minus the configured limit. The Optuna bridge additionally checks the selected candidate itself, including a feasible candidate outside the top-N. The finite nonnegative score-unit limit cannot be disabled with None; predeclare a domain-appropriate value. CLI uses `--max-degradation-gap`, `--max-relative-degradation` and `--direction maximize|minimize`.
 
-The decision compares exact finite-input arithmetic against the bound; displayed gaps are floats. Nonfinite, degenerate, overflow or underflow evidence cannot authorize deployment. These local policy checks do not establish data independence, statistical significance or external generalization. The lower-level `check_kc4()` and existing P1 orchestration retain their separate contracts.
+The absolute decision retains exact binary-float rational arithmetic. The relative ratio uses exact `Fraction(str(value))` decimal means: the direction-adjusted drop divided by the original positive TRAIN mean, including positive losses for minimize objectives. Exactly 50% is allowed; a larger exact ratio fails even if its displayed float rounds to 0.50. For TRAIN mean <= 0, the ratio is `None` / `UNDEFINED_NONPOSITIVE_TRAIN_BASELINE`, not zero; the absolute bound still applies. `gate_scores()` compares means, while Optuna additionally applies both bounds to its selected candidate, including a feasible candidate outside top-N. Thresholds must be finite and nonnegative; booleans and None are invalid. Displayed gaps and ratios are floats and never decide exact boundaries. Nonfinite, degenerate, overflow or underflow evidence cannot authorize deployment. These local policy checks do not establish data independence, statistical significance or external generalization. The lower-level `check_kc4()` and existing P1 orchestration retain their separate contracts.
 
 The Optuna report exposes both `degradation_gap` (top-N mean) and `selected_degradation_gap` (the selected candidate). A favorable mean cannot waive the selected candidate check.
 
-## v0.3.11 — Release changes
+## v0.3.12 — Release changes
 
-Separates audit completion from deployment authorization and adds declared mean/selected-candidate degradation bounds. The pure helpers below are retained features.
+Adds the default 50% relative-degradation bound alongside the absolute 1.0 score-unit bound, using exact decimal comparisons for mean and selected-candidate ratios. The keyless demo now includes normalized score collapse. Existing no-holdout fail-closed and correlation checks remain. The pure helpers below are retained features.
 
 Retains the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold()` applies `base + MDE * sqrt(1 + ln(max(1, trials)))`; `classify_calibration_verdict()` returns `M0_HOLD` for a failed holdout, `ESTABLISHED` only for a passed holdout with `delta > MDE`, and `NOT_ESTABLISHED` otherwise. Existing orchestration APIs are unchanged. These input-based rules do not measure holdout independence, statistical power, or generalization.
 
@@ -88,14 +105,14 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
 
 Synthetic input: PASS and exit 0, Pearson 1.000; gate.html is the scorecard. Reverse the holdout array to exercise FAIL/exit 1. Invalid input exits 2. This checks wiring, not real-world generalization.
 
-No sibling package is needed. omegaprompt requires omega-lock>=0.3.0,<0.4.0 at runtime. antemortem only cites a pinned source revision in CI. Optuna is a native optional bridge: install omega-lock[p2] (Optuna >=3,<5); other optimizers can supply score arrays through an explicit export.
+No sibling package is needed. omegaprompt requires omega-lock>=0.3.12,<0.4.0 at runtime. antemortem only cites a pinned source revision in CI. Optuna is a native optional bridge: install omega-lock[p2] (Optuna >=3,<5); other optimizers can supply score arrays through an explicit export.
 
 [Docking contracts and runnable data handoff](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [Full guide](README.md).
 
@@ -159,7 +176,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 
       # your tuner runs here and writes train_scores.json + holdout_scores.json
       - run: python tune.py
@@ -237,7 +254,7 @@ The empty seat omega-lock fills: an **output-side overfit gate**. The rule of th
 ## Install
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 
 omega-lock demo                 # 60s offline walkthrough — watch a lucky winner collapse
 omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)

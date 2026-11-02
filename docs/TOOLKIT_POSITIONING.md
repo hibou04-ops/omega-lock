@@ -58,7 +58,7 @@ connections are described in [DOCKING.md](../DOCKING.md).
 | `antemortem-cli` | Source-citation CI checks a pinned omega-lock revision; no runtime import or dependency. |
 | `mini-omega-lock` | Separate empirical preflight package requiring omegaprompt types; not an omega-lock submodule. |
 | `mini-antemortem-cli` | Separate deterministic analytical preflight package requiring omegaprompt types. |
-| `omegaprompt` | Runtime consumer of omega-lock>=0.3.0,<0.4.0 with independent producer and consumer contract guards. |
+| `omegaprompt` | Runtime consumer of omega-lock>=0.3.12,<0.4.0 with independent producer and consumer contract guards. |
 
 This repository does not claim external adapter support, live provider certification, or universal compatibility.
 

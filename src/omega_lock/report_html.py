@@ -233,6 +233,9 @@ def _from_study_audit_payload(d: Mapping[str, Any]) -> _Scorecard:
     card.meta.append(("deployment authorized", str(bool(d.get("deployment_authorized", False)))))
     card.meta.append(("degradation gap", _fmt(_as_float(d.get("degradation_gap")))))
     card.meta.append(("max degradation gap", _fmt(_as_float(d.get("max_degradation_gap")))))
+    card.meta.append(("relative degradation", _fmt(_as_float(d.get("relative_degradation")))))
+    card.meta.append(("max relative degradation", _fmt(_as_float(d.get("max_relative_degradation")))))
+    card.meta.append(("relative degradation status", str(d.get("relative_degradation_status", "NOT_RUN"))))
     card.kc_rows.append(
         (str(kc.get("name", "KC-4")), status, str(kc.get("message", "")))
     )
@@ -288,6 +291,9 @@ def _from_gate_verdict(verdict: Any) -> _Scorecard:
     card.meta.append(("deployment authorized", str(verdict.deployment_authorized)))
     card.meta.append(("degradation gap", _fmt(verdict.degradation_gap)))
     card.meta.append(("max degradation gap", _fmt(verdict.max_degradation_gap)))
+    card.meta.append(("relative degradation", _fmt(verdict.relative_degradation)))
+    card.meta.append(("max relative degradation", _fmt(verdict.max_relative_degradation)))
+    card.meta.append(("relative degradation status", verdict.relative_degradation_status))
     card.meta.append(("n scores", _fmt(len(verdict.train_scores))))
     card.kc_rows.append((kc.name, kc.status, kc.message))
     card.reasons = [str(r) for r in verdict.reasons]

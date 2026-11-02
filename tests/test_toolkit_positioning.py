@@ -39,7 +39,7 @@ def test_adjacent_tool_names_are_not_invented_relationships():
     assert "historical absence of local references" in normalized
     assert "DOCKING.md" in text
     assert "no runtime import or dependency" in normalized
-    assert "Runtime consumer of omega-lock>=0.3.0,<0.4.0" in normalized
+    assert "Runtime consumer of omega-lock>=0.3.12,<0.4.0" in normalized
     assert "No local reference found" not in text
 
 

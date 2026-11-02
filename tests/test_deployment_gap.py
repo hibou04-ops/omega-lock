@@ -33,7 +33,9 @@ def test_exact_location_shift_is_blocked_despite_perfect_correlation():
     ([1.0, 2.0, 3.0], 0.0, True),
 ])
 def test_gap_limit_is_inclusive_and_uses_score_units(holdout, limit, authorized):
-    verdict = gate_scores([1, 2, 3], holdout, max_degradation_gap=limit)
+    # Isolate the absolute score-unit boundary; the default relative gate is
+    # independently exercised by test_relative_degradation.py.
+    verdict = gate_scores([1, 2, 3], holdout, max_degradation_gap=limit, max_relative_degradation=1.0)
     assert verdict.passed is authorized
     assert verdict.deployment_authorized is authorized
 
@@ -111,7 +113,9 @@ def test_cli_gap_threshold_controls_exit_and_exposes_authorization(tmp_path: Pat
     args = ["gate", "--train", str(train), "--holdout", str(holdout)]
     assert main(args) == 1
     assert "deployment_authorized: False" in capsys.readouterr().out
-    assert main([*args, "--max-degradation-gap", "101"]) == 0
+    assert main([*args, "--max-degradation-gap", "101"]) == 1
+    capsys.readouterr()
+    assert main([*args, "--max-degradation-gap", "101", "--max-relative-degradation", "50.5"]) == 0
     assert "deployment_authorized: True" in capsys.readouterr().out
     assert main([*args, "--max-degradation-gap", "nan"]) == 2
     assert "max_degradation_gap" in capsys.readouterr().err

@@ -10,7 +10,7 @@ paths require configured infrastructure and may incur provider charges.
 
 | Tool | Standalone use | Actual connection | Installation/compatibility |
 |---|---|---|---|
-| omega-lock | Gate index-aligned numeric train/holdout scores; library search and audits | Required runtime engine of omegaprompt | `omega-lock`; consumer range `>=0.3.0,<0.4.0` |
+| omega-lock | Gate index-aligned numeric train/holdout scores; library search and audits | Required runtime engine of omegaprompt | `omega-lock`; consumer range `>=0.3.12,<0.4.0` |
 | omegaprompt | Calibrate prompts; inspect and gate CalibrationArtifact files | Imports omega-lock; optionally consumes mini preflight records | `omegaprompt`; `omegacal` remains a compatibility alias |
 | antemortem-cli | Scaffold, classify and verify repository-risk documents | Pinned source-citation validation in CI only; no omega-lock import/dependency | PyPI/import/CLI `antemortem` |
 | mini-omega-lock | Empirical probes and context projections | Requires omegaprompt types; returns measurements for PreflightReport | `mini-omega-lock`; CLI `preflight`; metadata `omegaprompt>=1.1.0` |
@@ -158,12 +158,12 @@ without a working guard is a bug.
 
 | # | Coupling (direction) | Tier | Kind | Pin | Guard(s) | Runtime import? | Status |
 |---|---|---|---|---|---|---|---|
-| 1 | omega-lock (producer) → omegaprompt (consumer) | **A** | Runtime seam | `omega-lock>=0.3.0,<0.4.0` (omegaprompt `pyproject.toml`) | **Producer CI:** `tests/test_contract_manifest.py` (omega-lock) self-checks its emitted wire-keys + signatures against `src/omega_lock/contract.py`'s `CONSUMED_CONTRACT`. **Consumer CI:** `tests/test_omega_lock_contract.py` (omegaprompt) fails loud against the installed dep; **scheduled `@main` canary** `.github/workflows/omega-lock-compat.yml` (omegaprompt) runs the same consumer test against bleeding-edge omega-lock. **No import between the two CI guards.** | Yes (omegaprompt imports `omega_lock`) | ACTIVE |
+| 1 | omega-lock (producer) → omegaprompt (consumer) | **A** | Runtime seam | `omega-lock>=0.3.12,<0.4.0` (omegaprompt `pyproject.toml`) | **Producer CI:** `tests/test_contract_manifest.py` (omega-lock) self-checks its emitted wire-keys + signatures against `src/omega_lock/contract.py`'s `CONSUMED_CONTRACT`. **Consumer CI:** `tests/test_omega_lock_contract.py` (omegaprompt) fails loud against the installed dep; **scheduled `@main` canary** `.github/workflows/omega-lock-compat.yml` (omegaprompt) runs the same consumer test against bleeding-edge omega-lock. **No import between the two CI guards.** | Yes (omegaprompt imports `omega_lock`) | ACTIVE |
 | 2 | antemortem-cli → omega-lock | **B** | Doc-citation only (asymmetric) | omega-lock **SHA `9989ee929a5ed382cfb592502d1279dc6b5dc31d`** (= tag `v0.3.2`), pinned as a CI-time `actions/checkout` ref into `_omega_lock_pin/` — **NOT a dependency** | `scripts/check_omega_lock_citations.py` (antemortem, reuses antemortem's own `citations.verify_citation`) run by the isolated `omega-lock-citation-drift` CI job in `.github/workflows/ci.yml`; plus the offline namespace-invariant test `tests/test_omega_lock_citation_invariant.py` (antemortem) | **No — zero `import omega_lock`, zero omega-lock dep (load-bearing; see C1)** | ACTIVE |
 
 ### Pin discipline notes
 
-- **Tier A pin is a dependency range** (`>=0.3.0,<0.4.0`) because omegaprompt
+- **Tier A pin is a dependency range** (`>=0.3.12,<0.4.0`) because omegaprompt
   installs and runs omega-lock. The consumer guards are hardcoded to the keys /
   signatures they read — they do **not** import omega-lock's `CONSUMED_CONTRACT`
   manifest; the two declarations are deliberately independent and meet only in
@@ -250,7 +250,7 @@ It **is** tier-aware, exactly as the original spec demanded:
 
 - **Tier A** pin lives in `pyproject.toml` (a dependency range) — the lint
   parses `omegaprompt/pyproject.toml` via `tomllib` (whitespace-normalized) and
-  checks for `omega-lock>=0.3.0,<0.4.0`.
+  checks for `omega-lock>=0.3.12,<0.4.0`.
 - **Tier B** pin lives in the CI workflow as a checkout `ref` (an immutable SHA),
   **not** in any `pyproject.toml` — the lint checks for the
   `omega-lock-citation-drift` CI job in antemortem's `ci.yml` (the tier-aware

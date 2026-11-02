@@ -19,7 +19,7 @@ The three repos are NOT symmetrically coupled, so the lint is NOT uniform:
 
 * **Tier A (runtime seam, omega-lock <-> omegaprompt):** guarded by a producer
   self-check + a consumer fail-loud test + a consumer canary workflow, and
-  **pinned by a pyproject dependency range** (``omega-lock>=0.3.0,<0.4.0`` in
+  **pinned by a pyproject dependency range** (``omega-lock>=0.3.12,<0.4.0`` in
   omegaprompt's ``pyproject.toml``).
 * **Tier B (doc-citation seam, antemortem-cli -> omega-lock):** guarded by an
   offline citation-drift script + a namespace-invariant test + a CI checkout
@@ -78,7 +78,7 @@ DEFAULT_ANTEMORTEM_ROOT = OMEGA_LOCK_ROOT.parent / "antemortem-cli"
 
 # Tier A pin (DOCKING.md C2): omegaprompt pyproject depends on this range.
 TIER_A_PIN_PACKAGE = "omega-lock"
-TIER_A_PIN_SPEC = ">=0.3.0,<0.4.0"
+TIER_A_PIN_SPEC = ">=0.3.12,<0.4.0"
 # Tier B "pin" (DOCKING.md C2/C4): the CI checkout job id, NOT a dependency.
 TIER_B_CI_JOB_ID = "omega-lock-citation-drift"
 # Optional nice-to-have: the immutable SHA the Tier B checkout pins to.
@@ -141,12 +141,12 @@ def _check_file_present(
 
 
 def _normalize_spec(spec: str) -> str:
-    """Strip all whitespace so ``>= 0.3.0, < 0.4.0`` == ``>=0.3.0,<0.4.0``."""
+    """Strip all whitespace so ``>= 0.3.12, < 0.4.0`` == ``>=0.3.12,<0.4.0``."""
     return "".join(spec.split())
 
 
 def _check_tier_a_pin(report: LintReport, omegaprompt_root: Path) -> None:
-    """Tier A pin: omegaprompt pyproject depends on omega-lock>=0.3.0,<0.4.0.
+    """Tier A pin: omegaprompt pyproject depends on omega-lock>=0.3.12,<0.4.0.
 
     Parsed via tomllib (not raw grep) and whitespace-normalized so formatting
     variants of the same constraint still pass.

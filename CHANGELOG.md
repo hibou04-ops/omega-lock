@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.12] - 2026-11-02
+
+Adds `max_relative_degradation=0.50` alongside the existing absolute score-unit bound. Relative ratios use exact `Fraction(str(value))` means and the original positive TRAIN baseline with the objective direction applied only to the gap. Exact 50% is inclusive; rounded float displays cannot approve larger exact ratios. Nonpositive TRAIN baselines are explicitly undefined for relative comparison and retain the absolute defense. `gate_scores` checks means; the Optuna bridge also checks the actual selected candidate, including one outside top-N. The offline demo includes normalized score collapse with Pearson 1.0, absolute gap 0.78 and relative drop 0.975. CLI/HTML and bilingual docs expose both policy limits.
+
+Package/runtime metadata is 0.3.12. Version-specific PyPI and GitHub records establish publication status; this changelog alone is not publication proof. Existing skip/authorization separation, absolute exact-boundary checks and schema identifiers are retained.
+
 ## [0.3.10] - 2026-11-01
 
 Adds the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold()` applies `base + MDE * sqrt(1 + ln(max(1, trials)))`; `classify_calibration_verdict()` returns `M0_HOLD` for a failed holdout, `ESTABLISHED` only for a passed holdout with `delta > MDE`, and `NOT_ESTABLISHED` otherwise. Existing orchestration APIs are unchanged. These input-based rules do not measure holdout independence, statistical power, or generalization.

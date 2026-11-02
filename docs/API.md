@@ -310,6 +310,6 @@ also writes to `path` when given.
 ## Stability
 
 These symbols are part of the consumed-surface contract documented in
-[`DOCKING.md`](../DOCKING.md). Consumers pinning `omega-lock>=0.3.0,<0.4.0` rely on
+[`DOCKING.md`](../DOCKING.md). Consumers pinning `omega-lock>=0.3.12,<0.4.0` rely on
 them; they are additive across minor versions and are not renamed or re-defaulted
 within the pin window.

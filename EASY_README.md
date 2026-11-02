@@ -1,13 +1,13 @@
 # omega-lock
 
-[![Source version](https://img.shields.io/badge/version-0.3.11-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.11)
+[![Source version](https://img.shields.io/badge/version-0.3.12-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.12)
 
 **Check tuned scores against declared holdout and constraint gates before release.**
 
 [![pip install omega-lock](https://img.shields.io/badge/pip%20install-omega--lock-3775A9.svg)](https://pypi.org/project/omega-lock/)
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 ```
 
 This is the plain-English page. No jargon, no setup, no prior knowledge needed.
@@ -16,7 +16,9 @@ Read [README.md](README.md).
 
 ---
 
-## v0.3.11 — Release changes
+The source version is 0.3.12; publication is verified per version on PyPI and GitHub, not inferred from this README. Mean and selected-candidate gates now also enforce max_relative_degradation=0.50 with exact decimal comparisons; nonpositive TRAIN baselines retain the absolute bound. See the canonical README for scope.
+
+## v0.3.12 — Release changes
 
 Separates audit completion from deployment authorization and adds declared mean/selected-candidate degradation bounds. The pure helpers below are retained features.
 
@@ -31,14 +33,14 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
 
 Synthetic input: PASS and exit 0, Pearson 1.000; gate.html is the scorecard. Reverse the holdout array to exercise FAIL/exit 1. Invalid input exits 2. This checks wiring, not real-world generalization.
 
-No sibling package is needed. omegaprompt requires omega-lock>=0.3.0,<0.4.0 at runtime. antemortem only cites a pinned source revision in CI. Optuna is a native optional bridge: install omega-lock[p2] (Optuna >=3,<5); other optimizers can supply score arrays through an explicit export.
+No sibling package is needed. omegaprompt requires omega-lock>=0.3.12,<0.4.0 at runtime. antemortem only cites a pinned source revision in CI. Optuna is a native optional bridge: install omega-lock[p2] (Optuna >=3,<5); other optimizers can supply score arrays through an explicit export.
 
 [Docking contracts and runnable data handoff](https://github.com/hibou04-ops/omega-lock/blob/main/DOCKING.md) · [Full guide](README.md).
 

@@ -2,7 +2,7 @@
 
 [English](README.md) · [한국어](README.ko.md) · [한국어 별칭](README_KR.md)
 
-[![Source version](https://img.shields.io/badge/version-0.3.11-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.11)
+[![Source version](https://img.shields.io/badge/version-0.3.12-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.12)
 
 **튜닝 후보가 선언한 감사 기준을 충족하는지 확인합니다.** omega-lock은 튜너가 끝난 뒤 후보 점수의 train/holdout 선형 상관과 선언한 제약을 검사합니다. 상관 통과가 절대 품질이나 배포 안전성을 보장하지는 않습니다.
 
@@ -10,10 +10,10 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
-**소스 버전 0.3.11.** 이번 변경은 Git 소스·태그 식별자를 대상으로 하며 GitHub Release 객체나 PyPI 업로드를 완료했다는 주장이 아닙니다. 아래 고정 설치 명령은 소스 태그를 사용합니다.
+**소스 버전 0.3.12.** 버전별 발행 상태는 [PyPI 0.3.12](https://pypi.org/project/omega-lock/0.3.12/), [GitHub v0.3.12](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.12), [발행 실행 기록](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml)에서 확인합니다. 소스 메타데이터만으로 발행 완료를 주장하지 않습니다. 아래 고정 설치는 소스 태그를 선택합니다.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 omega-lock demo   # 60초, 오프라인: "우승" 점수가 홀드아웃 데이터에서 -74% 무너지는 것을 직접 보세요
 ```
 
@@ -41,7 +41,9 @@ python examples/reproduce_optuna_traps.py
     "holdout_evaluated": false,
     "deployment_authorized": false,
     "pearson": null,
-    "degradation_gap": null
+    "degradation_gap": null,
+    "relative_degradation": null,
+    "relative_degradation_status": "NOT_RUN"
   },
   {
     "case": "location_shift",
@@ -50,7 +52,20 @@ python examples/reproduce_optuna_traps.py
     "holdout_evaluated": true,
     "deployment_authorized": false,
     "pearson": 1.0,
-    "degradation_gap": 101.0
+    "degradation_gap": 101.0,
+    "relative_degradation": 50.5,
+    "relative_degradation_status": "OK"
+  },
+  {
+    "case": "normalized_collapse",
+    "passed": false,
+    "status": "FAIL",
+    "holdout_evaluated": true,
+    "deployment_authorized": false,
+    "pearson": 1.0,
+    "degradation_gap": 0.78,
+    "relative_degradation": 0.975,
+    "relative_degradation_status": "OK"
   },
   {
     "case": "normal",
@@ -59,23 +74,25 @@ python examples/reproduce_optuna_traps.py
     "holdout_evaluated": true,
     "deployment_authorized": true,
     "pearson": 1.0,
-    "degradation_gap": 0.0
+    "degradation_gap": 0.0,
+    "relative_degradation": 0.0,
+    "relative_degradation_status": "OK"
   }
 ]
-All three deployment-gate cases reproduced without API keys or network calls.
+All four deployment-gate cases reproduced without API keys or network calls.
 ```
 
-스크립트가 세 경우를 자체 검증합니다. Holdout이 없으면 기존 `passed=True` / `status="SKIP"`를 유지하되 `holdout_evaluated=False`, `deployment_authorized=False`입니다. `[1,2,3]`과 `[-100,-99,-98]`은 Pearson 1이어도 하락폭 101로 차단합니다. 동일한 holdout 점수는 선언한 게이트 조건 아래 승인합니다. API 키·유료 호출·외부 서비스 설정은 사용하지 않습니다.
+스크립트가 네 경우를 자체 검증합니다. Holdout이 없으면 기존 `passed=True` / `status="SKIP"`를 유지하되 `holdout_evaluated=False`, `deployment_authorized=False`입니다. `[1,2,3]`과 `[-100,-99,-98]`은 Pearson 1이어도 하락폭 101로 차단합니다. 정규화 점수 `[0.7,0.8,0.9]`와 `[0.01,0.02,0.03]`은 절대 하락폭 0.78이어도 상대 하락률 0.975로 차단합니다. 동일한 holdout 점수는 선언한 게이트 조건 아래 승인합니다. API 키·유료 호출·외부 서비스 설정은 사용하지 않습니다.
 
-CI는 감사 완료 의미의 `passed`만 읽지 말고 `deployment_authorized`를 확인해야 합니다. `gate_scores()`와 `audit_optuna_study()`는 상관 검사에 기본 `max_degradation_gap=1.0`을 결합합니다. 하락폭은 maximize 방향의 `mean(train)-mean(holdout)`이며 minimize는 부호를 반전합니다. 즉 holdout 평균이 train 평균에서 설정한 한도를 뺀 하한 이상이어야 합니다. Optuna bridge는 top-N 밖의 feasible 후보를 포함한 실제 선택 후보 자체의 하락폭도 검사합니다. 점수 단위의 유한·비음수 한도는 None으로 끌 수 없으며 도메인에 맞게 사전에 정합니다. CLI는 `--max-degradation-gap`, `--direction maximize|minimize`를 사용합니다.
+CI는 감사 완료 의미의 `passed`만 읽지 말고 `deployment_authorized`를 확인해야 합니다. `gate_scores()`와 `audit_optuna_study()`는 상관 검사에 기본 `max_degradation_gap=1.0`과 `max_relative_degradation=0.50`을 함께 결합합니다. 하락폭은 maximize 방향의 `mean(train)-mean(holdout)`이며 minimize는 부호를 반전합니다. 즉 holdout 평균이 train 평균에서 설정한 한도를 뺀 하한 이상이어야 합니다. Optuna bridge는 top-N 밖의 feasible 후보를 포함한 실제 선택 후보 자체의 하락폭도 검사합니다. 점수 단위의 유한·비음수 한도는 None으로 끌 수 없으며 도메인에 맞게 사전에 정합니다. CLI는 `--max-degradation-gap`, `--max-relative-degradation`, `--direction maximize|minimize`를 사용합니다.
 
-경계 판정은 유한 입력의 정확한 산술값으로 비교하고 표시값은 float입니다. 비유한·퇴화·overflow·underflow 증거는 승인을 허용하지 않습니다. 이 로컬 정책 검사는 데이터 독립성·통계적 유의성·외부 일반화를 입증하지 않습니다. 하위 `check_kc4()`와 기존 P1 orchestration은 별도 계약을 유지합니다.
+절대 경계는 기존 binary-float의 정확한 유리수 연산을 유지합니다. 상대 비율은 `Fraction(str(value))`의 정확한 decimal 평균으로 계산하며, 방향을 반영한 하락폭을 원래 양수 TRAIN 평균으로 나눕니다. minimize의 양수 loss 증가도 검사합니다. 정확히 50%는 허용하고 더 큰 정확한 비율은 표시 float가 0.50으로 반올림되어도 차단합니다. TRAIN 평균이 0 이하이면 비율은 0이 아니라 `None` / `UNDEFINED_NONPOSITIVE_TRAIN_BASELINE`이며 절대 한도는 유지합니다. `gate_scores()`는 평균을 비교하고 Optuna는 top-N 밖 feasible 후보를 포함한 선택 후보에도 두 한도를 적용합니다. 한도는 유한·비음수여야 하며 boolean과 None은 거부합니다. 표시한 하락폭과 비율은 float이고 정확한 경계 판정을 대신하지 않습니다. 비유한·퇴화·overflow·underflow 증거는 승인을 허용하지 않습니다. 이 로컬 정책 검사는 데이터 독립성·통계적 유의성·외부 일반화를 입증하지 않습니다. 하위 `check_kc4()`와 기존 P1 orchestration은 별도 계약을 유지합니다.
 
 Optuna report는 `degradation_gap`(top-N 평균)과 `selected_degradation_gap`(선택 후보)을 모두 노출합니다. 평균이 양호해도 선택 후보의 하락 검사를 생략할 수 없습니다.
 
-## v0.3.11 — 이번 변경
+## v0.3.12 — 이번 변경
 
-감사 완료와 배포 승인을 분리하고, 평균 및 선택 후보의 선언된 점수 하락 한도를 추가합니다. 아래 순수 helper는 유지되는 기존 기능입니다.
+기존 절대 1.0 점수 단위 한도에 기본 상대 50% 하락 한도를 추가하고 평균·선택 후보 비율을 정확한 decimal 연산으로 비교합니다. API 키 없는 데모에 정규화 점수 붕괴를 추가했습니다. 기존 No-Holdout Fail-Closed와 상관 검사는 유지합니다. 아래 순수 helper는 유지되는 기존 기능입니다.
 
 기존 순수 함수 모듈 `omega_lock.holdout_defense`를 유지합니다. `compute_deflated_threshold()`는 `base + MDE * sqrt(1 + ln(max(1, trials)))`를 계산합니다. `classify_calibration_verdict()`는 holdout 실패 시 `M0_HOLD`, 통과하면서 `delta > MDE`일 때만 `ESTABLISHED`, 나머지는 `NOT_ESTABLISHED`를 반환합니다. 기존 orchestration API는 보존했습니다. 입력 기반 규칙이며 holdout 독립성·통계적 검정력·일반화를 측정하지 않습니다.
 
@@ -88,7 +105,7 @@ Optuna report는 `degradation_gap`(top-N 평균)과 `selected_degradation_gap`(�
 Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
@@ -157,7 +174,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 
       # your tuner runs here and writes train_scores.json + holdout_scores.json
       - run: python tune.py
@@ -234,7 +251,7 @@ omega-lock이 채우는 빈자리: **출력 측 과적합 게이트(output-side 
 ## 설치
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 
 omega-lock demo                 # 60s offline walkthrough — watch a lucky winner collapse
 omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)

@@ -54,7 +54,7 @@ def _make_omega_lock(root: Path) -> Path:
     return repo
 
 
-def _make_omegaprompt(root: Path, *, pin: str | None = "omega-lock>=0.3.0,<0.4.0") -> Path:
+def _make_omegaprompt(root: Path, *, pin: str | None = "omega-lock>=0.3.12,<0.4.0") -> Path:
     repo = root / "omegaprompt"
     (repo / "tests").mkdir(parents=True)
     (repo / ".github" / "workflows").mkdir(parents=True)
@@ -100,7 +100,7 @@ def _make_antemortem(
     (repo / "src" / "antemortem" / "core.py").write_text(body, "utf-8")
     # A Tier B repo MUST NOT need an omega-lock dependency; this flag exists
     # only to prove the lint does not require/penalize either presence/absence.
-    dep = '    "omega-lock>=0.3.0,<0.4.0",\n' if omega_lock_dep else ""
+    dep = '    "omega-lock>=0.3.12,<0.4.0",\n' if omega_lock_dep else ""
     (repo / "pyproject.toml").write_text(
         "[project]\nname = 'antemortem-cli'\ndependencies = [\n"
         '    "typer>=0.12.0",\n'
@@ -198,7 +198,7 @@ def test_missing_tier_a_pin_fails(tmp_path: Path):
 def test_tier_a_pin_whitespace_tolerant(tmp_path: Path):
     report = mod.run_checks(
         _make_omega_lock(tmp_path),
-        _make_omegaprompt(tmp_path, pin="omega-lock >= 0.3.0, < 0.4.0"),
+        _make_omegaprompt(tmp_path, pin="omega-lock >= 0.3.12, < 0.4.0"),
         _make_antemortem(tmp_path),
     )
     assert report.exit_code == 0, _statuses(report)
@@ -211,6 +211,16 @@ def test_wrong_tier_a_pin_range_fails(tmp_path: Path):
         _make_antemortem(tmp_path),
     )
     assert report.exit_code == 1
+
+
+def test_obsolete_tier_a_floor_does_not_satisfy_the_current_consumer_contract(tmp_path: Path):
+    report = mod.run_checks(
+        _make_omega_lock(tmp_path),
+        _make_omegaprompt(tmp_path, pin="omega-lock>=0.3.0,<0.4.0"),
+        _make_antemortem(tmp_path),
+    )
+    assert report.exit_code == 1
+    assert any(row.name.startswith("tier-A pin") and row.status == "FAIL" for row in report.results)
 
 
 def test_missing_tier_b_ci_job_fails(tmp_path: Path):

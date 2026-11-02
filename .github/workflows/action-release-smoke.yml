@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v0.3.11
+          ref: v0.3.12
           persist-credentials: false
       - name: Synthetic aligned and reversed scores
         run: |
@@ -21,11 +21,11 @@ jobs:
           import json
           from pathlib import Path
           for name, values in [('train',[1,2,3,4,5]),('holdout',[1,2,3,4,5]),('reverse',[5,4,3,2,1])]:
-              Path(name+'.json').write_text(json.dumps(values))
+              Path(name+'.json').write_text(json.dumps(values), encoding="utf-8")
           PY
       - name: Passing tagged Action
         id: pass
-        uses: hibou04-ops/omega-lock@v0.3.11
+        uses: hibou04-ops/omega-lock@v0.3.12
         with:
           train: train.json
           holdout: holdout.json
@@ -33,7 +33,7 @@ jobs:
       - name: Blocking tagged Action
         id: block
         continue-on-error: true
-        uses: hibou04-ops/omega-lock@v0.3.11
+        uses: hibou04-ops/omega-lock@v0.3.12
         with:
           train: train.json
           holdout: reverse.json
@@ -43,7 +43,7 @@ jobs:
           BLOCK: ${{ steps.block.outputs.passed }}
           BLOCK_OUTCOME: ${{ steps.block.outcome }}
         run: |
-          python -c "import omega_lock; assert omega_lock.__version__=='0.3.11'"
+          python -c "import omega_lock; assert omega_lock.__version__=='0.3.12'"
           python -m pip check
           test "$BLOCK_OUTCOME" = failure
           test "$PASS" = true

@@ -1,13 +1,13 @@
 # omega-lock
 
-[![Source version](https://img.shields.io/badge/version-0.3.11-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.11)
+[![Source version](https://img.shields.io/badge/version-0.3.12-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.12)
 
 **튜닝 점수를 공개 전에 선언한 홀드아웃·제약 기준으로 검사합니다.**
 
 [![pip install omega-lock](https://img.shields.io/badge/pip%20install-omega--lock-3775A9.svg)](https://pypi.org/project/omega-lock/)
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 ```
 
 이 페이지는 쉬운 설명 페이지입니다. 전문 용어도, 설정도, 사전 지식도 필요 없습니다.
@@ -16,7 +16,9 @@ CI 예제, 탐색 도구 연결, 전체 API가 담긴 기술 버전을 원하시
 
 ---
 
-## v0.3.11 — 이번 변경
+소스 버전은 0.3.12이며 발행 여부는 버전별 PyPI·GitHub에서 확인하고 이 README로 추정하지 않습니다. 평균·선택 후보 게이트에 정확한 decimal 비교의 max_relative_degradation=0.50을 함께 적용하며 TRAIN 기준값이 0 이하이면 절대 한도를 유지합니다. 상세 범위는 정식 README를 참고합니다.
+
+## v0.3.12 — 이번 변경
 
 감사 완료와 배포 승인을 분리하고, 평균 및 선택 후보의 선언된 점수 하락 한도를 추가합니다. 아래 순수 helper는 유지되는 기존 기능입니다.
 
@@ -31,7 +33,7 @@ CI 예제, 탐색 도구 연결, 전체 API가 담긴 기술 버전을 원하시
 Python 3.11 이상에서 실행합니다. 설치에는 인터넷이 필요합니다.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.11"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.12"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```

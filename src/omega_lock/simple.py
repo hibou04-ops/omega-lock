@@ -30,7 +30,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from omega_lock.adapters import CallableAdapter
 from omega_lock.kill_criteria import KCReport, KCThresholds, check_kc4
-from omega_lock.holdout_defense import score_degradation, validate_max_degradation_gap
+from omega_lock.holdout_defense import score_degradation, validate_max_degradation_gap, validate_max_relative_degradation
 from omega_lock.orchestrator import P1Config, P1Result, run_p1
 from omega_lock.report_html import render_html
 from omega_lock.target import ParamSpec
@@ -43,7 +43,7 @@ class GateVerdict:
     """Outcome of ``gate_scores``.
 
     Attributes:
-        passed: True when correlation and the score-unit degradation bound pass.
+        passed: True when correlation and both applicable degradation bounds pass.
         deployment_authorized: Explicit local policy decision; defaults False
             for directly constructed legacy records. Does not prove data independence.
         degradation_gap: Direction-adjusted mean(train)-mean(holdout), or None
@@ -68,19 +68,41 @@ class GateVerdict:
     degradation_gap: float | None = None
     max_degradation_gap: float = 1.0
     direction: str = "maximize"
+    relative_degradation: float | None = None
+    max_relative_degradation: float = 0.50
+    relative_degradation_status: str = "NOT_RUN"
 
     def __post_init__(self) -> None:
         validate_max_degradation_gap(self.max_degradation_gap)
+        validate_max_relative_degradation(self.max_relative_degradation)
         if self.direction not in ("maximize", "minimize"):
             raise ValueError("direction must be maximize or minimize")
         if not (
             self.passed and self.kc_report.status == "PASS"
             and self.kc_report.detail.get("degradation_ok") is True
+            and self.kc_report.detail.get("max_degradation_gap") == self.max_degradation_gap
+            and self.kc_report.detail.get("max_relative_degradation") == self.max_relative_degradation
             and self.degradation_gap is not None
             and isfinite(self.degradation_gap)
             and self.degradation_gap <= self.max_degradation_gap
         ):
             object.__setattr__(self, "deployment_authorized", False)
+        if self.deployment_authorized:
+            # A reconstructed record cannot carry stale certificates for new
+            # scores/direction. Exact helper booleans, not displayed ratios,
+            # decide whether its own retained evidence still passes.
+            measured = score_degradation(self.train_scores, self.holdout_scores,
+                                         self.max_degradation_gap, self.max_relative_degradation,
+                                         direction=self.direction)
+            correlation = check_kc4(train_fitnesses=list(self.train_scores), test_fitnesses=list(self.holdout_scores),
+                                    trade_ratio=1.0, thresholds=KCThresholds.pure_objective(pearson_min=-1.0))
+            if not (measured["degradation_ok"]
+                    and measured["degradation_gap"] == self.degradation_gap
+                    and measured["relative_degradation"] == self.relative_degradation
+                    and measured["relative_degradation_status"] == self.relative_degradation_status
+                    and correlation.detail.get("pearson_computable") is True
+                    and correlation.detail.get("pearson") == self.pearson):
+                object.__setattr__(self, "deployment_authorized", False)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -88,6 +110,9 @@ class GateVerdict:
             "deployment_authorized": self.deployment_authorized,
             "degradation_gap": self.degradation_gap,
             "max_degradation_gap": self.max_degradation_gap,
+            "relative_degradation": self.relative_degradation,
+            "max_relative_degradation": self.max_relative_degradation,
+            "relative_degradation_status": self.relative_degradation_status,
             "direction": self.direction,
             "pearson": self.pearson,
             "reasons": list(self.reasons),
@@ -120,6 +145,7 @@ def gate_scores(
     train_ids: Sequence[str] | None = None,
     holdout_ids: Sequence[str] | None = None,
     max_degradation_gap: float = 1.0,
+    max_relative_degradation: float = 0.50,
     direction: str = "maximize",
 ) -> GateVerdict:
     """Gate linear score association and mean degradation across aligned candidates.
@@ -145,15 +171,19 @@ def gate_scores(
             mapping the objective to maximize orientation. This is a policy
             threshold, not a confidence interval or an inferred noise floor.
         direction: maximize (default) or minimize. Positive gap means degradation.
+        max_relative_degradation: finite nonnegative ratio bound, default 0.50.
+            Compare the direction-adjusted decimal gap to the original positive
+            TRAIN mean. For nonpositive TRAIN the ratio is explicitly undefined
+            and only the absolute bound applies. This API compares means only.
 
     Returns:
         GateVerdict — ``passed``, measured ``pearson`` (None when not
         computable), and explicit ``reasons`` on failure.
     """
     limit = validate_max_degradation_gap(max_degradation_gap)
+    relative_limit = validate_max_relative_degradation(max_relative_degradation)
     if direction not in ("maximize", "minimize"):
         raise ValueError("direction must be 'maximize' or 'minimize'")
-    sign = -1.0 if direction == "minimize" else 1.0
     thr = thresholds if thresholds is not None else KCThresholds.pure_objective()
     train = [float(v) for v in train_scores]
     holdout = [float(v) for v in holdout_scores]
@@ -204,16 +234,22 @@ def gate_scores(
             )
 
     degradation = score_degradation(
-        [sign * value for value in train], [sign * value for value in holdout], limit
+        train, holdout, limit, relative_limit, direction=direction
     )
     detail.update(degradation)
     if not degradation["degradation_ok"]:
         if not degradation["degradation_computable"]:
             reason = f"degradation gap not computable ({degradation['degradation_status']})"
-        else:
+        elif not degradation["absolute_degradation_ok"]:
             reason = (
                 f"exact mean degradation exceeds max_degradation_gap={limit} "
                 f"(reported rounded degradation_gap={degradation['degradation_gap']})"
+            )
+        else:
+            reason = (
+                f"relative mean degradation exceeds max_relative_degradation={relative_limit} "
+                f"or is not representable ({degradation['relative_degradation_status']}; "
+                f"reported rounded ratio={degradation['relative_degradation']})"
             )
         reasons.append(reason)
         kc.status = "FAIL"
@@ -231,6 +267,9 @@ def gate_scores(
         degradation_gap=degradation["degradation_gap"],
         max_degradation_gap=limit,
         direction=direction,
+        relative_degradation=degradation["relative_degradation"],
+        max_relative_degradation=relative_limit,
+        relative_degradation_status=degradation["relative_degradation_status"],
     )
 
 

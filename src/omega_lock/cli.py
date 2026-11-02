@@ -100,6 +100,7 @@ def _cmd_gate(args: argparse.Namespace) -> int:
         verdict = gate_scores(
             train, holdout, thresholds=thresholds,
             max_degradation_gap=args.max_degradation_gap, direction=args.direction,
+            max_relative_degradation=args.max_relative_degradation,
         )
     except ValueError as exc:
         raise SystemExit2(str(exc)) from exc
@@ -108,6 +109,8 @@ def _cmd_gate(args: argparse.Namespace) -> int:
     pearson_text = "n/a" if verdict.pearson is None else f"{verdict.pearson:.3f}"
     _print_ascii(f"pearson  : {pearson_text}")
     _print_ascii(f"degradation_gap: {verdict.degradation_gap}")
+    _print_ascii(f"relative_degradation: {verdict.relative_degradation}")
+    _print_ascii(f"relative_degradation_status: {verdict.relative_degradation_status}")
     _print_ascii(f"deployment_authorized: {verdict.deployment_authorized}")
     _print_ascii(f"scores   : {len(train)} candidate(s)")
     for reason in verdict.reasons:
@@ -188,6 +191,10 @@ def build_parser() -> argparse.ArgumentParser:
     gate.add_argument(
         "--max-degradation-gap", type=float, default=1.0,
         help="maximum score-unit mean degradation (finite, nonnegative; default 1.0)",
+    )
+    gate.add_argument(
+        "--max-relative-degradation", type=float, default=0.50,
+        help="maximum degradation / original positive TRAIN mean (finite, nonnegative; default 0.50)",
     )
     gate.add_argument(
         "--direction", choices=("maximize", "minimize"), default="maximize",

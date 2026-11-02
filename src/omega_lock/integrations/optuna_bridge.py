@@ -51,7 +51,7 @@ from typing import Any, Callable, cast
 
 from omega_lock.grid import GridPoint
 from omega_lock.kill_criteria import KCReport, KCThresholds, check_kc4
-from omega_lock.holdout_defense import score_degradation, validate_max_degradation_gap
+from omega_lock.holdout_defense import score_degradation, validate_max_degradation_gap, validate_max_relative_degradation
 from omega_lock.target import EvalResult, ParamSpec
 from omega_lock.walk_forward import WalkForward
 
@@ -145,13 +145,21 @@ class StudyAuditReport:
     selected_degradation_gap: float | None = None
     max_degradation_gap: float = 1.0
     direction: str = "maximize"
+    relative_degradation: float | None = None
+    selected_relative_degradation: float | None = None
+    max_relative_degradation: float = 0.50
+    relative_degradation_status: str = "NOT_RUN"
+    selected_relative_degradation_status: str = "NOT_RUN"
 
     def __post_init__(self) -> None:
         validate_max_degradation_gap(self.max_degradation_gap)
+        validate_max_relative_degradation(self.max_relative_degradation)
         if not (
             self.holdout_evaluated and self.passed and self.kc_report.status == "PASS"
             and self.kc_report.detail.get("degradation_ok") is True
             and self.kc_report.detail.get("selected_degradation_ok") is True
+            and self.kc_report.detail.get("max_degradation_gap") == self.max_degradation_gap
+            and self.kc_report.detail.get("max_relative_degradation") == self.max_relative_degradation
             and self.gated_best is not None
             and self.degradation_gap is not None and isfinite(self.degradation_gap)
             and self.degradation_gap <= self.max_degradation_gap
@@ -160,6 +168,30 @@ class StudyAuditReport:
             and self.selected_degradation_gap <= self.max_degradation_gap
         ):
             self.deployment_authorized = False
+        if self.deployment_authorized and self.gated_best is not None:
+            train = [candidate.train_value for candidate in self.candidates]
+            holdout = [candidate.holdout_value for candidate in self.candidates
+                       if candidate.holdout_value is not None]
+            measured = score_degradation(train, holdout, self.max_degradation_gap,
+                                         self.max_relative_degradation, direction=self.direction)
+            chosen = self.gated_best
+            selected = score_degradation([chosen.train_value],
+                [] if chosen.holdout_value is None else [chosen.holdout_value],
+                self.max_degradation_gap, self.max_relative_degradation, direction=self.direction)
+            expected = self.best_feasible if self.feasibility_source == "user_attrs" else self.best_any
+            correlation = check_kc4(train_fitnesses=train, test_fitnesses=holdout,
+                                    trade_ratio=1.0, thresholds=self.thresholds)
+            if not (measured["degradation_ok"] and selected["degradation_ok"]
+                    and chosen == expected
+                    and all(candidate == chosen for candidate in self.candidates if candidate.number == chosen.number)
+                    and measured["degradation_gap"] == self.degradation_gap
+                    and measured["relative_degradation"] == self.relative_degradation
+                    and measured["relative_degradation_status"] == self.relative_degradation_status
+                    and selected["degradation_gap"] == self.selected_degradation_gap
+                    and selected["relative_degradation"] == self.selected_relative_degradation
+                    and selected["relative_degradation_status"] == self.selected_relative_degradation_status
+                    and correlation.status == "PASS" and correlation.detail.get("pearson") == self.pearson):
+                self.deployment_authorized = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -169,6 +201,11 @@ class StudyAuditReport:
             "degradation_gap": self.degradation_gap,
             "selected_degradation_gap": self.selected_degradation_gap,
             "max_degradation_gap": self.max_degradation_gap,
+            "relative_degradation": self.relative_degradation,
+            "selected_relative_degradation": self.selected_relative_degradation,
+            "max_relative_degradation": self.max_relative_degradation,
+            "relative_degradation_status": self.relative_degradation_status,
+            "selected_relative_degradation_status": self.selected_relative_degradation_status,
             "direction": self.direction,
             "kc_report": {
                 "name": self.kc_report.name,
@@ -230,6 +267,7 @@ def audit_optuna_study(
     thresholds: KCThresholds | None = None,
     top_n: int = 10,
     max_degradation_gap: float = 1.0,
+    max_relative_degradation: float = 0.50,
 ) -> StudyAuditReport:
     """Gate an existing Optuna study's completed trials.
 
@@ -252,6 +290,11 @@ def audit_optuna_study(
             for both the top-N mean and selected candidate. Positive gap means
             worse holdout performance in either study direction. None cannot
             disable this gate. Declare the limit before inspecting holdout.
+        max_relative_degradation: finite nonnegative ratio bound, default 0.50,
+            enforced for both top-N means and the selected candidate using its
+            original positive TRAIN baseline and a direction-adjusted gap.
+            Nonpositive baselines retain the absolute bound; their ratio is
+            explicitly undefined. Declare both bounds before evaluation.
 
     Returns:
         StudyAuditReport — see the dataclass docstring for field semantics.
@@ -262,6 +305,7 @@ def audit_optuna_study(
             with values, or ``top_n`` < 2.
     """
     limit = validate_max_degradation_gap(max_degradation_gap)
+    relative_limit = validate_max_relative_degradation(max_relative_degradation)
     try:
         # importlib indirection mirrors p2_tpe.py: optuna is an optional
         # extra, and a static ``import optuna`` fails pyright in environments
@@ -325,6 +369,9 @@ def audit_optuna_study(
     holdout_by_number: dict[int, float] = {}
     degradation_gap: float | None = None
     selected_degradation_gap: float | None = None
+    relative_degradation: float | None = None
+    selected_relative_degradation: float | None = None
+    relative_status = selected_relative_status = "NOT_RUN"
     if holdout_evaluate is not None:
         # Reuse the exact walk-forward + KC-4 machinery (no duplicated math).
         wf = WalkForward(test_target=_HoldoutTarget(holdout_evaluate, sign))
@@ -336,16 +383,21 @@ def audit_optuna_study(
             thresholds=thr,
         )
         degradation = score_degradation(
-            wf_result.train_fitnesses, wf_result.test_fitnesses, limit
+            [sign * value for value in wf_result.train_fitnesses],
+            [sign * value for value in wf_result.test_fitnesses], limit, relative_limit,
+            direction="minimize" if sign < 0 else "maximize",
         )
         degradation_gap = degradation["degradation_gap"]
+        relative_degradation = degradation["relative_degradation"]
+        relative_status = degradation["relative_degradation_status"]
         kc_report.detail.update(degradation)
         if not degradation["degradation_ok"]:
             kc_report.status = "FAIL"
             kc_report.message = (
                 "FAIL: degradation gap not computable"
                 if not degradation["degradation_computable"]
-                else f"FAIL: exact mean degradation exceeds max_degradation_gap={limit} "
+                else f"FAIL: absolute/relative mean degradation exceeds declared bounds "
+                f"max_degradation_gap={limit}, max_relative_degradation={relative_limit} "
                 f"(reported rounded degradation_gap={degradation_gap})"
             )
         pearson: float | None = (
@@ -369,6 +421,9 @@ def audit_optuna_study(
                 "degradation_gap": None,
                 "degradation_status": "NOT_RUN",
                 "max_degradation_gap": limit,
+                "relative_degradation": None,
+                "relative_degradation_status": "NOT_RUN",
+                "max_relative_degradation": relative_limit,
             },
         )
         pearson = None
@@ -417,22 +472,28 @@ def audit_optuna_study(
     # catastrophic result for the actual selected candidate.
     if holdout_evaluate is not None and gated_best is not None:
         selected = score_degradation(
-            [sign * gated_best.train_value],
-            [sign * gated_best.holdout_value] if gated_best.holdout_value is not None else [],
-            limit,
+            [gated_best.train_value],
+            [gated_best.holdout_value] if gated_best.holdout_value is not None else [],
+            limit, relative_limit, direction="minimize" if sign < 0 else "maximize",
         )
         selected_degradation_gap = selected["degradation_gap"]
+        selected_relative_degradation = selected["relative_degradation"]
+        selected_relative_status = selected["relative_degradation_status"]
         kc_report.detail.update({
             "selected_degradation_gap": selected_degradation_gap,
             "selected_degradation_status": selected["degradation_status"],
             "selected_degradation_ok": selected["degradation_ok"],
+            "selected_relative_degradation": selected_relative_degradation,
+            "selected_relative_degradation_status": selected_relative_status,
+            "selected_relative_degradation_ok": selected["relative_degradation_ok"],
         })
         if not selected["degradation_ok"]:
             kc_report.status = "FAIL"
             kc_report.message = (
                 "FAIL: selected candidate degradation gap not computable"
                 if not selected["degradation_computable"]
-                else f"FAIL: selected candidate exact degradation exceeds max_degradation_gap={limit} "
+                else f"FAIL: selected candidate absolute/relative degradation exceeds declared bounds "
+                f"max_degradation_gap={limit}, max_relative_degradation={relative_limit} "
                 f"(reported rounded degradation_gap={selected_degradation_gap})"
             )
             gated_best = None
@@ -460,4 +521,9 @@ def audit_optuna_study(
         selected_degradation_gap=selected_degradation_gap,
         max_degradation_gap=limit,
         direction="minimize" if sign < 0 else "maximize",
+        relative_degradation=relative_degradation,
+        selected_relative_degradation=selected_relative_degradation,
+        max_relative_degradation=relative_limit,
+        relative_degradation_status=relative_status,
+        selected_relative_degradation_status=selected_relative_status,
     )

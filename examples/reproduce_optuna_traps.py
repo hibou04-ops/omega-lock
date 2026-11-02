@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Three offline, keyless deployment-gate cases; requires omega-lock[p2].
+"""Four offline, keyless deployment-gate cases; requires omega-lock[p2].
 
 Run from a checkout: python examples/reproduce_optuna_traps.py
 The script asserts the unsafe cases are blocked and exits zero on success.
@@ -48,16 +48,32 @@ def main() -> int:
         study, holdout_evaluate=lambda params: float(params["x"]) + 1.0, top_n=3,
     )
     assert normal.passed and normal.deployment_authorized and normal.degradation_gap == 0.0
+    normalized = optuna.create_study(direction="maximize")
+    for index, score in enumerate([0.7, 0.8, 0.9]):
+        normalized.add_trial(optuna.trial.create_trial(
+            params={"x": index},
+            distributions={"x": optuna.distributions.IntDistribution(0, 2)}, value=score,
+        ))
+    collapsed = audit_optuna_study(
+        normalized, holdout_evaluate=lambda params: [0.01, 0.02, 0.03][int(params["x"])], top_n=3,
+    )
+    assert collapsed.pearson == 1.0 and collapsed.degradation_gap is not None
+    assert collapsed.degradation_gap < 1.0 and collapsed.relative_degradation == 0.975
+    assert not collapsed.passed and not collapsed.deployment_authorized
+    assert not gate_scores([0.7, 0.8, 0.9], [0.01, 0.02, 0.03]).deployment_authorized
     rows: list[dict[str, Any]] = []
-    for name, report in (("no_holdout", skipped), ("location_shift", shifted), ("normal", normal)):
+    for name, report in (("no_holdout", skipped), ("location_shift", shifted),
+                         ("normalized_collapse", collapsed), ("normal", normal)):
         rows.append({
             "case": name, "passed": report.passed, "status": report.kc_report.status,
             "holdout_evaluated": report.holdout_evaluated,
             "deployment_authorized": report.deployment_authorized,
             "pearson": report.pearson, "degradation_gap": report.degradation_gap,
+            "relative_degradation": report.relative_degradation,
+            "relative_degradation_status": report.relative_degradation_status,
         })
     print(json.dumps(rows, indent=2, allow_nan=False))
-    print("All three deployment-gate cases reproduced without API keys or network calls.")
+    print("All four deployment-gate cases reproduced without API keys or network calls.")
     return 0
 
 

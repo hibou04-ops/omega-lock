@@ -309,6 +309,7 @@ def test_minimize_direction_ranks_and_reports_in_study_orientation():
         holdout_evaluate=lambda p: 10.0 - float(p["x"]),
         top_n=5,
         max_degradation_gap=5.0,  # this direction test deliberately allows a 5-unit drop
+        max_relative_degradation=5.0,  # and the selected 1.0 -> 6.0 loss increase
     )
 
     assert report.best_any.train_value == 1.0
@@ -338,7 +339,7 @@ def test_exact_location_shift_has_perfect_pearson_but_no_deployment_authority():
 @pytest.mark.parametrize("direction,values,holdout,authorized,gap", [
     ("maximize", [1.0, 2.0, 3.0], [0.0, 1.0, 2.0], True, 1.0),
     ("maximize", [1.0, 2.0, 3.0], [-0.01, 0.99, 1.99], False, 1.01),
-    ("minimize", [1.0, 2.0, 3.0], [2.0, 3.0, 4.0], True, 1.0),
+    ("minimize", [1.0, 2.0, 3.0], [2.0, 3.0, 4.0], False, 1.0),
     ("minimize", [1.0, 2.0, 3.0], [102.0, 103.0, 104.0], False, 101.0),
     ("minimize", [1.0, 2.0, 3.0], [0.0, 1.0, 2.0], True, -1.0),
 ])
