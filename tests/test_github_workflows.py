@@ -67,7 +67,6 @@ def test_release_readiness_workflow_is_manual_and_non_publishing():
     assert "python -m pip install build twine" in text
     assert '"setuptools>=61.0"' in text
     assert 'python -m pip install -e ".[dev,p2]"' in text
-
     forbidden = (
         "pypa/gh-action-pypi-publish",
         "twine upload",
@@ -79,6 +78,21 @@ def test_release_readiness_workflow_is_manual_and_non_publishing():
     )
     for fragment in forbidden:
         assert fragment not in lower
+
+
+def test_publish_dispatch_binds_tag_commit_and_final_artifacts():
+    text = _text("publish.yml")
+    assert "release-tag:" in text and "release-commit:" in text
+    assert text.count("required: true") == 2
+    assert "default:" not in text
+    assert "github.event.release.tag_name" in text and "github.sha" in text
+    assert "ref: ${{ steps.source.outputs.commit }}" in text
+    assert "fetch-depth: 0" in text and "persist-credentials: false" in text
+    assert "refs/tags/$REQUESTED_RELEASE_TAG^{commit}" in text
+    assert '"$REQUESTED_RELEASE_TAG" = "v$PKG_VER"' in text
+    assert "controller_workflow_commit" in text and "source_commit" in text
+    assert text.index("Verify final distributions") < text.index("Publish package distributions")
+    assert "skip-existing" not in text
 
 
 def test_publish_workflow_trigger_and_publish_action_remain_explicit():

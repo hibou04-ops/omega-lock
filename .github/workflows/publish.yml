@@ -4,6 +4,15 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Existing immutable release tag (vX.Y.Z)
+        required: true
+        type: string
+      release-commit:
+        description: Exact 40-hex commit to which the existing tag must peel
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -12,19 +21,48 @@ jobs:
   publish:
     name: Build and publish omega-lock
     runs-on: ubuntu-latest
+    env:
+      REQUESTED_RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs['release-tag'] }}
+      REQUESTED_RELEASE_COMMIT: ${{ github.event_name == 'release' && github.sha || inputs['release-commit'] }}
+      CONTROLLER_WORKFLOW_COMMIT: ${{ github.workflow_sha }}
+      CONTROLLER_WORKFLOW_REF: ${{ github.workflow_ref }}
 
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Resolve immutable release source
+        id: source
+        run: |
+          python - <<'PY'
+          # BEGIN RELEASE_INPUT_VALIDATION
+          import json
+          import os
+          import re
+          tag = os.environ['REQUESTED_RELEASE_TAG']
+          commit = os.environ['REQUESTED_RELEASE_COMMIT'].lower()
+          if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', tag):
+              raise SystemExit('release-tag must be an existing vX.Y.Z tag')
+          if not re.fullmatch(r'[0-9a-f]{40}', commit):
+              raise SystemExit('release-commit must be exactly 40 hex characters')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'tag={tag}\ncommit={commit}\n')
+          print(json.dumps({'release_tag': tag, 'release_commit': commit}))
+          # END RELEASE_INPUT_VALIDATION
+          PY
+
+      - name: Checkout exact release commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Install build backend
         run: python -m pip install --upgrade build twine "setuptools>=61.0"
@@ -35,10 +73,12 @@ jobs:
           PKG_VER=$(python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           echo "pyproject version: $PKG_VER"
           grep "\"$PKG_VER\"" src/omega_lock/__init__.py
-          if [ -n "${GITHUB_REF_NAME:-}" ] && [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            echo "release tag: $GITHUB_REF_NAME"
-            [ "$GITHUB_REF_NAME" = "v$PKG_VER" ] || { echo "tag $GITHUB_REF_NAME != v$PKG_VER"; exit 1; }
-          fi
+          EXPECTED_COMMIT="$(printf '%s' "$REQUESTED_RELEASE_COMMIT" | tr '[:upper:]' '[:lower:]')"
+          [ "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT" ] || { echo 'checkout commit mismatch'; exit 1; }
+          [ "$(git rev-parse "refs/tags/$REQUESTED_RELEASE_TAG^{commit}")" = "$EXPECTED_COMMIT" ] || { echo 'tag peel mismatch'; exit 1; }
+          [ "$REQUESTED_RELEASE_TAG" = "v$PKG_VER" ] || { echo 'tag and package version mismatch'; exit 1; }
+          git diff --exit-code HEAD --
+          echo "release tag: $REQUESTED_RELEASE_TAG; source commit: $EXPECTED_COMMIT"
           echo "PKG_VER=$PKG_VER" >> "$GITHUB_ENV"
 
       - name: Run tests
@@ -54,6 +94,66 @@ jobs:
 
       - name: Publish readiness gate
         run: python scripts/publish_readiness.py --intended-version "$PKG_VER" --offline
+
+      - name: Verify final distributions against immutable Git source
+        run: |
+          python - <<'PY'
+          # BEGIN RELEASE_ARTIFACT_VERIFICATION
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import tarfile
+          import zipfile
+          def git(*args):
+              return subprocess.check_output(['git', *args])
+          commit = os.environ['REQUESTED_RELEASE_COMMIT'].lower()
+          tag = os.environ['REQUESTED_RELEASE_TAG']
+          version = os.environ['PKG_VER']
+          if git('rev-parse', 'HEAD').decode().strip() != commit:
+              raise SystemExit('checkout commit mismatch')
+          if git('rev-parse', f'refs/tags/{tag}^{{commit}}').decode().strip() != commit:
+              raise SystemExit('tag peel mismatch')
+          if tag != 'v' + version:
+              raise SystemExit('tag and package version mismatch')
+          if subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--'], check=False).returncode:
+              raise SystemExit('tracked release source changed during validation/build')
+          files = git('ls-tree', '-r', '--name-only', commit, '--', 'src/omega_lock').decode('utf-8').splitlines()
+          expected = {p: git('show', f'{commit}:{p}') for p in files if p.endswith('.py')}
+          if not expected:
+              raise SystemExit('no committed package Python source')
+          wheel = Path('dist') / f'omega_lock-{version}-py3-none-any.whl'
+          sdist = Path('dist') / f'omega_lock-{version}.tar.gz'
+          if set(Path('dist').iterdir()) != {wheel, sdist}:
+              raise SystemExit('unexpected or missing distribution files')
+          with zipfile.ZipFile(wheel) as archive:
+              actual = {name for name in archive.namelist() if name.endswith('.py')}
+              if actual != {p.removeprefix('src/') for p in expected}:
+                  raise SystemExit('wheel Python inventory differs from Git commit')
+              for path, data in expected.items():
+                  if archive.read(path.removeprefix('src/')) != data:
+                      raise SystemExit('wheel source bytes differ: ' + path)
+          prefix = f'omega_lock-{version}/'
+          with tarfile.open(sdist, 'r:gz') as archive:
+              actual = {m.name.removeprefix(prefix): m for m in archive.getmembers()
+                        if m.name.startswith(prefix + 'src/omega_lock/') and m.name.endswith('.py')}
+              if set(actual) != set(expected):
+                  raise SystemExit('sdist Python inventory differs from Git commit')
+              for path, data in expected.items():
+                  member = archive.extractfile(actual[path])
+                  if member is None or member.read() != data:
+                      raise SystemExit('sdist source bytes differ: ' + path)
+          print(json.dumps({
+              'release_tag': tag, 'source_commit': commit,
+              'controller_workflow_commit': os.environ['CONTROLLER_WORKFLOW_COMMIT'],
+              'controller_workflow_ref': os.environ['CONTROLLER_WORKFLOW_REF'],
+              'tag_object': git('rev-parse', 'refs/tags/' + tag).decode().strip(),
+              'verified_python_files': len(expected),
+              'artifact_sha256': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (wheel, sdist)},
+          }, sort_keys=True))
+          # END RELEASE_ARTIFACT_VERIFICATION
+          PY
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
