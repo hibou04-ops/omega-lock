@@ -10,6 +10,32 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
+<!-- QUICKSTART_DEMO_START -->
+## 10-second start: install and inspect an offline gate
+
+```bash
+pip install omega-lock
+uvx omega-lock --help
+```
+
+These synthetic score arrays exercise declared local thresholds; a pass does not establish holdout independence or external generalization.
+
+After installation, run the demo from a clone of this repository. The diff block is the demo's actual stdout.
+
+```bash
+git clone https://github.com/hibou04-ops/omega-lock.git
+cd omega-lock
+python examples/quickstart_demo.py
+```
+
+```diff
+- [BLOCKED] location_shift: deployment_authorized=False
+- [BLOCKED] normalized_collapse: deployment_authorized=False
++ [PASS] unchanged_holdout: deployment_authorized=True
+```
+<!-- QUICKSTART_DEMO_END -->
+
+
 **Source version 0.3.13.** Verify publication by version: [PyPI 0.3.13](https://pypi.org/project/omega-lock/0.3.13/), [GitHub v0.3.13](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.13), and [publication runs](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml). Source metadata alone is not publication proof. The pinned install below selects the source tag.
 
 ```bash

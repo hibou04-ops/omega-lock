@@ -10,6 +10,32 @@
 [![Python](https://img.shields.io/pypi/pyversions/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 [![License](https://img.shields.io/pypi/l/omega-lock.svg?cacheSeconds=900)](https://pypi.org/project/omega-lock/)
 
+<!-- QUICKSTART_DEMO_START -->
+## 10초 시작: 설치와 오프라인 게이트 결과
+
+```bash
+pip install omega-lock
+uvx omega-lock --help
+```
+
+합성 점수 배열로 선언된 로컬 임계값을 확인합니다. 통과가 홀드아웃 독립성이나 외부 일반화를 입증하지는 않습니다.
+
+설치 후 이 저장소를 복제한 디렉터리에서 아래 데모를 실행합니다. diff 블록은 데모가 출력하는 실제 stdout입니다.
+
+```bash
+git clone https://github.com/hibou04-ops/omega-lock.git
+cd omega-lock
+python examples/quickstart_demo.py
+```
+
+```diff
+- [BLOCKED] location_shift: deployment_authorized=False
+- [BLOCKED] normalized_collapse: deployment_authorized=False
++ [PASS] unchanged_holdout: deployment_authorized=True
+```
+<!-- QUICKSTART_DEMO_END -->
+
+
 **소스 버전 0.3.13.** 버전별 발행 상태는 [PyPI 0.3.13](https://pypi.org/project/omega-lock/0.3.13/), [GitHub v0.3.13](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.13), [발행 실행 기록](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml)에서 확인합니다. 소스 메타데이터만으로 발행 완료를 주장하지 않습니다. 아래 고정 설치는 소스 태그를 선택합니다.
 
 ```bash
