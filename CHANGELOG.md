@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.14 - 2026-11-06
+
+- Align the packaged description and release surfaces with the reviewed, domain-neutral documentation.
+- Preserve public APIs, library behavior and the frozen audit fixtures; normalize the demo display label. This patch adds no performance or generalization evidence.
+
 ## 0.3.13 - 2026-11-03
 
 - Clarify public documentation and examples for general AI/ML verification and software quality engineering.

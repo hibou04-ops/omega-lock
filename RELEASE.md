@@ -1,14 +1,14 @@
 # Release Checklist
 
-Use this checklist for every omega-lock release. The current source target is `0.3.13`.
+Use this checklist for every omega-lock release. The current source target is `0.3.14`.
 
 Version metadata is not publication proof. Check the version-specific
-[PyPI page](https://pypi.org/project/omega-lock/0.3.13/),
-[GitHub Release](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.13)
+[PyPI page](https://pypi.org/project/omega-lock/0.3.14/),
+[GitHub Release](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.14)
 and publication workflow result independently. Install the exact source with:
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.14"
 ```
 
 ## Before Building
@@ -55,7 +55,11 @@ The golden audit runner manually replays the frozen historical provenance
 version. Do not rewrite those fixture bytes merely to bump a release version.
 Current pyproject, runtime and installed metadata are checked separately.
 
-## 0.3.13 Release Note
+## 0.3.14 Release Note
+
+This documentation and packaging patch aligns the package description with the reviewed, domain-neutral source documentation. Public APIs, library behavior and frozen audit fixtures are unchanged; the demo display label uses neutral terminology. It adds no new performance or generalization evidence.
+
+## Historical 0.3.13 Release Note
 
 Separates no-holdout audit completion from deployment authorization. Deployment
 requires evaluated, finite holdout evidence and declared mean/selected-candidate
@@ -172,7 +176,7 @@ Adds the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold(
 ### 0.3.0
 
 - new `KCThresholds.pure_objective()` preset: disables the action-count gates
-  (KC-3 and the KC-4 trade-ratio sub-gate) for non-action objectives while
+  (KC-3 and the KC-4 activity-ratio sub-gate) for non-action objectives while
   keeping the domain-neutral gates
 - domain-neutral public field names with backward-compatible aliases
   (`EvalResult.sample_count`, `ParamSpec.stress_suppressed`,
@@ -194,10 +198,10 @@ Adds the pure `omega_lock.holdout_defense` helpers: `compute_deflated_threshold(
 
 ## Expected Artifacts
 
-For 0.3.13, the expected files are:
+For 0.3.14, the expected files are:
 
-- `omega_lock-0.3.13-py3-none-any.whl`
-- `omega_lock-0.3.13.tar.gz`
+- `omega_lock-0.3.14-py3-none-any.whl`
+- `omega_lock-0.3.14.tar.gz`
 
 If an isolated PEP 517 build cannot download build dependencies in a restricted
 environment, `python -m build --no-isolation` is acceptable for local sandbox
@@ -214,10 +218,10 @@ Review `git status` first, then:
 
 ```bash
 git add -A
-git commit -m "Prepare source version 0.3.13"
-git tag v0.3.13
+git commit -m "Prepare source version 0.3.14"
+git tag v0.3.14
 git push origin main
-git push origin v0.3.13
+git push origin v0.3.14
 ```
 
 For a future, separately scoped registry publication, create GitHub Release for the intended tag to trigger `.github/workflows/publish.yml`, or
@@ -235,16 +239,16 @@ all agree on the same version.
 After PyPI publication is expected to exist:
 
 ```bash
-python scripts/post_release_verify.py --version 0.3.13 --distribution omega-lock
+python scripts/post_release_verify.py --version 0.3.14 --distribution omega-lock
 python -m pip index versions omega-lock
-python -m pip install --no-cache-dir --upgrade omega-lock==0.3.13
+python -m pip install --no-cache-dir --upgrade omega-lock==0.3.14
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```
 
 For cache-sensitive releases, verify the exact wheel URL exposed by PyPI JSON:
 
 ```bash
-python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.13/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
+python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('https://pypi.org/pypi/omega-lock/0.3.14/json')); print([u['url'] for u in data['urls'] if u['packagetype']=='bdist_wheel'][0])"
 python -m pip install --no-cache-dir --force-reinstall "<wheel-url-from-pypi-json>"
 python -c "import omega_lock; print(omega_lock.__version__)"
 ```

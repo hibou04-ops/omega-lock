@@ -2,7 +2,7 @@
 
 [English](README.md) · [한국어](README.ko.md) · [한국어 별칭](README_KR.md)
 
-[![Source version](https://img.shields.io/badge/version-0.3.13-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.13)
+[![Source version](https://img.shields.io/badge/version-0.3.14-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.14)
 
 **Check whether a tuned candidate survives your declared audit gates.** omega-lock is the gate that runs *after* your tuner, takes its "winning" candidate, and checks the declared constraints and train/holdout score correlation **before** it ships.
 
@@ -36,10 +36,10 @@ python examples/quickstart_demo.py
 <!-- QUICKSTART_DEMO_END -->
 
 
-**Source version 0.3.13.** Verify publication by version: [PyPI 0.3.13](https://pypi.org/project/omega-lock/0.3.13/), [GitHub v0.3.13](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.13), and [publication runs](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml). Source metadata alone is not publication proof. The pinned install below selects the source tag.
+**Source version 0.3.14.** Verify publication by version: [PyPI 0.3.14](https://pypi.org/project/omega-lock/0.3.14/), [GitHub v0.3.14](https://github.com/hibou04-ops/omega-lock/releases/tag/v0.3.14), and [publication runs](https://github.com/hibou04-ops/omega-lock/actions/workflows/publish.yml). Source metadata alone is not publication proof. The pinned install below selects the source tag.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.14"
 omega-lock demo   # 60s, offline: watch a "winning" score collapse -74% on held-out data
 ```
 
@@ -116,7 +116,11 @@ The absolute decision retains exact binary-float rational arithmetic. The relati
 
 The Optuna report exposes both `degradation_gap` (top-N mean) and `selected_degradation_gap` (the selected candidate). A favorable mean cannot waive the selected candidate check.
 
-## v0.3.13 — Release changes
+## v0.3.14 — Documentation and package metadata
+
+This documentation and packaging patch aligns the package description with the reviewed, domain-neutral source documentation. Public APIs, library behavior and frozen audit fixtures are unchanged; the demo display label uses neutral terminology. It adds no new performance or generalization evidence.
+
+## v0.3.13 — Retained feature changes
 
 Adds the default 50% relative-degradation bound alongside the absolute 1.0 score-unit bound, using exact decimal comparisons for mean and selected-candidate ratios. The keyless demo now includes normalized score collapse. Existing no-holdout fail-closed and correlation checks remain. The pure helpers below are retained features.
 
@@ -131,7 +135,7 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.14"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
@@ -202,7 +206,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
+      - run: python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.14"
 
       # your tuner runs here and writes train_scores.json + holdout_scores.json
       - run: python tune.py
@@ -280,7 +284,7 @@ The empty seat omega-lock fills: an **output-side overfit gate**. The rule of th
 ## Install
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.14"
 
 omega-lock demo                 # 60s offline walkthrough — watch a lucky winner collapse
 omega-lock gate --help          # the CI gate (exit 0 = ship, 1 = block)

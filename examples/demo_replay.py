@@ -1,8 +1,8 @@
 """Paced replay of phantom_demo output for screencast recording.
 
-Runs phantom_demo's REAL output (captured in `_demo_output.txt`) at a
-deliberate tempo so a viewer can read each phase. No fabricated numbers —
-the file is a verbatim capture of the actual run.
+Replays phantom_demo's recorded output (captured in `_demo_output.txt`) at a
+deliberate tempo so a viewer can read each phase. Recorded numbers are retained;
+display labels are aligned with the current demo terminology.
 
 Total wall time tuned for ~55 seconds. Adjust SECTION_PAUSES to taste.
 

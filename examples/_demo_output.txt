@@ -5,7 +5,7 @@
   [  5/12] decoy_offset                   stress=0.0003 (0.0s)
   [  6/12] decoy_bias                     stress=0.0020 (0.0s)
   [  7/12] decoy_mag                      stress=0.0000 (0.0s)
-  [  8/12] decoy_ofi                      stress=0.0040 OFI (0.0s)
+  [  8/12] decoy_ofi                      stress=0.0040 SUPPRESSED (0.0s)
   [  9/12] decoy_mult                     stress=0.0000 (0.0s)
   [ 10/12] decoy_exp                      stress=0.0001 (0.0s)
   [ 11/12] decoy_mode                     stress=0.0007 (0.0s)

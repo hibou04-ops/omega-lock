@@ -1,13 +1,13 @@
 # omega-lock
 
-[![Source version](https://img.shields.io/badge/version-0.3.13-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.13)
+[![Source version](https://img.shields.io/badge/version-0.3.14-blue.svg)](https://github.com/hibou04-ops/omega-lock/tree/v0.3.14)
 
 **Check tuned scores against declared holdout and constraint gates before release.**
 
 [![pip install omega-lock](https://img.shields.io/badge/pip%20install-omega--lock-3775A9.svg)](https://pypi.org/project/omega-lock/)
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.14"
 ```
 
 This is the plain-English page. No jargon, no setup, no prior knowledge needed.
@@ -16,9 +16,13 @@ Read [README.md](README.md).
 
 ---
 
-The source version is 0.3.13; publication is verified per version on PyPI and GitHub, not inferred from this README. Mean and selected-candidate gates now also enforce max_relative_degradation=0.50 with exact decimal comparisons; nonpositive TRAIN baselines retain the absolute bound. See the canonical README for scope.
+The source version is 0.3.14; publication is verified per version on PyPI and GitHub, not inferred from this README. Mean and selected-candidate gates now also enforce max_relative_degradation=0.50 with exact decimal comparisons; nonpositive TRAIN baselines retain the absolute bound. See the canonical README for scope.
 
-## v0.3.13 — Release changes
+## v0.3.14 — Documentation and package metadata
+
+This documentation and packaging patch aligns the package description with the reviewed, domain-neutral source documentation. Public APIs, library behavior and frozen audit fixtures are unchanged; the demo display label uses neutral terminology. It adds no new performance or generalization evidence.
+
+## v0.3.13 — Retained feature changes
 
 Separates audit completion from deployment authorization and adds declared mean/selected-candidate degradation bounds. The pure helpers below are retained features.
 
@@ -33,7 +37,7 @@ Audit numeric candidate scores after tuning. The CLI correlation gate checks ind
 Requires Python 3.11+. Installation needs internet.
 
 ```bash
-python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.13"
+python -m pip install "omega-lock @ git+https://github.com/hibou04-ops/omega-lock.git@v0.3.14"
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3,4,5])); Path('holdout.json').write_text(json.dumps([1,2,3,4,5]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```

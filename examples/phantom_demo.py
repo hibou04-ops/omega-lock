@@ -100,11 +100,11 @@ def main() -> int:
     print("  stress top-3 vs bottom-3:")
     sorted_stress = sorted(result.stress_results, key=lambda s: -s["raw_stress"])
     for s in sorted_stress[:3]:
-        tag = " OFI" if s["ofi_biased"] else ""
+        tag = " SUPPRESSED" if s["ofi_biased"] else ""
         print(f"    {s['name']:15s} raw={s['raw_stress']:10.4f}{tag}")
     print("    ...")
     for s in sorted_stress[-3:]:
-        tag = " OFI" if s["ofi_biased"] else ""
+        tag = " SUPPRESSED" if s["ofi_biased"] else ""
         print(f"    {s['name']:15s} raw={s['raw_stress']:10.6f}{tag}")
 
     print(f"\n  output: {output_path}")
