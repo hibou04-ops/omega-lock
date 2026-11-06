@@ -92,7 +92,7 @@ independence, and paired remeasurement is not unseen-input validation.
 ## Install and offline smoke
 
 ```bash
-python -m pip install omega-lock==0.3.9
+python -m pip install omega-lock==0.3.14
 python -c "import json; from pathlib import Path; Path('train.json').write_text(json.dumps([1,2,3])); Path('holdout.json').write_text(json.dumps([1,2,3]))"
 omega-lock gate --train train.json --holdout holdout.json --report gate.html
 ```
