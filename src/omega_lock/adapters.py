@@ -86,6 +86,6 @@ class CallableAdapter:
         metadata = dict(self.metadata_fn(params)) if self.metadata_fn else {}
         return EvalResult(
             fitness=fitness,
-            n_trials=n_trials,
+            sample_count=n_trials,
             metadata=metadata,
         )

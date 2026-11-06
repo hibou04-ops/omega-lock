@@ -124,7 +124,7 @@ class P1Config:
     # is the only signal that wasn't reused for selection.
     holdout_mode: str = "evidence_only"
     holdout_min_fitness: float | None = None  # absolute floor; None disables
-    holdout_min_trade_ratio: float | None = None  # ratio against train_best.n_trials
+    holdout_min_trade_ratio: float | None = None  # ratio against train_best.sample_count
 
     def __post_init__(self) -> None:
         # Reviewer P1: invalid configs should fail at construction time, not
@@ -214,7 +214,7 @@ def _json_fallback(o: Any) -> Any:
 def _eval_to_dict(r: EvalResult) -> dict[str, Any]:
     return {
         "fitness": r.fitness,
-        "n_trials": r.n_trials,
+        "n_trials": r.sample_count,
         "metadata": dict(r.metadata),
     }
 
@@ -278,12 +278,12 @@ def _hybrid_to_dict(h: HybridResult) -> dict[str, Any]:
     d = {
         "params": dict(h.params),
         "search_fitness": h.search_result.fitness,
-        "search_n_trials": h.search_result.n_trials,
+        "search_n_trials": h.search_result.sample_count,
         "final_fitness": h.final_fitness,
     }
     if h.validation_result is not None:
         d["validation_fitness"] = h.validation_result.fitness
-        d["validation_n_trials"] = h.validation_result.n_trials
+        d["validation_n_trials"] = h.validation_result.sample_count
     return d
 
 
@@ -497,7 +497,7 @@ def run_p1(
     # 8. KC-1 (time box) + KC-3 (trade counts)
     elapsed = time.time() - t_start
     kc1 = check_kc1(elapsed, cfg.kc_thresholds)
-    trade_counts = {"baseline": baseline.n_trials, "train_best": grid_best.result.n_trials}
+    trade_counts = {"baseline": baseline.sample_count, "train_best": grid_best.result.sample_count}
     if wf_result is not None:
         trade_counts["test_best"] = wf_result.test_best_trades
     kc3 = check_kc3(trade_counts, cfg.kc_thresholds)
@@ -522,12 +522,12 @@ def run_p1(
         train_fit = grid_best.result.fitness
         test_fit = wf_result.test_fitnesses[0] if wf_result and wf_result.test_fitnesses else None
         trade_ratio_vs_train = (
-            ho.n_trials / grid_best.result.n_trials
-            if grid_best.result.n_trials > 0 else None
+            ho.sample_count / grid_best.result.sample_count
+            if grid_best.result.sample_count > 0 else None
         )
         holdout_dict = {
             "fitness": ho.fitness,
-            "n_trials": ho.n_trials,
+            "n_trials": ho.sample_count,
             "params": dict(grid_best.params),
             "fitness_vs_train": (ho.fitness - train_fit),
             "fitness_vs_test": (ho.fitness - test_fit) if test_fit is not None else None,
@@ -890,7 +890,7 @@ def run_p1_iterative(
         )
         holdout_dict = {
             "fitness": ho.fitness,
-            "n_trials": ho.n_trials,
+            "n_trials": ho.sample_count,
             "params": dict(base),
             "fitness_vs_last_round_train": (
                 ho.fitness - train_ref if train_ref is not None else None
